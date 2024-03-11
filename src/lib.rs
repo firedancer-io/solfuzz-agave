@@ -278,8 +278,10 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
 
 fn execute_instr(input: InstrContext) -> InstrEffects {
     // TODO this shouldn't be default
-    let mut compute_budget = ComputeBudget::default();
-    compute_budget.compute_unit_limit = input.cu_avail;
+    let compute_budget = ComputeBudget {
+        compute_unit_limit: input.cu_avail,
+        ..ComputeBudget::default()
+    };
     let rent = Rent::default();
 
     let mut transaction_accounts =
