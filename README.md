@@ -1,6 +1,9 @@
 solfuzz-agave provides solfuzz API bindings for Agave components.
 Only supports x86_64-unknown-linux-gnu targets.
 
+Supported APIs:
+- sol_compat_instr_execute_v1
+
 Check and test:
 
 ```sh
