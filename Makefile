@@ -15,7 +15,7 @@ CARGO?=cargo
 .PHONY: build clean toolchain
 
 build:
-	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) +$(RUST_VERSION) build --target x86_64-unknown-linux-gnu --release
+	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) +$(RUST_VERSION) build --target x86_64-unknown-linux-gnu --release --lib
 
 clean:
 	$(CARGO) clean

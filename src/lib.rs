@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use lazy_static::lazy_static;
+use paste::paste;
 use prost::Message;
 use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
@@ -14,6 +15,7 @@ use solana_sdk::feature_set::*;
 use solana_sdk::hash::Hash;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::sysvar;
 use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{InstructionAccount, TransactionAccount, TransactionContext};
 use std::collections::HashMap;
@@ -29,9 +31,8 @@ macro_rules! feature_list {
     };
 }
 
-static HARDCODED_FEATURES: &[u64] = feature_list![
-    secp256k1_program_enabled,
-];
+static HARDCODED_FEATURES: &[u64] =
+    feature_list![secp256k1_program_enabled, system_transfer_zero_check,];
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     // Active on all clusters, but not cleaned up.
     pico_inflation,
@@ -102,7 +103,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     deprecate_executable_meta_update_in_bpf_loader,
 ];
 
-mod proto {
+pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
 }
 
@@ -272,7 +273,7 @@ impl From<InstrEffects> for proto::InstrEffects {
     }
 }
 
-fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEffects> {
+pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEffects> {
     let instr_context = match InstrContext::try_from(input) {
         Ok(context) => context,
         Err(_) => return None,
@@ -292,7 +293,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
     );
 }
 
-fn execute_instr(input: InstrContext) -> InstrEffects {
+fn execute_instr(mut input: InstrContext) -> InstrEffects {
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
         compute_unit_limit: input.cu_avail,
@@ -300,8 +301,64 @@ fn execute_instr(input: InstrContext) -> InstrEffects {
     };
     let rent = Rent::default();
 
+    let mut sysvar_cache = SysvarCache::default();
+
+    // Populate the sysvar cache from the original accounts
+    //
+    // A callback in a callback ... this is awful code ...
+    // The sysvar cache is the worst implementation of a cache I have
+    // ever seen.  This is not even a cache.  It is a overlay that
+    // arbitrarily mangles data on read and has no coherent write-back
+    // strategy at all.  Not to mention the duplication of code ...
+    // What purpose does it even serve?  All these sysvars can be mapped
+    // directly and are POD so they don't require serialization.
+    //
+    // And of course, the logic to write the sysvar cache's changes back
+    // are scattered around bank.rs to add insult to injury.
+
+    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
+        if let Some(account) = input.accounts.iter().find(|(key, _)| key == pubkey) {
+            if account.1.lamports > 0 {
+                callbackback(&account.1.data);
+            }
+        }
+    });
+
+    // Re-serialize the sysvar cache ... sigh
+    macro_rules! reserialize(
+        ($sysvar:ident) => {
+            paste! {
+                #[allow(deprecated)]
+                let acc_maybe = input
+                    .accounts
+                    .iter_mut()
+                    .find(|(pubkey, _)| pubkey == &sysvar::$sysvar::id());
+                #[allow(deprecated)]
+                if let Some(var) = sysvar_cache.[<get_ $sysvar>]().ok() {
+                    acc_maybe.unwrap()
+                        .1
+                        .data = bincode::serialize(&var).unwrap();
+                } else if let Some(acc_maybe) = acc_maybe {
+                    acc_maybe.1.lamports = 0;
+                    acc_maybe.1.data.clear();
+                    acc_maybe.1.owner = Pubkey::default();
+                }
+            }
+        }
+    );
+    reserialize!(clock);
+    reserialize!(epoch_schedule);
+    reserialize!(epoch_rewards);
+    reserialize!(fees);
+    reserialize!(rent);
+    reserialize!(slot_hashes);
+    reserialize!(recent_blockhashes);
+    reserialize!(stake_history);
+    reserialize!(last_restart_slot);
+
     let mut transaction_accounts =
         Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
+    #[allow(deprecated)]
     input
         .accounts
         .into_iter()
@@ -333,8 +390,6 @@ fn execute_instr(input: InstrContext) -> InstrEffects {
         compute_budget.max_invoke_stack_height,
         compute_budget.max_instruction_trace_length,
     );
-
-    let sysvar_cache = SysvarCache::default();
 
     // sigh ... What is this mess?
     let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
