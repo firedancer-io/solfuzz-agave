@@ -1,4 +1,5 @@
 RUSTFLAGS:=
+RUSTFLAGS+=-g
 RUSTFLAGS+=-Cpasses=sancov-module
 RUSTFLAGS+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
 RUSTFLAGS+=-Cllvm-args=-sanitizer-coverage-level=4

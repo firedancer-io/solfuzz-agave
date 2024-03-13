@@ -8,17 +8,21 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bincode = "1.3.3"
-prost = "0.10"
-prost-types = "0.10"
-solana-address-lookup-table-program = "1.18.2"
-solana-bpf-loader-program = "1.18.2"
-solana-compute-budget-program = "1.18.2"
-solana-config-program = "1.18.2"
-solana-loader-v4-program = "1.18.2"
-solana-program-runtime = "1.18.2"
-solana-system-program = "1.18.2"
-solana-sdk = "1.18.2"
+lazy_static = "1.4.0"
+prost = "0.11.9"
+prost-types = "0.11.9"
+solana-address-lookup-table-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-bpf-loader-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-compute-budget-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-config-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-loader-v4-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-program-runtime = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-system-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-sdk = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
 thiserror = "1.0.57"
 
 [build-dependencies]
-prost-build = "0.10"
+prost-build = "0.11.9"
+
+[patch."https://github.com/anza-xyz/agave"]
+solana-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
