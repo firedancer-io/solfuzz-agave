@@ -11,7 +11,6 @@ use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::{Account, AccountSharedData};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::feature_set::*;
-use solana_sdk::hash::Hash;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
@@ -351,6 +350,14 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
 
+    #[allow(deprecated)]
+    let blockhash = sysvar_cache
+        .get_recent_blockhashes()
+        .ok()
+        .and_then(|x| (*x).last().cloned())
+        .map(|x| x.blockhash)
+        .unwrap_or_default();
+
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
         &sysvar_cache,
@@ -359,7 +366,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
         Arc::new(input.feature_set),
-        Hash::default(),
+        blockhash,
         0,
     );
 
