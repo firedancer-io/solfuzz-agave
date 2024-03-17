@@ -35,7 +35,7 @@ macro_rules! feature_list {
 
 lazy_static! {
     static ref HARDCODED_FEATURES: Vec<u64> =
-        feature_list![secp256k1_program_enabled, system_transfer_zero_check];
+        feature_list![secp256k1_program_enabled];
     static ref SUPPORTED_FEATURES: Vec<u64> = feature_list![
         // Active on all clusters, but not cleaned up.
         pico_inflation,
@@ -50,6 +50,7 @@ lazy_static! {
         update_hashes_per_tick,
         reduce_stake_warmup_cooldown,
         enable_early_verification_of_account_modifications,
+        system_transfer_zero_check,
         // Active on testnet & devnet.
         libsecp256k1_fail_on_bad_count2,
         enable_bpf_loader_set_authority_checked_ix,
