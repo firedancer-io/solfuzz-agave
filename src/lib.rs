@@ -35,7 +35,8 @@ macro_rules! feature_list {
 static HARDCODED_FEATURES: &[u64] = feature_list![
     secp256k1_program_enabled,
     system_transfer_zero_check,
-    native_programs_consume_cu
+    native_programs_consume_cu,
+    dedupe_config_program_signers,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
