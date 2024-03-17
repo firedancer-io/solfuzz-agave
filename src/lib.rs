@@ -274,6 +274,22 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
 
 fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
     cache.replenish(
+        solana_address_lookup_table_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_address_lookup_table_program::processor::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_config_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_config_program::config_processor::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
         solana_system_program::id(),
         Arc::new(LoadedProgram::new_builtin(
             0u64,
