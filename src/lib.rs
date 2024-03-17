@@ -1,7 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
 use lazy_static::lazy_static;
-use paste::paste;
 use prost::Message;
 use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
@@ -13,11 +12,13 @@ use solana_sdk::account::{Account, AccountSharedData};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::feature_set::*;
 use solana_sdk::hash::Hash;
+use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::sysvar;
-use solana_sdk::sysvar::rent::Rent;
-use solana_sdk::transaction_context::{InstructionAccount, TransactionAccount, TransactionContext};
+use solana_sdk::stable_layout::stable_instruction::StableInstruction;
+use solana_sdk::sysvar::rent::Rent;use solana_sdk::transaction_context::{
+    IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
+};
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::str::FromStr;
@@ -111,7 +112,7 @@ lazy_static! {
     static ref INDEXED_FEATURES: HashMap<u64, Pubkey> = {
         FEATURE_NAMES
             .iter()
-            .map(|(pubkey, _)| (feature_u64(pubkey), pubkey.clone()))
+            .map(|(pubkey, _)| (feature_u64(pubkey), *pubkey))
             .collect()
     };
 }
@@ -120,7 +121,7 @@ impl From<&proto::FeatureSet> for FeatureSet {
     fn from(input: &proto::FeatureSet) -> Self {
         let mut feature_set = FeatureSet::default();
         for id in &input.features {
-            if let Some(pubkey) = INDEXED_FEATURES.get(&id) {
+            if let Some(pubkey) = INDEXED_FEATURES.get(id) {
                 feature_set.activate(pubkey, 0);
             }
         }
@@ -153,12 +154,10 @@ pub enum Error {
 }
 
 pub struct InstrContext {
-    pub program_id: Pubkey,
     pub loader_id: Option<Pubkey>,
     pub feature_set: FeatureSet,
     pub accounts: Vec<(Pubkey, Account)>,
-    pub instr_accounts: Vec<InstructionAccount>,
-    pub data: Vec<u8>,
+    pub instruction: StableInstruction,
     pub cu_avail: u64,
 }
 
@@ -191,45 +190,32 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             .map(|fs| fs.into())
             .unwrap_or_default();
 
-        let accounts = input
+        let accounts: Vec<(Pubkey, Account)> = input
             .accounts
             .into_iter()
             .map(|acct_state| acct_state.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let mut instr_accounts =
-            Vec::<InstructionAccount>::with_capacity(input.instr_accounts.len());
-        for (
-            instr_acc_idx,
-            proto::InstrAcct {
-                index,
-                is_signer,
-                is_writable,
-            },
-        ) in input.instr_accounts.into_iter().enumerate()
-        {
-            if instr_acc_idx > u16::MAX as usize {
-                return Err(Error::IntegerOutOfRange);
-            }
-            if index > u16::MAX as u32 {
-                return Err(Error::IntegerOutOfRange);
-            }
-            instr_accounts.push(InstructionAccount {
-                index_in_transaction: index as u16,
-                index_in_caller: instr_acc_idx as u16,
-                index_in_callee: instr_acc_idx as u16,
-                is_signer,
-                is_writable,
-            });
-        }
+        let instruction = StableInstruction {
+            accounts: input
+                .instr_accounts
+                .into_iter()
+                .map(|acct| AccountMeta {
+                    pubkey: accounts[acct.index as usize].0,
+                    is_signer: acct.is_signer,
+                    is_writable: acct.is_writable,
+                })
+                .collect::<Vec<_>>()
+                .into(),
+            data: input.data.into(),
+            program_id,
+        };
 
         Ok(Self {
-            program_id,
             loader_id,
             feature_set,
             accounts,
-            instr_accounts,
-            data: input.data,
+            instruction,
             cu_avail: input.cu_avail,
         })
     }
@@ -279,7 +265,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
         Err(_) => return None,
     };
     let instr_effects = execute_instr(instr_context);
-    Some(instr_effects.into())
+    instr_effects.map(Into::into)
 }
 
 fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
@@ -293,7 +279,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
     );
 }
 
-fn execute_instr(mut input: InstrContext) -> InstrEffects {
+fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
         compute_unit_limit: input.cu_avail,
@@ -324,38 +310,6 @@ fn execute_instr(mut input: InstrContext) -> InstrEffects {
         }
     });
 
-    // Re-serialize the sysvar cache ... sigh
-    macro_rules! reserialize(
-        ($sysvar:ident) => {
-            paste! {
-                #[allow(deprecated)]
-                let acc_maybe = input
-                    .accounts
-                    .iter_mut()
-                    .find(|(pubkey, _)| pubkey == &sysvar::$sysvar::id());
-                #[allow(deprecated)]
-                if let Some(var) = sysvar_cache.[<get_ $sysvar>]().ok() {
-                    acc_maybe.unwrap()
-                        .1
-                        .data = bincode::serialize(&var).unwrap();
-                } else if let Some(acc_maybe) = acc_maybe {
-                    acc_maybe.1.lamports = 0;
-                    acc_maybe.1.data.clear();
-                    acc_maybe.1.owner = Pubkey::default();
-                }
-            }
-        }
-    );
-    reserialize!(clock);
-    reserialize!(epoch_schedule);
-    reserialize!(epoch_rewards);
-    reserialize!(fees);
-    reserialize!(rent);
-    reserialize!(slot_hashes);
-    reserialize!(recent_blockhashes);
-    reserialize!(stake_history);
-    reserialize!(last_restart_slot);
-
     let mut transaction_accounts =
         Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
     #[allow(deprecated)]
@@ -367,12 +321,12 @@ fn execute_instr(mut input: InstrContext) -> InstrEffects {
 
     let program_idx = if let Some(index) = transaction_accounts
         .iter()
-        .position(|(pubkey, _)| *pubkey == input.program_id)
+        .position(|(pubkey, _)| *pubkey == input.instruction.program_id)
     {
         index
     } else {
         transaction_accounts.push((
-            input.program_id,
+            input.instruction.program_id,
             AccountSharedData::from(Account {
                 lamports: 10000000,
                 data: vec![],
@@ -415,15 +369,44 @@ fn execute_instr(mut input: InstrContext) -> InstrEffects {
 
     let mut timings = ExecuteTimings::default();
 
+    let mut instruction_accounts: Vec<InstructionAccount> =
+        Vec::with_capacity(input.instruction.accounts.len());
+    for (instruction_account_index, account_meta) in
+        input.instruction.accounts.as_ref().iter().enumerate()
+    {
+        let index_in_transaction = transaction_accounts
+            .iter()
+            .position(|(key, _account)| *key == account_meta.pubkey)
+            .unwrap_or(transaction_accounts.len())
+            as IndexOfAccount;
+        let index_in_callee = instruction_accounts
+            .get(0..instruction_account_index)
+            .unwrap()
+            .iter()
+            .position(|instruction_account| {
+                instruction_account.index_in_transaction == index_in_transaction
+            })
+            .unwrap_or(instruction_account_index) as IndexOfAccount;
+        instruction_accounts.push(InstructionAccount {
+            index_in_transaction,
+            index_in_caller: index_in_transaction,
+            index_in_callee,
+            is_signer: account_meta.is_signer,
+            is_writable: account_meta.is_writable,
+        });
+    }
+    let processor_account = AccountSharedData::new(0, 0, &solana_sdk::native_loader::id());
+    transaction_accounts.push((input.instruction.program_id, processor_account));
+
     let result = invoke_context.process_instruction(
-        &input.data,
-        &input.instr_accounts,
+        &input.instruction.data,
+        &instruction_accounts,
         program_indices,
         &mut compute_units_consumed,
         &mut timings,
     );
 
-    InstrEffects {
+    Some(InstrEffects {
         custom_err: if let Err(InstructionError::Custom(x)) = result {
             Some(x)
         } else {
@@ -439,7 +422,7 @@ fn execute_instr(mut input: InstrContext) -> InstrEffects {
             .map(|(index, data)| (transaction_accounts[index].0, data.into()))
             .collect(),
         cu_avail: input.cu_avail - compute_units_consumed,
-    }
+    })
 }
 
 impl TryFrom<proto::AcctState> for (Pubkey, Account) {

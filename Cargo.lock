@@ -2894,7 +2894,6 @@ dependencies = [
  "bincode",
  "clap",
  "lazy_static",
- "paste",
  "prost",
  "prost-build",
  "prost-types",
