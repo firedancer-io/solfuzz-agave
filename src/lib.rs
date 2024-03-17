@@ -51,6 +51,7 @@ lazy_static! {
         enable_early_verification_of_account_modifications,
         native_programs_consume_cu,
         system_transfer_zero_check,
+        dedupe_config_program_signers,
         // Active on testnet & devnet.
         libsecp256k1_fail_on_bad_count2,
         enable_bpf_loader_set_authority_checked_ix,
