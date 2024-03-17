@@ -50,6 +50,7 @@ lazy_static! {
         update_hashes_per_tick,
         reduce_stake_warmup_cooldown,
         enable_early_verification_of_account_modifications,
+        native_programs_consume_cu,
         system_transfer_zero_check,
         // Active on testnet & devnet.
         libsecp256k1_fail_on_bad_count2,
@@ -161,7 +162,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
     type Error = Error;
 
     fn try_from(input: proto::InstrContext) -> Result<Self, Self::Error> {
-        let program_id = Pubkey::new_from_array(
+        let  program_id = Pubkey::new_from_array(
             input
                 .program_id
                 .try_into()
