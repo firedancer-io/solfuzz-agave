@@ -11,7 +11,6 @@ use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::{Account, AccountSharedData};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::feature_set::*;
-use solana_sdk::hash::Hash;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
@@ -266,6 +265,22 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
 }
 
 fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
+    cache.replenish(
+        solana_address_lookup_table_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_address_lookup_table_program::processor::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_config_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_config_program::config_processor::Entrypoint::vm,
+        )),
+    );
     cache.replenish(
         solana_system_program::id(),
         Arc::new(LoadedProgram::new_builtin(
