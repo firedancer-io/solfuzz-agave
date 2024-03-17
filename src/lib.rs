@@ -356,11 +356,11 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
 
     #[allow(deprecated)]
-    let blockhash = sysvar_cache
+    let (blockhash, lamports_per_signature) = sysvar_cache
         .get_recent_blockhashes()
         .ok()
         .and_then(|x| (*x).last().cloned())
-        .map(|x| x.blockhash)
+        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
         .unwrap_or_default();
 
     let mut invoke_context = InvokeContext::new(
@@ -372,7 +372,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         &mut programs_modified_by_tx,
         Arc::new(input.feature_set),
         blockhash,
-        0,
+        lamports_per_signature,
     );
 
     let program_indices = &[program_idx as u16];
