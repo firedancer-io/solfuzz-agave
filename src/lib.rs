@@ -162,7 +162,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
     type Error = Error;
 
     fn try_from(input: proto::InstrContext) -> Result<Self, Self::Error> {
-        let  program_id = Pubkey::new_from_array(
+        let program_id = Pubkey::new_from_array(
             input
                 .program_id
                 .try_into()
@@ -350,6 +350,14 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default(); // ???
 
+    #[allow(deprecated)]
+    let (blockhash, lamports_per_signature) = sysvar_cache
+        .get_recent_blockhashes()
+        .ok()
+        .and_then(|x| (*x).last().cloned())
+        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
+        .unwrap_or_default();
+
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
         rent.clone(),
@@ -360,8 +368,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         &mut programs_modified_by_tx,
         &mut programs_updated_only_for_global_cache,
         Arc::new(input.feature_set),
-        Hash::default(),
-        0,
+        blockhash,
+        lamports_per_signature,
         0,
     );
 
