@@ -12,18 +12,15 @@ clap = { version = "4.5.2", features = ["derive"] }
 lazy_static = "1.4.0"
 prost = "0.11.9"
 prost-types = "0.11.9"
-solana-address-lookup-table-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-bpf-loader-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-compute-budget-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-config-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-loader-v4-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-program-runtime = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-system-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
-solana-sdk = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
+solana-address-lookup-table-program = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-compute-budget-program = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-config-program = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-loader-v4-program = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-program-runtime = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
+solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "b27c80a92077de291986a15a8440dfcf27f4b57c" }
 thiserror = "1.0.57"
 
 [build-dependencies]
 prost-build = "0.11.9"
-
-[patch."https://github.com/anza-xyz/agave"]
-solana-program = { git = "https://github.com/ripatel-fd/solana", branch = "patch-1" }
