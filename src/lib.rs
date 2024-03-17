@@ -16,7 +16,8 @@ use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
-use solana_sdk::sysvar::rent::Rent;use solana_sdk::transaction_context::{
+use solana_sdk::sysvar::rent::Rent;
+use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use std::collections::HashMap;
@@ -28,81 +29,75 @@ use thiserror::Error;
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 macro_rules! feature_list {
     ($($feature:ident),*$(,)?) => {
-        &[$(feature_u64(&$feature::id())),*]
+        vec![$(feature_u64(&$feature::id())),*]
     };
 }
 
-static HARDCODED_FEATURES: &[u64] =
-    feature_list![secp256k1_program_enabled, system_transfer_zero_check,];
-static SUPPORTED_FEATURES: &[u64] = feature_list![
-    // Active on all clusters, but not cleaned up.
-    pico_inflation,
-    warp_timestamp_again,
-    disable_fees_sysvar,
-    disable_deploy_of_alloc_free_syscall,
-    set_exempt_rent_epoch_max,
-    incremental_snapshot_only_incremental_hash_calculation,
-    relax_authority_signer_check_for_lookup_table_creation,
-    commission_updates_only_allowed_in_first_half_of_epoch,
-    enable_turbine_fanout_experiments,
-    update_hashes_per_tick,
-    reduce_stake_warmup_cooldown,
-    enable_early_verification_of_account_modifications,
-    // Active on testnet & devnet.
-    libsecp256k1_fail_on_bad_count2,
-    enable_bpf_loader_set_authority_checked_ix,
-    enable_alt_bn128_syscall,
-    switch_to_new_elf_parser,
-    vote_state_add_vote_latency,
-    require_rent_exempt_split_destination,
-    update_hashes_per_tick2,
-    update_hashes_per_tick3,
-    update_hashes_per_tick4,
-    update_hashes_per_tick5,
-    validate_fee_collector_account,
-    // Active on testnet.
-    stake_raise_minimum_delegation_to_1_sol,
-    update_hashes_per_tick6,
-    // Active on devnet.
-    blake3_syscall_enabled,
-    curve25519_syscall_enabled,
-    libsecp256k1_fail_on_bad_count,
-    reject_callx_r10,
-    increase_tx_account_lock_limit,
-    // Inactive on all clusters.
-    zk_token_sdk_enabled,
-    enable_partitioned_epoch_reward,
-    stake_minimum_delegation_for_rewards,
-    stake_redelegate_instruction,
-    skip_rent_rewrites,
-    loosen_cpi_size_restriction,
-    disable_turbine_fanout_experiments,
-    enable_big_mod_exp_syscall,
-    apply_cost_tracker_during_replay,
-    include_loaded_accounts_data_size_in_fee_calculation,
-    bpf_account_data_direct_mapping,
-    last_restart_slot_sysvar,
-    enable_poseidon_syscall,
-    timely_vote_credits,
-    remaining_compute_units_syscall_enabled,
-    enable_program_runtime_v2_and_loader_v4,
-    enable_alt_bn128_compression_syscall,
-    disable_rent_fees_collection,
-    enable_zk_transfer_with_fee,
-    drop_legacy_shreds,
-    allow_commission_decrease_at_any_time,
-    consume_blockstore_duplicate_proofs,
-    index_erasure_conflict_duplicate_proofs,
-    merkle_conflict_duplicate_proofs,
-    enable_zk_proof_from_account,
-    curve25519_restrict_msm_length,
-    cost_model_requested_write_lock_cost,
-    enable_gossip_duplicate_proof_ingestion,
-    enable_chained_merkle_shreds,
-    // These two were force-activated, but the gate remains on the BPF Loader.
-    disable_bpf_loader_instructions,
-    deprecate_executable_meta_update_in_bpf_loader,
-];
+lazy_static! {
+    static ref HARDCODED_FEATURES: Vec<u64> =
+        feature_list![secp256k1_program_enabled, system_transfer_zero_check];
+    static ref SUPPORTED_FEATURES: Vec<u64> = feature_list![
+        // Active on all clusters, but not cleaned up.
+        pico_inflation,
+        warp_timestamp_again,
+        disable_fees_sysvar,
+        disable_deploy_of_alloc_free_syscall,
+        set_exempt_rent_epoch_max,
+        incremental_snapshot_only_incremental_hash_calculation,
+        relax_authority_signer_check_for_lookup_table_creation,
+        commission_updates_only_allowed_in_first_half_of_epoch,
+        enable_turbine_fanout_experiments,
+        update_hashes_per_tick,
+        reduce_stake_warmup_cooldown,
+        enable_early_verification_of_account_modifications,
+        // Active on testnet & devnet.
+        libsecp256k1_fail_on_bad_count2,
+        enable_bpf_loader_set_authority_checked_ix,
+        enable_alt_bn128_syscall,
+        switch_to_new_elf_parser,
+        vote_state_add_vote_latency,
+        require_rent_exempt_split_destination,
+        update_hashes_per_tick2,
+        update_hashes_per_tick3,
+        update_hashes_per_tick4,
+        update_hashes_per_tick5,
+        validate_fee_collector_account,
+        // Active on testnet.
+        stake_raise_minimum_delegation_to_1_sol,
+        update_hashes_per_tick6,
+        // Active on devnet.
+        blake3_syscall_enabled,
+        curve25519_syscall_enabled,
+        libsecp256k1_fail_on_bad_count,
+        reject_callx_r10,
+        increase_tx_account_lock_limit,
+        // Inactive on all clusters.
+        zk_token_sdk_enabled,
+        enable_partitioned_epoch_reward,
+        stake_minimum_delegation_for_rewards,
+        stake_redelegate_instruction,
+        skip_rent_rewrites,
+        loosen_cpi_size_restriction,
+        disable_turbine_fanout_experiments,
+        enable_big_mod_exp_syscall,
+        apply_cost_tracker_during_replay,
+        include_loaded_accounts_data_size_in_fee_calculation,
+        bpf_account_data_direct_mapping,
+        last_restart_slot_sysvar,
+        enable_poseidon_syscall,
+        timely_vote_credits,
+        remaining_compute_units_syscall_enabled,
+        enable_program_runtime_v2_and_loader_v4,
+        enable_alt_bn128_compression_syscall,
+        enable_zk_transfer_with_fee,
+        drop_legacy_shreds,
+        consume_blockstore_duplicate_proofs,
+        index_erasure_conflict_duplicate_proofs,
+        curve25519_restrict_msm_length,
+        // These two were force-activated, but the gate remains on the BPF Loader.
+        disable_bpf_loader_instructions,
+    ];
+}
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
@@ -340,7 +335,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
-        rent,
+        Some(rent.clone()),
         compute_budget.max_invoke_stack_height,
         compute_budget.max_instruction_trace_length,
     );
@@ -351,15 +346,20 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
 
+    let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default(); // ???
+
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
+        rent.clone(),
         &sysvar_cache,
         None,
         compute_budget,
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
+        &mut programs_updated_only_for_global_cache,
         Arc::new(input.feature_set),
         Hash::default(),
+        0,
         0,
     );
 
@@ -470,7 +470,7 @@ pub struct SolCompatFeatures {
 unsafe impl Send for SolCompatFeatures {}
 unsafe impl Sync for SolCompatFeatures {}
 
-pub const fn feature_u64(feature: &Pubkey) -> u64 {
+pub fn feature_u64(feature: &Pubkey) -> u64 {
     let feature_id = feature.to_bytes();
     feature_id[0] as u64
         | (feature_id[1] as u64) << 8
@@ -482,17 +482,19 @@ pub const fn feature_u64(feature: &Pubkey) -> u64 {
         | (feature_id[7] as u64) << 56
 }
 
-static FEATURES: SolCompatFeatures = SolCompatFeatures {
-    struct_size: std::mem::size_of::<SolCompatFeatures>() as u64,
-    hardcoded_features: HARDCODED_FEATURES.as_ptr(),
-    hardcoded_features_len: HARDCODED_FEATURES.len() as u64,
-    supported_features: SUPPORTED_FEATURES.as_ptr(),
-    supported_features_len: SUPPORTED_FEATURES.len() as u64,
-};
+lazy_static! {
+    static ref FEATURES: SolCompatFeatures = SolCompatFeatures {
+        struct_size: std::mem::size_of::<SolCompatFeatures>() as u64,
+        hardcoded_features: HARDCODED_FEATURES.as_ptr(),
+        hardcoded_features_len: HARDCODED_FEATURES.len() as u64,
+        supported_features: SUPPORTED_FEATURES.as_ptr(),
+        supported_features_len: SUPPORTED_FEATURES.len() as u64,
+    };
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeatures {
-    &FEATURES
+    &*FEATURES
 }
 
 #[no_mangle]
