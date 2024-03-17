@@ -15,7 +15,8 @@ use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
-use solana_sdk::sysvar::rent::Rent;use solana_sdk::transaction_context::{
+use solana_sdk::sysvar::rent::Rent;
+use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use std::collections::HashMap;
@@ -31,8 +32,12 @@ macro_rules! feature_list {
     };
 }
 
-static HARDCODED_FEATURES: &[u64] =
-    feature_list![secp256k1_program_enabled, system_transfer_zero_check,];
+static HARDCODED_FEATURES: &[u64] = feature_list![
+    secp256k1_program_enabled,
+    system_transfer_zero_check,
+    native_programs_consume_cu
+];
+
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     // Active on all clusters, but not cleaned up.
     pico_inflation,
