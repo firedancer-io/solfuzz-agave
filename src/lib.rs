@@ -350,7 +350,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             input.instruction.program_id,
             AccountSharedData::from(Account {
                 lamports: 10000000,
-                data: vec![],
+                data: b"Solana Program".to_vec(),
                 owner: Pubkey::from_str("NativeLoader1111111111111111111111111111111").unwrap(),
                 executable: false,
                 rent_epoch: 0,
