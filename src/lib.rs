@@ -8,6 +8,7 @@ use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
+use solana_sdk::account::ReadableAccount;
 use solana_sdk::account::{Account, AccountSharedData};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::feature_set::*;
@@ -21,7 +22,6 @@ use solana_sdk::transaction_context::{
 };
 use std::collections::HashMap;
 use std::ffi::c_int;
-use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -364,13 +364,19 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             AccountSharedData::from(Account {
                 lamports: 10000000,
                 data: b"Solana Program".to_vec(),
-                owner: Pubkey::from_str("NativeLoader1111111111111111111111111111111").unwrap(),
-                executable: false,
+                owner: solana_sdk::native_loader::id(),
+                executable: true,
                 rent_epoch: 0,
             }),
         ));
         transaction_accounts.len() - 1
     };
+
+    // Skip if the program account is not owned by the native loader
+    // (Would call the owner instead)
+    if transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
+        return None;
+    }
 
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
@@ -437,8 +443,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             is_writable: account_meta.is_writable,
         });
     }
-    let processor_account = AccountSharedData::new(0, 0, &solana_sdk::native_loader::id());
-    transaction_accounts.push((input.instruction.program_id, processor_account));
 
     let result = invoke_context.process_instruction(
         &input.instruction.data,
