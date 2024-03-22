@@ -193,17 +193,23 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             .map(|acct_state| acct_state.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let instruction = StableInstruction {
-            accounts: input
-                .instr_accounts
-                .into_iter()
-                .map(|acct| AccountMeta {
+        let instruction_accounts = input
+            .instr_accounts
+            .into_iter()
+            .map(|acct| {
+                if acct.index as usize >= accounts.len() {
+                    return Err(Error::AccountMissing);
+                }
+                return Ok(AccountMeta {
                     pubkey: accounts[acct.index as usize].0,
                     is_signer: acct.is_signer,
                     is_writable: acct.is_writable,
                 })
-                .collect::<Vec<_>>()
-                .into(),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let instruction = StableInstruction {
+            accounts: instruction_accounts.into(),
             data: input.data.into(),
             program_id,
         };
