@@ -357,8 +357,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         return None;
     }
 
+    let transaction_account_keys: Vec<Pubkey> = transaction_accounts.iter().map(|(key, _)| *key).collect();
     let mut transaction_context = TransactionContext::new(
-        transaction_accounts.clone(),
+        transaction_accounts,
         Some(rent.clone()),
         compute_budget.max_invoke_stack_height,
         compute_budget.max_instruction_trace_length,
@@ -406,10 +407,10 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     for (instruction_account_index, account_meta) in
         input.instruction.accounts.as_ref().iter().enumerate()
     {
-        let index_in_transaction = transaction_accounts
+        let index_in_transaction = transaction_account_keys
             .iter()
-            .position(|(key, _account)| *key == account_meta.pubkey)
-            .unwrap_or(transaction_accounts.len())
+            .position(|key| key == &account_meta.pubkey)
+            .unwrap_or(transaction_account_keys.len())
             as IndexOfAccount;
         let index_in_callee = instruction_accounts
             .get(0..instruction_account_index)
@@ -447,9 +448,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             .deconstruct_without_keys()
             .unwrap()
             .into_iter()
-            .take(transaction_accounts.len() - 1)
             .enumerate()
-            .map(|(index, data)| (transaction_accounts[index].0, data.into()))
+            .map(|(index, data)| (transaction_account_keys[index], data.into()))
             .collect(),
         cu_avail: input.cu_avail - compute_units_consumed,
     })
