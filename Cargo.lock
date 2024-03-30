@@ -409,9 +409,9 @@ dependencies = [
 
 [[package]]
 name = "blake3"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0231f06152bf547e9c2b5194f247cd97aacf6dcd8b15d8e5ec0663f64580da87"
+checksum = "30cca6d3674597c30ddf2c587bf8d9d65c9a84d2326d941cc79c9842dfe0ef52"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -2550,7 +2550,7 @@ dependencies = [
 [[package]]
 name = "solana-address-lookup-table-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -2570,7 +2570,7 @@ dependencies = [
 [[package]]
 name = "solana-bpf-loader-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "bincode",
  "byteorder",
@@ -2588,7 +2588,7 @@ dependencies = [
 [[package]]
 name = "solana-compute-budget-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "solana-program-runtime",
  "solana-sdk",
@@ -2597,7 +2597,7 @@ dependencies = [
 [[package]]
 name = "solana-config-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "bincode",
  "chrono",
@@ -2610,7 +2610,7 @@ dependencies = [
 [[package]]
 name = "solana-frozen-abi"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "block-buffer 0.10.4",
  "bs58",
@@ -2633,7 +2633,7 @@ dependencies = [
 [[package]]
 name = "solana-frozen-abi-macro"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2644,7 +2644,7 @@ dependencies = [
 [[package]]
 name = "solana-loader-v4-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "log",
  "solana-measure",
@@ -2656,7 +2656,7 @@ dependencies = [
 [[package]]
 name = "solana-logger"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -2666,7 +2666,7 @@ dependencies = [
 [[package]]
 name = "solana-measure"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "log",
  "solana-sdk",
@@ -2675,7 +2675,7 @@ dependencies = [
 [[package]]
 name = "solana-metrics"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
@@ -2689,7 +2689,7 @@ dependencies = [
 [[package]]
 name = "solana-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -2743,7 +2743,7 @@ dependencies = [
 [[package]]
 name = "solana-program-runtime"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "base64 0.22.0",
  "bincode",
@@ -2770,7 +2770,7 @@ dependencies = [
 [[package]]
 name = "solana-sdk"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "assert_matches",
  "base64 0.22.0",
@@ -2824,7 +2824,7 @@ dependencies = [
 [[package]]
 name = "solana-sdk-macro"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "bs58",
  "proc-macro2",
@@ -2836,7 +2836,7 @@ dependencies = [
 [[package]]
 name = "solana-system-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "bincode",
  "log",
@@ -2849,7 +2849,7 @@ dependencies = [
 [[package]]
 name = "solana-zk-token-sdk"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=b27c80a92077de291986a15a8440dfcf27f4b57c#b27c80a92077de291986a15a8440dfcf27f4b57c"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
 dependencies = [
  "aes-gcm-siv",
  "base64 0.22.0",

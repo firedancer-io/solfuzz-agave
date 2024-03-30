@@ -106,7 +106,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_chained_merkle_shreds,
     // These two were force-activated, but the gate remains on the BPF Loader.
     disable_bpf_loader_instructions,
-    deprecate_executable_meta_update_in_bpf_loader,
 ];
 
 pub mod proto {
