@@ -369,12 +369,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
-name = "base64"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9475866fec1451be56a3c2400fd081ff546538961565ccb5b7142cbd22bc7a51"
-
-[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2549,8 +2543,9 @@ dependencies = [
 
 [[package]]
 name = "solana-address-lookup-table-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3602b15a5c70a16cac6008d3556098b7990c5ab72b047a996f5ea4e988871975"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -2569,8 +2564,9 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-loader-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22e70419c0258baf10a8bb4f4dc5d535c597026eefbc3b288a8c3b87787bad05"
 dependencies = [
  "bincode",
  "byteorder",
@@ -2587,8 +2583,9 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e729d000949680e57c82ea2d6568611e54e7c76de4308bfb0a7f369f17ae6067"
 dependencies = [
  "solana-program-runtime",
  "solana-sdk",
@@ -2596,8 +2593,9 @@ dependencies = [
 
 [[package]]
 name = "solana-config-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617228f9569238e544b526c422b632de368a5ce748a7af04f7f762bd937f42f3"
 dependencies = [
  "bincode",
  "chrono",
@@ -2609,8 +2607,9 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc46edad65d122c8b8634aa9ad11276a804c1aa2404755577fdfdea67484b620"
 dependencies = [
  "block-buffer 0.10.4",
  "bs58",
@@ -2618,6 +2617,7 @@ dependencies = [
  "either",
  "generic-array",
  "im",
+ "lazy_static",
  "log",
  "memmap2",
  "rustc_version",
@@ -2632,8 +2632,9 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi-macro"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c71c603d2203da423cfd8862572ffca7165268e76cab181035f50d106c3710eb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2643,8 +2644,9 @@ dependencies = [
 
 [[package]]
 name = "solana-loader-v4-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5a9d776a3f71896ef5ea83c00816474ada49d1d718e1de7b220473c7e7e0cb0"
 dependencies = [
  "log",
  "solana-measure",
@@ -2655,8 +2657,9 @@ dependencies = [
 
 [[package]]
 name = "solana-logger"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5b3eef85d82c2c3030acb1d3272d77984d118d2a026d9b1a2cecc6e4c6602eb"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -2665,8 +2668,9 @@ dependencies = [
 
 [[package]]
 name = "solana-measure"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd072023ab870dcb7d524980d9481317bfd29c1dfd74a067747c8d1d249d1075"
 dependencies = [
  "log",
  "solana-sdk",
@@ -2674,8 +2678,9 @@ dependencies = [
 
 [[package]]
 name = "solana-metrics"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f594ca2a2698983b515580925d10be20b079617154bbed07d6cd455d1661b90"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
@@ -2688,14 +2693,15 @@ dependencies = [
 
 [[package]]
 name = "solana-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "760e9e923050f30f03a159aec9ba1fe09ae7c7494ebd8ba74dc5b7429b11085b"
 dependencies = [
  "ark-bn254",
  "ark-ec",
  "ark-ff",
  "ark-serialize",
- "base64 0.22.0",
+ "base64 0.21.7",
  "bincode",
  "bitflags 2.4.2",
  "blake3",
@@ -2742,10 +2748,11 @@ dependencies = [
 
 [[package]]
 name = "solana-program-runtime"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a61b65be846413bc504ecae468b6a3fa91b1b37631c80074c41ada8cdc36d165"
 dependencies = [
- "base64 0.22.0",
+ "base64 0.21.7",
  "bincode",
  "eager",
  "enum-iterator",
@@ -2769,11 +2776,12 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1788023924ebb072288868f8b4b72f5459c1ff653238d769700da9c8043a8aea"
 dependencies = [
  "assert_matches",
- "base64 0.22.0",
+ "base64 0.21.7",
  "bincode",
  "bitflags 2.4.2",
  "borsh 1.3.1",
@@ -2823,8 +2831,9 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f3b24f46820e8912b81719a828a3d05f4fbd2f6afdc13826b0327df065ab795"
 dependencies = [
  "bs58",
  "proc-macro2",
@@ -2835,8 +2844,9 @@ dependencies = [
 
 [[package]]
 name = "solana-system-program"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a74a76740e5e37b52b3be15f9bc2c1e388b8ac22a2c9b1297bff80da758fa444"
 dependencies = [
  "bincode",
  "log",
@@ -2848,11 +2858,12 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-token-sdk"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+version = "1.18.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76cba1f80c9001dc788655f2d7d5671af55c7a0a49b95de819f2fc45d8b803b0"
 dependencies = [
  "aes-gcm-siv",
- "base64 0.22.0",
+ "base64 0.21.7",
  "bincode",
  "bytemuck",
  "byteorder",
