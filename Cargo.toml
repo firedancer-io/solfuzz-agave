@@ -2,6 +2,7 @@
 name = "solfuzz-agave"
 version = "0.1.0"
 edition = "2021"
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
@@ -12,14 +13,14 @@ clap = { version = "3", features = ["derive"] }
 lazy_static = "1.4.0"
 prost = "0.11.9"
 prost-types = "0.11.9"
-solana-address-lookup-table-program = "=1.17.26"
-solana-bpf-loader-program = "=1.17.26"
-solana-compute-budget-program = "=1.17.26"
-solana-config-program = "=1.17.26"
-solana-loader-v4-program = "=1.17.26"
-solana-program-runtime = "=1.17.26"
-solana-system-program = "=1.17.26"
-solana-sdk = "=1.17.26"
+solana-address-lookup-table-program = "=1.17.29"
+solana-bpf-loader-program = "=1.17.29"
+solana-compute-budget-program = "=1.17.29"
+solana-config-program = "=1.17.29"
+solana-loader-v4-program = "=1.17.29"
+solana-program-runtime = "=1.17.29"
+solana-system-program = "=1.17.29"
+solana-sdk = "=1.17.29"
 thiserror = "1.0.49"
 
 [build-dependencies]
