@@ -14,7 +14,6 @@ cargo test
 Build:
 
 ```sh
-make toolchain
 make build
 ```
 

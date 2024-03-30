@@ -10,7 +10,6 @@ use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
 use solana_sdk::account::{Account, AccountSharedData};
-use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
@@ -609,7 +608,11 @@ mod tests {
                 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             ],
             cu_avail: 10000u64,
-            epoch_context: None,
+            epoch_context: Some(proto::EpochContext {
+                features: Some(proto::FeatureSet {
+                    features: vec![feature_u64(&native_programs_consume_cu::id())],
+                }),
+            }),
             slot_context: None,
             txn_context: None,
         };
@@ -634,6 +637,14 @@ mod tests {
                         lamports: 1,
                         data: vec![],
                         executable: false,
+                        rent_epoch: 0,
+                    },
+                    proto::AcctState {
+                        address: vec![0u8; 32],
+                        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+                        lamports: 10000000,
+                        data: b"Solana Program".to_vec(),
+                        executable: true,
                         rent_epoch: 0,
                     },
                 ],
