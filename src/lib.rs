@@ -357,7 +357,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
                 lamports: 10000000,
                 data: b"Solana Program".to_vec(),
                 owner: Pubkey::from_str("NativeLoader1111111111111111111111111111111").unwrap(),
-                executable: false,
+                executable: true,
                 rent_epoch: 0,
             }),
         ));
@@ -632,6 +632,14 @@ mod tests {
                         lamports: 1,
                         data: vec![],
                         executable: false,
+                        rent_epoch: 0,
+                    },
+                    proto::AcctState {
+                        address: vec![0u8; 32],
+                        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+                        lamports: 10000000,
+                        data: b"Solana Program".to_vec(),
+                        executable: true,
                         rent_epoch: 0,
                     },
                 ],
