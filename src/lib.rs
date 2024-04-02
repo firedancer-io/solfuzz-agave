@@ -296,6 +296,14 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
         )),
     );
     cache.replenish(
+        solana_stake_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_stake_program::stake_instruction::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
         solana_system_program::id(),
         Arc::new(LoadedProgram::new_builtin(
             0u64,

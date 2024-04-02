@@ -2834,6 +2834,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-stake-program"
+version = "2.0.0"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+dependencies = [
+ "bincode",
+ "log",
+ "rustc_version",
+ "solana-config-program",
+ "solana-program-runtime",
+ "solana-sdk",
+ "solana-vote-program",
+]
+
+[[package]]
 name = "solana-system-program"
 version = "2.0.0"
 source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
@@ -2844,6 +2858,27 @@ dependencies = [
  "serde_derive",
  "solana-program-runtime",
  "solana-sdk",
+]
+
+[[package]]
+name = "solana-vote-program"
+version = "2.0.0"
+source = "git+https://github.com/anza-xyz/agave?rev=e56d314df52cecc00bd8d30b56ca75adef159985#e56d314df52cecc00bd8d30b56ca75adef159985"
+dependencies = [
+ "bincode",
+ "log",
+ "num-derive",
+ "num-traits",
+ "rustc_version",
+ "serde",
+ "serde_derive",
+ "solana-frozen-abi",
+ "solana-frozen-abi-macro",
+ "solana-metrics",
+ "solana-program",
+ "solana-program-runtime",
+ "solana-sdk",
+ "thiserror",
 ]
 
 [[package]]
@@ -2910,6 +2945,7 @@ dependencies = [
  "solana-loader-v4-program",
  "solana-program-runtime",
  "solana-sdk",
+ "solana-stake-program",
  "solana-system-program",
  "thiserror",
 ]

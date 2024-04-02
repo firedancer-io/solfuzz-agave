@@ -18,6 +18,7 @@ solana-compute-budget-program = { git = "https://github.com/anza-xyz/agave", rev
 solana-config-program = { git = "https://github.com/anza-xyz/agave", rev = "e56d314df52cecc00bd8d30b56ca75adef159985" }
 solana-loader-v4-program = { git = "https://github.com/anza-xyz/agave", rev = "e56d314df52cecc00bd8d30b56ca75adef159985" }
 solana-program-runtime = { git = "https://github.com/anza-xyz/agave", rev = "e56d314df52cecc00bd8d30b56ca75adef159985" }
+solana-stake-program = { git = "https://github.com/anza-xyz/agave", rev = "e56d314df52cecc00bd8d30b56ca75adef159985" }
 solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "e56d314df52cecc00bd8d30b56ca75adef159985" }
 solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "e56d314df52cecc00bd8d30b56ca75adef159985" }
 thiserror = "1.0.57"
