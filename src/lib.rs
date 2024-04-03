@@ -6,7 +6,6 @@ use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
-use solana_program_runtime::solana_rbpf::program;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
@@ -210,11 +209,11 @@ impl TryFrom<proto::InstrContext> for InstrContext {
                 if acct.index as usize >= accounts.len() {
                     return Err(Error::AccountMissing);
                 }
-                return Ok(AccountMeta {
+                Ok(AccountMeta {
                     pubkey: accounts[acct.index as usize].0,
                     is_signer: acct.is_signer,
                     is_writable: acct.is_writable,
-                });
+                })
             })
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -335,7 +334,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     });
 
     // Add checks for rent boundaries
-    if let Some(rent) = sysvar_cache.get_rent().ok() {
+    if let Ok(rent) = sysvar_cache.get_rent() {
         if rent.lamports_per_byte_year > u32::MAX.into()
             || rent.exemption_threshold > 999.0
             || rent.exemption_threshold < 0.0
