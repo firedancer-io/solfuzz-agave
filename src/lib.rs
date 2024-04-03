@@ -6,6 +6,7 @@ use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
+use solana_program_runtime::solana_rbpf::program;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
@@ -213,7 +214,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
                     pubkey: accounts[acct.index as usize].0,
                     is_signer: acct.is_signer,
                     is_writable: acct.is_writable,
-                })
+                });
             })
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -338,7 +339,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         if rent.lamports_per_byte_year > u32::MAX.into()
             || rent.exemption_threshold > 999.0
             || rent.exemption_threshold < 0.0
-            || rent.burn_percent > 100 {
+            || rent.burn_percent > 100
+        {
             return None;
         }
     }
@@ -441,6 +443,13 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             is_signer: account_meta.is_signer,
             is_writable: account_meta.is_writable,
         });
+    }
+
+    // The Agave impl of the stake program panics if there is no epoch schedule
+    if transaction_accounts[program_idx].0 == solana_stake_program::id()
+        && sysvar_cache.get_epoch_schedule().is_err()
+    {
+        return None;
     }
 
     let result = invoke_context.process_instruction(
