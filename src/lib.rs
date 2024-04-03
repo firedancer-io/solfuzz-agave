@@ -37,6 +37,8 @@ static HARDCODED_FEATURES: &[u64] = feature_list![
     system_transfer_zero_check,
     native_programs_consume_cu,
     dedupe_config_program_signers,
+    vote_stake_checked_instructions,
+    require_custodian_for_locked_stake_authorize,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -322,19 +324,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let rent = Rent::default();
 
     let mut sysvar_cache = SysvarCache::default();
-
-    // Populate the sysvar cache from the original accounts
-    //
-    // A callback in a callback ... this is awful code ...
-    // The sysvar cache is the worst implementation of a cache I have
-    // ever seen.  This is not even a cache.  It is a overlay that
-    // arbitrarily mangles data on read and has no coherent write-back
-    // strategy at all.  Not to mention the duplication of code ...
-    // What purpose does it even serve?  All these sysvars can be mapped
-    // directly and are POD so they don't require serialization.
-    //
-    // And of course, the logic to write the sysvar cache's changes back
-    // are scattered around bank.rs to add insult to injury.
 
     sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
         if let Some(account) = input.accounts.iter().find(|(key, _)| key == pubkey) {
