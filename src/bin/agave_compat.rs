@@ -12,7 +12,13 @@ struct Cli {
 fn exec(input: &PathBuf) {
     let blob = std::fs::read(input).unwrap();
     let context = InstrContext::decode(&blob[..]).unwrap();
-    let effects = solfuzz_agave::execute_instr_proto(context).unwrap();
+    let effects = match solfuzz_agave::execute_instr_proto(context) {
+        Some(e) => e,
+        None => {
+            println!("No instruction effects returned.");
+            return;
+        }
+    };
     eprintln!("Effects: {:?}", effects);
 }
 

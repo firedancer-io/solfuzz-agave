@@ -333,6 +333,17 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
     });
 
+    // Add checks for rent boundaries
+    let arc_rent = sysvar_cache.get_rent().unwrap();
+    let sysvar_rent = Arc::as_ref(&arc_rent);
+
+    if sysvar_rent.lamports_per_byte_year > u32::MAX.into()
+        || sysvar_rent.exemption_threshold > 999.0
+        || sysvar_rent.exemption_threshold < 0.0
+        || sysvar_rent.burn_percent > 100 {
+        return None;
+    }
+
     let mut transaction_accounts =
         Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
     #[allow(deprecated)]
