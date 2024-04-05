@@ -39,6 +39,11 @@ static HARDCODED_FEATURES: &[u64] = feature_list![
     dedupe_config_program_signers,
     vote_stake_checked_instructions,
     require_custodian_for_locked_stake_authorize,
+    stake_merge_with_unmatched_credits_observed,
+    require_rent_exempt_split_destination,
+    vote_authorize_with_seed,
+    allow_votes_to_directly_update_vote_state,
+    compact_vote_state_updates,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -61,7 +66,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_alt_bn128_syscall,
     switch_to_new_elf_parser,
     vote_state_add_vote_latency,
-    require_rent_exempt_split_destination,
     update_hashes_per_tick2,
     update_hashes_per_tick3,
     update_hashes_per_tick4,
@@ -311,6 +315,14 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
             0u64,
             0usize,
             solana_system_program::system_processor::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_vote_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
 }
