@@ -10,7 +10,6 @@ use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
 use solana_sdk::account::{Account, AccountSharedData};
-use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
@@ -333,7 +332,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         compute_unit_limit: input.cu_avail,
         ..ComputeBudget::default()
     };
-    let rent = Rent::default();
 
     let mut sysvar_cache = SysvarCache::default();
 
@@ -346,14 +344,18 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     });
 
     // Add checks for rent boundaries
-    if let Ok(rent) = sysvar_cache.get_rent() {
-        if rent.lamports_per_byte_year > u32::MAX.into()
-            || rent.exemption_threshold > 999.0
-            || rent.exemption_threshold < 0.0
-            || rent.burn_percent > 100
+    let rent: Rent;
+    if let Ok(rent_) = sysvar_cache.get_rent() {
+        if rent_.lamports_per_byte_year > u32::MAX.into()
+            || rent_.exemption_threshold > 999.0
+            || rent_.exemption_threshold < 0.0
+            || rent_.burn_percent > 100
         {
             return None;
         }
+        rent = (*rent_).clone();
+    } else {
+        rent = Rent::default();
     }
 
     let mut transaction_accounts =
