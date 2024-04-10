@@ -1,3 +1,5 @@
+/programs
 /target
 test/self_test
 .vscode/
+*.so

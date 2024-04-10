@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+core-bpf-address-lookup-table = []
+core-bpf-config = []
+
 [dependencies]
 bincode = "1.3.3"
 clap = { version = "4.5.2", features = ["derive"] }
