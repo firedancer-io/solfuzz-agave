@@ -23,12 +23,13 @@ Optional variables:
 
 ```
 CORE_BPF_PROGRAM_ID=... # see below
+CORE_BPF_TARGET=...     # see below
 ```
 
 When the `CORE_BPF_PROGRAM_ID` environment variable is set, SolFuzz-Agave will
-_not_ add the specified builtin program to the program cache, and will instead
-attempt to clone it's Core BPF implementation and insert it into the cache as a
-BPF program using the compiled ELF.
+overwrite the specified builtin program in the program cache with the provided
+BPF target. Provide the path to the compiled BPF program target `.so` file with
+variable `CORE_BPF_TARGET`.
 
 Produces file `target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so`
 

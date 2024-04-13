@@ -1,6 +1,9 @@
 use std::io::Result;
 
 fn main() -> Result<()> {
+    println!("cargo:rerun-if-env-changed=CORE_BPF_PROGRAM_ID");
+    println!("cargo:rerun-if-env-changed=CORE_BPF_TARGET");
+
     let proto_base_path = std::path::PathBuf::from("proto");
 
     let protos = &[proto_base_path.join("invoke.proto")];

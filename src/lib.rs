@@ -4,14 +4,12 @@ use lazy_static::lazy_static;
 use prost::Message;
 use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
-use solana_program_runtime::loaded_programs::LoadProgramMetrics;
 use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
 use solana_sdk::account::{Account, AccountSharedData};
-use solana_sdk::bpf_loader_upgradeable;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
@@ -21,6 +19,7 @@ use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
+use solfuzz_agave_macro::load_core_bpf_program;
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::sync::Arc;
@@ -286,68 +285,22 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
 }
 
 fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
-    #[cfg(any(feature = "core-bpf-address-lookup-table", feature = "core-bpf-config"))]
-    let elf = include_bytes!("../programs/program.so");
-    {
-        let program_id = solana_address_lookup_table_program::id();
-        #[cfg(not(feature = "core-bpf-address-lookup-table"))]
-        cache.replenish(
-            program_id,
-            Arc::new(LoadedProgram::new_builtin(
-                0u64,
-                0usize,
-                solana_address_lookup_table_program::processor::Entrypoint::vm,
-            )),
-        );
-        #[cfg(feature = "core-bpf-address-lookup-table")]
-        {
-            cache.replenish(
-                program_id,
-                Arc::new(
-                    LoadedProgram::new(
-                        &bpf_loader_upgradeable::id(),
-                        cache.environments.program_runtime_v1.clone(),
-                        0,
-                        0,
-                        elf,
-                        elf.len(),
-                        &mut LoadProgramMetrics::default(),
-                    )
-                    .unwrap(),
-                ),
-            );
-        }
-    }
-    {
-        let program_id = solana_config_program::id();
-        #[cfg(not(feature = "core-bpf-config"))]
-        cache.replenish(
-            program_id,
-            Arc::new(LoadedProgram::new_builtin(
-                0u64,
-                0usize,
-                solana_config_program::config_processor::Entrypoint::vm,
-            )),
-        );
-        #[cfg(feature = "core-bpf-config")]
-        {
-            cache.replenish(
-                program_id,
-                Arc::new(
-                    LoadedProgram::new(
-                        &bpf_loader_upgradeable::id(),
-                        cache.environments.program_runtime_v1.clone(),
-                        0,
-                        0,
-                        elf,
-                        elf.len(),
-                        &mut LoadProgramMetrics::default(),
-                    )
-                    .unwrap(),
-                ),
-            );
-        }
-    }
+    cache.replenish(
+        solana_address_lookup_table_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_address_lookup_table_program::processor::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_config_program::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_config_program::config_processor::Entrypoint::vm,
+        )),
+    );
     cache.replenish(
         solana_stake_program::id(),
         Arc::new(LoadedProgram::new_builtin(
@@ -372,6 +325,10 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
             solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
+
+    // Will overwrite a builtin if environment variable `CORE_BPF_PROGRAM_ID`
+    // is set to a valid program id.
+    load_core_bpf_program!();
 }
 
 fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
