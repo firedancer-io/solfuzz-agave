@@ -1,5 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
+mod vm_syscalls;
+
 use lazy_static::lazy_static;
 use prost::Message;
 use solana_program_runtime::compute_budget::ComputeBudget;
