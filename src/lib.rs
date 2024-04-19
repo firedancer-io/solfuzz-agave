@@ -163,7 +163,6 @@ pub enum Error {
 }
 
 pub struct InstrContext {
-    pub loader_id: Option<Pubkey>,
     pub feature_set: FeatureSet,
     pub accounts: Vec<(Pubkey, Account)>,
     pub instruction: StableInstruction,
@@ -180,17 +179,6 @@ impl TryFrom<proto::InstrContext> for InstrContext {
                 .try_into()
                 .map_err(|_| Error::InvalidPubkeyBytes)?,
         );
-
-        let loader_id = if input.loader_id.is_empty() {
-            None
-        } else {
-            Some(Pubkey::new_from_array(
-                input
-                    .loader_id
-                    .try_into()
-                    .map_err(|_| Error::InvalidPubkeyBytes)?,
-            ))
-        };
 
         let feature_set: FeatureSet = input
             .epoch_context
@@ -227,7 +215,6 @@ impl TryFrom<proto::InstrContext> for InstrContext {
         };
 
         Ok(Self {
-            loader_id,
             feature_set,
             accounts,
             instruction,
@@ -601,7 +588,6 @@ mod tests {
         // Ensure that a basic account transfer works
         let input = proto::InstrContext {
             program_id: vec![0u8; 32],
-            loader_id: Pubkey::default().to_bytes().to_vec(),
             accounts: vec![
                 proto::AcctState {
                     address: vec![1u8; 32],
