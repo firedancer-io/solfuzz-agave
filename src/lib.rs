@@ -21,6 +21,7 @@ use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
+use solfuzz_agave_macro::load_core_bpf_program;
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::sync::Arc;
@@ -313,6 +314,10 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
             solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
+
+    // Will overwrite a builtin if environment variable `CORE_BPF_PROGRAM_ID`
+    // is set to a valid program id.
+    load_core_bpf_program!();
 }
 
 fn execute_instr(input: InstrContext) -> Option<InstrEffects> {

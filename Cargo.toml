@@ -22,6 +22,7 @@ solana-stake-program = { git = "https://github.com/anza-xyz/agave", rev = "9706a
 solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "9706a6464665f7ebd6ead47f0d12f853ccacbab9" }
 solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "9706a6464665f7ebd6ead47f0d12f853ccacbab9" }
 solana-vote-program = { git = "https://github.com/anza-xyz/agave", rev = "9706a6464665f7ebd6ead47f0d12f853ccacbab9" }
+solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.58"
 
 [build-dependencies]
