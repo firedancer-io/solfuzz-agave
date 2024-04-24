@@ -283,6 +283,30 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
         )),
     );
     cache.replenish(
+        solana_sdk::bpf_loader_deprecated::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_sdk::bpf_loader::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_sdk::bpf_loader_upgradeable::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
         solana_config_program::id(),
         Arc::new(LoadedProgram::new_builtin(
             0u64,
