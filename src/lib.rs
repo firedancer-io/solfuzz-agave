@@ -4,10 +4,14 @@ mod vm_syscalls;
 
 use lazy_static::lazy_static;
 use prost::Message;
+use solana_program::hash::Hash;
+use solana_program::clock::Slot;
 use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
+use solana_program_runtime::loaded_programs::ForkGraph;
 use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
+use solana_program_runtime::loaded_programs::BlockRelation;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
@@ -16,11 +20,14 @@ use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
 use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
+use solana_svm::transaction_processor::TransactionBatchProcessor;
+use solana_svm::transaction_processor::TransactionProcessingCallback;
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::sync::Arc;
@@ -169,6 +176,57 @@ pub struct InstrContext {
     pub accounts: Vec<(Pubkey, Account)>,
     pub instruction: StableInstruction,
     pub cu_avail: u64,
+    pub rent_collector: RentCollector,
+}
+
+impl TransactionProcessingCallback for InstrContext {
+    fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
+        let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
+            .accounts
+            .iter()
+            .map(|(_pubkey, _account)| (*_pubkey, AccountSharedData::from(_account.clone())))
+            .collect();
+        if let Some(data) = account_shared_data
+            .iter()
+            .find(|(pubkey, _)| *pubkey == *account)
+            .map(|(_, shared_account)| shared_account)
+        {
+            if data.lamports() == 0 {
+                None
+            } else {
+                owners.iter().position(|entry| data.owner() == entry)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn get_account_shared_data(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
+        let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
+            .accounts
+            .iter()
+            .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
+            .collect();
+        account_shared_data
+            .iter()
+            .find(|(_pubkey, _)| *_pubkey == *pubkey)
+            .map(|(_, shared_account)| shared_account)
+            .cloned()
+    }
+
+    fn get_last_blockhash_and_lamports_per_signature(&self) -> (Hash, u64) {
+        let blockhash = Hash::default();
+        let lamports_per_signature = 2;
+        (blockhash, lamports_per_signature)
+    }
+
+    fn get_rent_collector(&self) -> &RentCollector {
+        &self.rent_collector
+    }
+
+    fn get_feature_set(&self) -> Arc<FeatureSet> {
+        Arc::new(self.feature_set.clone())
+    }
 }
 
 impl TryFrom<proto::InstrContext> for InstrContext {
@@ -221,6 +279,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             accounts,
             instruction,
             cu_avail: input.cu_avail,
+            rent_collector: RentCollector::default()
         })
     }
 }
@@ -315,6 +374,20 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
     );
 }
 
+struct DummyForkGraph {
+    relation: BlockRelation,
+}
+impl ForkGraph for DummyForkGraph {
+    fn relationship(&self, _a: Slot, _b: Slot) -> BlockRelation {
+        self.relation
+    }
+}
+
+pub fn get_loaded_program(instr_context: &InstrContext, pubkey: &Pubkey) -> Option<Arc<LoadedProgram>> {
+    let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::default();
+    tx_batch_processor.load_program_with_pubkey(instr_context, pubkey, false, 0)
+}
+
 fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
@@ -352,8 +425,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     #[allow(deprecated)]
     input
         .accounts
-        .into_iter()
-        .map(|(pubkey, account)| (pubkey, AccountSharedData::from(account)))
+        .iter()
+        .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
         .for_each(|x| transaction_accounts.push(x));
 
     let program_idx = if let Some(index) = transaction_accounts
@@ -391,6 +464,12 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // sigh ... What is this mess?
     let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
     load_builtins(&mut programs_loaded_for_tx_batch);
+
+    if programs_loaded_for_tx_batch.find(&input.instruction.program_id).is_none() {
+        if let Some(loaded_program) = get_loaded_program(&input, &input.instruction.program_id) {   
+            programs_loaded_for_tx_batch.replenish(input.instruction.program_id, loaded_program);
+        }
+    }
 
     let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
 
