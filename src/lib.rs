@@ -4,14 +4,14 @@ mod vm_syscalls;
 
 use lazy_static::lazy_static;
 use prost::Message;
-use solana_program::hash::Hash;
 use solana_program::clock::Slot;
+use solana_program::hash::Hash;
 use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
+use solana_program_runtime::loaded_programs::BlockRelation;
 use solana_program_runtime::loaded_programs::ForkGraph;
 use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
-use solana_program_runtime::loaded_programs::BlockRelation;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
@@ -28,6 +28,7 @@ use solana_sdk::transaction_context::{
 };
 use solana_svm::transaction_processor::TransactionBatchProcessor;
 use solana_svm::transaction_processor::TransactionProcessingCallback;
+use solfuzz_agave_macro::load_core_bpf_program;
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::sync::Arc;
@@ -279,7 +280,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             accounts,
             instruction,
             cu_avail: input.cu_avail,
-            rent_collector: RentCollector::default()
+            rent_collector: RentCollector::default(),
         })
     }
 }
@@ -341,6 +342,30 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
         )),
     );
     cache.replenish(
+        solana_sdk::bpf_loader_deprecated::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_sdk::bpf_loader::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_sdk::bpf_loader_upgradeable::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
         solana_config_program::id(),
         Arc::new(LoadedProgram::new_builtin(
             0u64,
@@ -372,6 +397,10 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
             solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
+
+    // Will overwrite a builtin if environment variable `CORE_BPF_PROGRAM_ID`
+    // is set to a valid program id.
+    load_core_bpf_program!();
 }
 
 struct DummyForkGraph {
@@ -383,7 +412,10 @@ impl ForkGraph for DummyForkGraph {
     }
 }
 
-pub fn get_loaded_program(instr_context: &InstrContext, pubkey: &Pubkey) -> Option<Arc<LoadedProgram>> {
+pub fn get_loaded_program(
+    instr_context: &InstrContext,
+    pubkey: &Pubkey,
+) -> Option<Arc<LoadedProgram>> {
     let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::default();
     tx_batch_processor.load_program_with_pubkey(instr_context, pubkey, false, 0)
 }
@@ -465,8 +497,11 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
     load_builtins(&mut programs_loaded_for_tx_batch);
 
-    if programs_loaded_for_tx_batch.find(&input.instruction.program_id).is_none() {
-        if let Some(loaded_program) = get_loaded_program(&input, &input.instruction.program_id) {   
+    if programs_loaded_for_tx_batch
+        .find(&input.instruction.program_id)
+        .is_none()
+    {
+        if let Some(loaded_program) = get_loaded_program(&input, &input.instruction.program_id) {
             programs_loaded_for_tx_batch.replenish(input.instruction.program_id, loaded_program);
         }
     }

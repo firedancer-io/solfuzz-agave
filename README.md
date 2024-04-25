@@ -2,6 +2,7 @@ solfuzz-agave provides solfuzz API bindings for Agave components.
 Only supports x86_64-unknown-linux-gnu targets.
 
 Supported APIs:
+
 - sol_compat_instr_execute_v1
 - sol_compat_vm_syscall_execute_v1
 
@@ -18,6 +19,18 @@ Build:
 make toolchain
 make build
 ```
+
+Optional variables:
+
+```
+CORE_BPF_PROGRAM_ID=... # see below
+CORE_BPF_TARGET=...     # see below
+```
+
+When the `CORE_BPF_PROGRAM_ID` environment variable is set, SolFuzz-Agave will
+overwrite the specified builtin program in the program cache with the provided
+BPF target. Provide the path to the compiled BPF program target `.so` file with
+variable `CORE_BPF_TARGET`.
 
 Produces file `target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so`
 
