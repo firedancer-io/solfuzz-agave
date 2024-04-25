@@ -497,12 +497,15 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
     load_builtins(&mut programs_loaded_for_tx_batch);
 
-    if programs_loaded_for_tx_batch
-        .find(&input.instruction.program_id)
-        .is_none()
-    {
-        if let Some(loaded_program) = get_loaded_program(&input, &input.instruction.program_id) {
-            programs_loaded_for_tx_batch.replenish(input.instruction.program_id, loaded_program);
+    for acc in &input.accounts {
+        if acc.executable
+            && programs_loaded_for_tx_batch
+                .find(&input.instruction.program_id)
+                .is_none()
+        {
+            if let Some(loaded_program) = get_loaded_program(&input, &acc.0) {
+                programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
+            }
         }
     }
 
