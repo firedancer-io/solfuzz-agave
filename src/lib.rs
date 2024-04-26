@@ -366,6 +366,14 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
         )),
     );
     cache.replenish(
+        solana_sdk::compute_budget::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_compute_budget_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
         solana_config_program::id(),
         Arc::new(LoadedProgram::new_builtin(
             0u64,
@@ -480,12 +488,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         transaction_accounts.len() - 1
     };
 
-    // Skip if the program account is not owned by the native loader
-    // (Would call the owner instead)
-    if transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
-        return None;
-    }
-
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
         rent,
@@ -498,9 +500,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     load_builtins(&mut programs_loaded_for_tx_batch);
 
     for acc in &input.accounts {
-        if acc.executable
+        if acc.1.executable
             && programs_loaded_for_tx_batch
-                .find(&input.instruction.program_id)
+                .find(&acc.0)
                 .is_none()
         {
             if let Some(loaded_program) = get_loaded_program(&input, &acc.0) {
