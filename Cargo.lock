@@ -2847,6 +2847,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-svm"
+version = "2.0.0"
+source = "git+https://github.com/anza-xyz/agave?rev=9706a6464665f7ebd6ead47f0d12f853ccacbab9#9706a6464665f7ebd6ead47f0d12f853ccacbab9"
+dependencies = [
+ "itertools",
+ "log",
+ "percentage",
+ "rustc_version",
+ "serde",
+ "solana-frozen-abi",
+ "solana-frozen-abi-macro",
+ "solana-loader-v4-program",
+ "solana-measure",
+ "solana-metrics",
+ "solana-program-runtime",
+ "solana-sdk",
+ "solana-system-program",
+]
+
+[[package]]
 name = "solana-system-program"
 version = "2.0.0"
 source = "git+https://github.com/anza-xyz/agave?rev=9706a6464665f7ebd6ead47f0d12f853ccacbab9#9706a6464665f7ebd6ead47f0d12f853ccacbab9"
@@ -2942,9 +2962,11 @@ dependencies = [
  "solana-compute-budget-program",
  "solana-config-program",
  "solana-loader-v4-program",
+ "solana-program",
  "solana-program-runtime",
  "solana-sdk",
  "solana-stake-program",
+ "solana-svm",
  "solana-system-program",
  "solana-vote-program",
  "solfuzz-agave-macro",

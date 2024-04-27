@@ -4,27 +4,42 @@ mod vm_syscalls;
 
 use lazy_static::lazy_static;
 use prost::Message;
+use solana_program::clock::Slot;
+use solana_program::hash::Hash;
 use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::InvokeContext;
+use solana_program_runtime::loaded_programs::BlockRelation;
+use solana_program_runtime::loaded_programs::ForkGraph;
 use solana_program_runtime::loaded_programs::LoadedProgram;
 use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
+use solana_program_runtime::loaded_programs::ProgramCache;
+use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
+use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::ReadableAccount;
 use solana_sdk::account::{Account, AccountSharedData};
+use solana_sdk::clock::Epoch;
 use solana_sdk::feature_set::*;
+use solana_sdk::fee::FeeStructure;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
 use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
+use solana_svm::runtime_config::RuntimeConfig;
+use solana_svm::transaction_processor::TransactionBatchProcessor;
+use solana_svm::transaction_processor::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::Arc;
+use std::sync::RwLock;
 use thiserror::Error;
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
@@ -170,6 +185,57 @@ pub struct InstrContext {
     pub accounts: Vec<(Pubkey, Account)>,
     pub instruction: StableInstruction,
     pub cu_avail: u64,
+    pub rent_collector: RentCollector,
+}
+
+impl TransactionProcessingCallback for InstrContext {
+    fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
+        let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
+            .accounts
+            .iter()
+            .map(|(_pubkey, _account)| (*_pubkey, AccountSharedData::from(_account.clone())))
+            .collect();
+        if let Some(data) = account_shared_data
+            .iter()
+            .find(|(pubkey, _)| *pubkey == *account)
+            .map(|(_, shared_account)| shared_account)
+        {
+            if data.lamports() == 0 {
+                None
+            } else {
+                owners.iter().position(|entry| data.owner() == entry)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn get_account_shared_data(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
+        let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
+            .accounts
+            .iter()
+            .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
+            .collect();
+        account_shared_data
+            .iter()
+            .find(|(_pubkey, _)| *_pubkey == *pubkey)
+            .map(|(_, shared_account)| shared_account)
+            .cloned()
+    }
+
+    fn get_last_blockhash_and_lamports_per_signature(&self) -> (Hash, u64) {
+        let blockhash = Hash::default();
+        let lamports_per_signature = 2;
+        (blockhash, lamports_per_signature)
+    }
+
+    fn get_rent_collector(&self) -> &RentCollector {
+        &self.rent_collector
+    }
+
+    fn get_feature_set(&self) -> Arc<FeatureSet> {
+        Arc::new(self.feature_set.clone())
+    }
 }
 
 impl TryFrom<proto::InstrContext> for InstrContext {
@@ -222,6 +288,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             accounts,
             instruction,
             cu_avail: input.cu_avail,
+            rent_collector: RentCollector::default(),
         })
     }
 }
@@ -273,7 +340,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
+fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {    
     cache.replenish(
         solana_address_lookup_table_program::id(),
         Arc::new(LoadedProgram::new_builtin(
@@ -304,6 +371,14 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
             0u64,
             0usize,
             solana_bpf_loader_program::Entrypoint::vm,
+        )),
+    );
+    cache.replenish(
+        solana_sdk::compute_budget::id(),
+        Arc::new(LoadedProgram::new_builtin(
+            0u64,
+            0usize,
+            solana_compute_budget_program::Entrypoint::vm,
         )),
     );
     cache.replenish(
@@ -342,7 +417,30 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) {
     // Will overwrite a builtin if environment variable `CORE_BPF_PROGRAM_ID`
     // is set to a valid program id.
     load_core_bpf_program!();
+
+    // Return builtins as a HashSet
+    let mut builtins: HashSet<Pubkey> = HashSet::new();
+    builtins.insert(solana_address_lookup_table_program::id());
+    builtins.insert(solana_sdk::bpf_loader_deprecated::id());
+    builtins.insert(solana_sdk::bpf_loader::id());
+    builtins.insert(solana_sdk::bpf_loader_upgradeable::id());
+    builtins.insert(solana_sdk::compute_budget::id());
+    builtins.insert(solana_config_program::id());
+    builtins.insert(solana_stake_program::id());
+    builtins.insert(solana_system_program::id());
+    builtins.insert(solana_vote_program::id());
+    builtins
 }
+
+struct DummyForkGraph {
+    relation: BlockRelation,
+}
+impl ForkGraph for DummyForkGraph {
+    fn relationship(&self, _a: Slot, _b: Slot) -> BlockRelation {
+        self.relation
+    }
+}
+
 
 fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
@@ -360,6 +458,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             }
         }
     });
+
+    let clock = sysvar_cache.get_clock().unwrap();
 
     // Add checks for rent boundaries
     let rent: Rent;
@@ -381,8 +481,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     #[allow(deprecated)]
     input
         .accounts
-        .into_iter()
-        .map(|(pubkey, account)| (pubkey, AccountSharedData::from(account)))
+        .iter()
+        .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
         .for_each(|x| transaction_accounts.push(x));
 
     let program_idx = if let Some(index) = transaction_accounts
@@ -404,12 +504,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         transaction_accounts.len() - 1
     };
 
-    // Skip if the program account is not owned by the native loader
-    // (Would call the owner instead)
-    if transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
-        return None;
-    }
-
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
         rent,
@@ -419,7 +513,45 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     // sigh ... What is this mess?
     let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
-    load_builtins(&mut programs_loaded_for_tx_batch);
+    programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
+    let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
+
+    let mut program_cache = ProgramCache::new(
+        Slot::default(),
+        Epoch::default(),
+    );
+    let program_runtime_environment_v1 = solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
+        &input.feature_set,
+        &compute_budget,
+        false, /* deployment */
+        false, /* debugging_features */
+    ).unwrap();
+    let mut environments = ProgramRuntimeEnvironments::default();
+    environments.program_runtime_v1 = Arc::new(program_runtime_environment_v1);
+    program_cache.environments = environments.clone();
+    program_cache.upcoming_environments = Some(environments);
+
+    let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
+        clock.slot,
+        clock.epoch,
+        sysvar_cache.get_epoch_schedule().unwrap().as_ref().clone(),
+        FeeStructure::default(),
+        Arc::<RuntimeConfig>::default(),
+        Arc::new(RwLock::new(program_cache)),
+        loaded_builtins
+    );
+
+    for acc in &input.accounts {
+        if acc.1.executable
+            && programs_loaded_for_tx_batch
+                .find(&acc.0)
+                .is_none()
+        {
+            if let Some(loaded_program) = tx_batch_processor.load_program_with_pubkey(&input, &acc.0, false, 0) {
+                programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
+            }
+        }
+    }
 
     let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
 
@@ -431,10 +563,11 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
         .unwrap_or_default();
 
+    let log_collector = LogCollector::new_ref();
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
         &sysvar_cache,
-        None,
+        Some(log_collector.clone()),
         compute_budget,
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
