@@ -526,8 +526,12 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         false, /* deployment */
         false, /* debugging_features */
     ).unwrap();
+    let program_runtime_environment_v2 = solana_loader_v4_program::create_program_runtime_environment_v2(
+        &compute_budget, 
+        false);
     let mut environments = ProgramRuntimeEnvironments::default();
     environments.program_runtime_v1 = Arc::new(program_runtime_environment_v1);
+    environments.program_runtime_v2 = Arc::new(program_runtime_environment_v2);
     program_cache.environments = environments.clone();
     program_cache.upcoming_environments = Some(environments);
 
