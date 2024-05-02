@@ -27,6 +27,8 @@ use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
+use solana_sdk::sysvar::clock::Clock;
+use solana_sdk::sysvar::epoch_schedule::EpochSchedule;
 use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
@@ -340,7 +342,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {    
+fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     cache.replenish(
         solana_address_lookup_table_program::id(),
         Arc::new(LoadedProgram::new_builtin(
@@ -441,7 +443,6 @@ impl ForkGraph for DummyForkGraph {
     }
 }
 
-
 fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
@@ -459,7 +460,15 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
     });
 
-    let clock = sysvar_cache.get_clock().unwrap();
+    let clock = match sysvar_cache.get_clock() {
+        Ok(clock) => (*clock).clone(),
+        Err(_) => Clock::default(),
+    };
+
+    let epoch_schedule = match sysvar_cache.get_epoch_schedule() {
+        Ok(epoch_schedule) => (*epoch_schedule).clone(),
+        Err(_) => EpochSchedule::default(),
+    };
 
     // Add checks for rent boundaries
     let rent: Rent;
@@ -516,38 +525,37 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
     let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
 
-    let mut program_cache = ProgramCache::new(
-        Slot::default(),
-        Epoch::default(),
-    );
-    let program_runtime_environment_v1 = solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
-        &input.feature_set,
-        &compute_budget,
-        false, /* deployment */
-        false, /* debugging_features */
-    ).unwrap();
-    let mut environments = ProgramRuntimeEnvironments::default();
-    environments.program_runtime_v1 = Arc::new(program_runtime_environment_v1);
+    let mut program_cache = ProgramCache::new(Slot::default(), Epoch::default());
+    let program_runtime_environment_v1 =
+        solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
+            &input.feature_set,
+            &compute_budget,
+            false, /* deployment */
+            false, /* debugging_features */
+        )
+        .unwrap();
+    let environments = ProgramRuntimeEnvironments {
+        program_runtime_v1: Arc::new(program_runtime_environment_v1),
+        ..ProgramRuntimeEnvironments::default()
+    };
     program_cache.environments = environments.clone();
     program_cache.upcoming_environments = Some(environments);
 
     let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
         clock.slot,
         clock.epoch,
-        sysvar_cache.get_epoch_schedule().unwrap().as_ref().clone(),
+        epoch_schedule,
         FeeStructure::default(),
         Arc::<RuntimeConfig>::default(),
         Arc::new(RwLock::new(program_cache)),
-        loaded_builtins
+        loaded_builtins,
     );
 
     for acc in &input.accounts {
-        if acc.1.executable
-            && programs_loaded_for_tx_batch
-                .find(&acc.0)
-                .is_none()
-        {
-            if let Some(loaded_program) = tx_batch_processor.load_program_with_pubkey(&input, &acc.0, false, 0) {
+        if acc.1.executable && programs_loaded_for_tx_batch.find(&acc.0).is_none() {
+            if let Some(loaded_program) =
+                tx_batch_processor.load_program_with_pubkey(&input, &acc.0, false, 0)
+            {
                 programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
             }
         }

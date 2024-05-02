@@ -195,8 +195,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         stack,
         inputdata: input_data_regions
             .iter()
-            .map(|region| region.content.clone())
-            .flatten()
+            .flat_map(|region| region.content.clone())
             .collect(),
         frame_count: vm.call_depth,
         log: invoke_context
