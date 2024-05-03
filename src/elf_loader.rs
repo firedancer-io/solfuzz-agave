@@ -34,9 +34,11 @@ fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &FeatureSet::all_enabled(),
         &ComputeBudget::default(), 
-        false, 
+        true, // all uploaded programs are verified before deployment, so this should be true(?) 
         false
     ).unwrap();
+
+    // load the elf
     let elf_exec = match Executable::load(elf_bytes, std::sync::Arc::new(program_runtime_environment_v1)) {
         Ok(v) => v,
         Err(_) => return None,
