@@ -48,9 +48,10 @@ fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
 
     Some(
         ElfLoaderEffects {
-            rodata: ro_section.to_vec(),
+            rodata: Vec::<u8>::new(),
             rodata_sz: ro_section.len() as u64,
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
+            text: text_bytes.to_vec(),
             text_off: (text_vaddr - ebpf::MM_PROGRAM_START) as u64, // FIXME: assumes ro offset is 0
             text_cnt: (text_sz/8) as u64
         })
