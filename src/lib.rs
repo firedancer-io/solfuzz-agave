@@ -23,7 +23,8 @@ use solana_sdk::clock::Epoch;
 use solana_sdk::feature_set::*;
 use solana_sdk::fee::FeeStructure;
 use solana_sdk::instruction::AccountMeta;
-use solana_sdk::instruction::InstructionError;
+use solana_sdk::instruction::{CompiledInstruction, InstructionError};
+use solana_sdk::precompiles::{is_precompile, verify_if_precompile, PrecompileError};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
@@ -622,6 +623,68 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         && sysvar_cache.get_epoch_schedule().is_err()
     {
         return None;
+    }
+
+    // Precompiles (ed25519, secp256k1)
+    // Precompiles are programs that run without the VM and without loading any account.
+    // They allow to verify signatures, either ed25519 or Ethereum-like secp256k1
+    // (note that precompiles can access data from other instructions as well, within
+    // the same transaction).
+    //
+    // They're not run as part of transaction execution, but instead they're run during
+    // transaction verification:
+    // https://github.com/anza-xyz/agave/blob/34b76ac/runtime/src/bank.rs#L5779
+    //
+    // During transaction execution, they're skipped (just accounted for CU)
+    // https://github.com/anza-xyz/agave/blob/34b76ac/svm/src/message_processor.rs#L93-L108
+    //
+    // Here we're testing a single instruction.
+    // Therefore, when the program is a precompile, we need to run the precompile
+    // instead of the regular process_instruction().
+    // https://github.com/anza-xyz/agave/blob/34b76ac/sdk/src/precompiles.rs#L107
+    //
+    // Note: while this test covers the functionality of the precompile, it doesn't
+    // cover the fact that the precompile can access data from other instructions.
+    // This will be covered in separated tests.
+    let program_id = &input.instruction.program_id;
+    let is_precompile = is_precompile(program_id, |id| invoke_context.feature_set.is_active(id));
+    if is_precompile {
+        let compiled_instruction = CompiledInstruction {
+            program_id_index: 0,
+            accounts: vec![],
+            data: input.instruction.data.to_vec(),
+        };
+        let result = verify_if_precompile(
+            program_id,
+            &compiled_instruction,
+            &[compiled_instruction.clone()],
+            &invoke_context.feature_set,
+        );
+        return Some(InstrEffects {
+            custom_err: None,
+            result: if let Err(e) = result {
+                // Precompiles return PrecompileError instead of InstructionError, and
+                // there's no from/into conversion to InstructionError nor to u32.
+                // For simplicity, we remap first-first, second-second, etc.
+                match e {
+                    PrecompileError::InvalidPublicKey => Some(InstructionError::GenericError),
+                    PrecompileError::InvalidRecoveryId => Some(InstructionError::InvalidArgument),
+                    PrecompileError::InvalidSignature => {
+                        Some(InstructionError::InvalidInstructionData)
+                    }
+                    PrecompileError::InvalidDataOffsets => {
+                        Some(InstructionError::InvalidAccountData)
+                    }
+                    PrecompileError::InvalidInstructionDataSize => {
+                        Some(InstructionError::AccountDataTooSmall)
+                    }
+                }
+            } else {
+                None
+            },
+            modified_accounts: vec![],
+            cu_avail: input.cu_avail,
+        });
     }
 
     let result = invoke_context.process_instruction(
