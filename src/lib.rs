@@ -298,7 +298,7 @@ impl TryFrom<proto::InstrContext> for InstrContext {
 
 fn instr_err_to_num(error: &InstructionError) -> i32 {
     let serialized_err = bincode::serialize(error).unwrap();
-    i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap())
+    i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()) + 1
 }
 
 pub struct InstrEffects {
