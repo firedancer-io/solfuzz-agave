@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 mod vm_syscalls;
-mod elf_loader;
+pub mod elf_loader;
 
 use lazy_static::lazy_static;
 use prost::Message;
