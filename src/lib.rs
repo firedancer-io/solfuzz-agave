@@ -466,13 +466,18 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         Err(_) => {
             let mut default_clock = Clock::default();
             default_clock.slot = 10;
+            sysvar_cache.set_clock(default_clock.clone());
             default_clock
         }
     };
 
     let epoch_schedule = match sysvar_cache.get_epoch_schedule() {
         Ok(epoch_schedule) => (*epoch_schedule).clone(),
-        Err(_) => EpochSchedule::default(),
+        Err(_) => {
+            let default_epoch_schedule = EpochSchedule::default();
+            sysvar_cache.set_epoch_schedule(default_epoch_schedule.clone());
+            default_epoch_schedule
+        }
     };
 
     // Add checks for rent boundaries
@@ -487,7 +492,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
         rent = (*rent_).clone();
     } else {
-        rent = Rent::default();
+        let default_rent = Rent::default();
+        sysvar_cache.set_rent(default_rent.clone());
+        rent = default_rent;
     }
 
     let mut transaction_accounts =
