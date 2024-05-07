@@ -2,10 +2,16 @@ use crate::proto::ElfLoaderEffects;
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
-use solana_sdk::feature_set::*;
+use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use solana_program_runtime::compute_budget::ComputeBudget;
 
 use std::ffi::c_int;
+
+const ACTIVATE_FEATURES: &[Pubkey] = &[
+    switch_to_new_elf_parser::id(),
+    error_on_syscall_bpf_function_hash_collisions::id(),
+    bpf_account_data_direct_mapping::id(),
+];
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_elf_loader_v1(
@@ -31,14 +37,20 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
 }
 
 fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
+    let mut feature_set = FeatureSet::default();
+
+    for feature in ACTIVATE_FEATURES.iter() {
+        feature_set.activate(feature, 0);
+    }
+
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
-        &FeatureSet::all_enabled(),
+        &feature_set,
         &ComputeBudget::default(), 
         true, // all uploaded programs are verified before deployment, so this should be true(?) 
         false
     ).unwrap();
 
-    // load the elf
+        // load the elf
     let elf_exec = match Executable::load(elf_bytes, std::sync::Arc::new(program_runtime_environment_v1)) {
         Ok(v) => v,
         Err(_) => return None,
@@ -47,7 +59,7 @@ fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
     let ro_section = elf_exec.get_ro_section();
     let (text_vaddr, text_bytes) = elf_exec.get_text_bytes();
     let raw_text_sz = text_bytes.len();
-
+    
     let mut text = text_bytes.to_vec();
     text.truncate(raw_text_sz - (raw_text_sz % 8));
 
