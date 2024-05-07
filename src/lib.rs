@@ -618,13 +618,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         });
     }
 
-    // The Agave impl of the stake program panics if there is no epoch schedule
-    if transaction_accounts[program_idx].0 == solana_stake_program::id()
-        && sysvar_cache.get_epoch_schedule().is_err()
-    {
-        return None;
-    }
-
     // Precompiles (ed25519, secp256k1)
     // Precompiles are programs that run without the VM and without loading any account.
     // They allow to verify signatures, either ed25519 or Ethereum-like secp256k1
