@@ -1,0 +1,16 @@
+name: "Build, check, test, release"
+on:
+  push:
+    branches:
+      - 'agave-v2.0'
+  pull_request:
+
+jobs:
+  test:
+    name: cargo check + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo check && cargo test && make build
+
