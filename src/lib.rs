@@ -463,7 +463,11 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let clock = match sysvar_cache.get_clock() {
         Ok(clock) => (*clock).clone(),
-        Err(_) => Clock::default(),
+        Err(_) => {
+            let mut default_clock = Clock::default();
+            default_clock.slot = 10;
+            default_clock
+        }
     };
 
     let epoch_schedule = match sysvar_cache.get_epoch_schedule() {
