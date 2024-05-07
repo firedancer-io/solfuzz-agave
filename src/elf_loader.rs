@@ -46,14 +46,10 @@ fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
 
     let ro_section = elf_exec.get_ro_section();
     let (text_vaddr, text_bytes) = elf_exec.get_text_bytes();
-    let text_sz = text_bytes.len();
+    let raw_text_sz = text_bytes.len();
 
     let mut text = text_bytes.to_vec();
-    let rem = text_sz % 8;
-    if rem != 0 {
-        let pad = 8 - rem;
-        text.extend(vec![0; pad]);
-    }
+    text.truncate(raw_text_sz - (raw_text_sz % 8));
 
     let text_sz = text.len();
 
