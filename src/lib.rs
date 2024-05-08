@@ -461,6 +461,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
     });
 
+    // Set the default clock slot to something arbitrary beyond 0
+    // This prevents DelayedVisibility errors when executing BPF programs
     let clock = match sysvar_cache.get_clock() {
         Ok(clock) => (*clock).clone(),
         Err(_) => {
