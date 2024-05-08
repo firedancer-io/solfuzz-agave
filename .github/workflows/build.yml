@@ -1,0 +1,19 @@
+name: "Build, check, test, release"
+on:
+  push:
+    branches:
+      - 'agave-v2.0'
+  pull_request:
+
+jobs:
+  test:
+    name: cargo check + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: sudo apt-get install protobuf-compiler && cargo check && cargo test && make build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libsolfuzz-agave.so
+          path: ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so
