@@ -22,11 +22,10 @@ fn main() {
             if sol_compat_elf_loader_v1(out.as_mut_ptr(), out_psz, blob.as_mut_ptr(), blob.len() as u64) == 1 {
                 let out_sz = *out_psz as usize;
                 let effects = ElfLoaderEffects::decode(&out[..out_sz]).unwrap();
-                eprintln!("Effects: {:?}", effects);
+                eprintln!("Effects generated. Text section count: {}", effects.text_cnt);
             } else {
-                eprintln!("No elf loader effects returned.");}
-            
-            
+                eprintln!("No elf loader effects returned.");
+            }          
         }        
         
     }
