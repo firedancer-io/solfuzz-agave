@@ -3,6 +3,7 @@ use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
 use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use solana_program_runtime::compute_budget::ComputeBudget;
+use std::collections::BTreeSet;
 
 
 const ACTIVATE_FEATURES: &[Pubkey] = &[
@@ -41,6 +42,15 @@ pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
 
     let text_sz = text.len();
 
+    let mut calldests = BTreeSet::<u64>::new();
+
+    let fn_reg = elf_exec.get_function_registry();
+    for (_k, v) in fn_reg.iter() {
+        let (_name , fn_addr) = v;
+        let _name_str = std::str::from_utf8(_name).unwrap();
+        calldests.insert(fn_addr as u64);
+    }
+
     Some(
         ElfLoaderEffects {
             rodata: Vec::<u8>::new(),
@@ -48,7 +58,8 @@ pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
             text: text,
             text_off: (text_vaddr - ebpf::MM_PROGRAM_START) as u64, // FIXME: assumes ro offset is 0
-            text_cnt: (text_sz/8) as u64
+            text_cnt: (text_sz/8) as u64,
+            calldests: calldests.into_iter().collect(),
         })
     
 }
