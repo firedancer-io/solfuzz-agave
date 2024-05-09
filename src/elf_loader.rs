@@ -1,11 +1,9 @@
 use crate::proto::ElfLoaderEffects;
-use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
 use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use solana_program_runtime::compute_budget::ComputeBudget;
 
-use std::ffi::c_int;
 
 const ACTIVATE_FEATURES: &[Pubkey] = &[
     switch_to_new_elf_parser::id(),
@@ -13,30 +11,8 @@ const ACTIVATE_FEATURES: &[Pubkey] = &[
     bpf_account_data_direct_mapping::id(),
 ];
 
-#[no_mangle]
-pub unsafe extern "C" fn sol_compat_elf_loader_v1(
-    out_ptr: *mut u8,
-    out_psz: *mut u64,
-    in_ptr: *mut u8,
-    in_sz: u64,
-) -> c_int { 
-    let elf_loader_effects = match load_elf(
-        std::slice::from_raw_parts(in_ptr, in_sz as usize),
-    ) {
-        Some(v) => v,
-        None => return 0,
-    };
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
-    let out_vec = elf_loader_effects.encode_to_vec();
-    if out_vec.len() > out_slice.len() {
-        return 0;
-    }
-    out_slice[..out_vec.len()].copy_from_slice(&out_vec);
-    *out_psz = out_vec.len() as u64;
-    1
-}
 
-fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
+pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
     let mut feature_set = FeatureSet::default();
 
     for feature in ACTIVATE_FEATURES.iter() {
@@ -46,7 +22,7 @@ fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set,
         &ComputeBudget::default(), 
-        true, // all uploaded programs are verified before deployment, so this should be true(?) 
+        true,
         false
     ).unwrap();
 

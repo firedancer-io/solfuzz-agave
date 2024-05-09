@@ -10,6 +10,8 @@ struct Cli {
     inputs: Vec<PathBuf>,
 }
 
+// Simple executable that loads ELF files/fuzz corpus and prints effects
+// Can be used for coverage analysis
 fn main() {
     let cli = Cli::parse();
     for input in cli.inputs {
@@ -20,7 +22,7 @@ fn main() {
             if sol_compat_elf_loader_v1(out.as_mut_ptr(), out_psz, blob.as_mut_ptr(), blob.len() as u64) == 1 {
                 let out_sz = *out_psz as usize;
                 let effects = ElfLoaderEffects::decode(&out[..out_sz]).unwrap();
-                eprintln!("Effects: {:?}", effects.);
+                eprintln!("Effects: {:?}", effects);
             } else {
                 eprintln!("No elf loader effects returned.");}
             

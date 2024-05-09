@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 mod vm_syscalls;
-pub mod elf_loader;
+mod elf_loader;
 
 use lazy_static::lazy_static;
 use prost::Message;
@@ -743,6 +743,30 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 
     1
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn sol_compat_elf_loader_v1(
+    out_ptr: *mut u8,
+    out_psz: *mut u64,
+    in_ptr: *mut u8,
+    in_sz: u64,
+) -> c_int { 
+    let elf_loader_effects = match elf_loader::load_elf(
+        std::slice::from_raw_parts(in_ptr, in_sz as usize),
+    ) {
+        Some(v) => v,
+        None => return 0,
+    };
+    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+    let out_vec = elf_loader_effects.encode_to_vec();
+    if out_vec.len() > out_slice.len() {
+        return 0;
+    }
+    out_slice[..out_vec.len()].copy_from_slice(&out_vec);
+    *out_psz = out_vec.len() as u64;
+    1
+}
+
 
 #[cfg(test)]
 mod tests {

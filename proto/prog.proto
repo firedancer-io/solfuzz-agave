@@ -1,1 +1,15 @@
-/home/rsivakumaran/repos/solfuzz/src/proto/prog.proto
+syntax = "proto3";
+package org.solana.sealevel.v1;
+message ELFLoaderEffects {
+    bytes rodata = 1;
+    uint64 rodata_sz = 2;
+
+    bytes text = 3;
+    uint64 text_cnt = 4;
+    uint64 text_off = 5;
+
+    uint64 entry_pc = 6;
+
+    // TODO: implement this
+    // repeated uint64 calldests = 7;
+}
