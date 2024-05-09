@@ -539,6 +539,13 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
     let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
 
+    // Skip if the program account is a native program and is not owned by the native loader
+    // (Would call the owner instead)
+    if loaded_builtins.contains(&transaction_accounts[program_idx].0) && 
+        transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
+        return None;
+    }
+
     let mut program_cache = ProgramCache::new(Slot::default(), Epoch::default());
     let program_runtime_environment_v1 =
         solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
