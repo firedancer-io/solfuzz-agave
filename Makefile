@@ -26,7 +26,7 @@ all: shared_obj binaries
 build: shared_obj
 
 shared_obj:
-	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --lib
+	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
 
 binaries:
 	LLVM_PROFILE_FILE="compiler_artifacts.tmp" RUSTFLAGS="-Cinstrument-coverage" $(CARGO) build --bins
