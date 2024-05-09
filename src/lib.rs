@@ -461,14 +461,25 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
     });
 
+    // Set the default clock slot to something arbitrary beyond 0
+    // This prevents DelayedVisibility errors when executing BPF programs
     let clock = match sysvar_cache.get_clock() {
         Ok(clock) => (*clock).clone(),
-        Err(_) => Clock::default(),
+        Err(_) => {
+            let mut default_clock = Clock::default();
+            default_clock.slot = 10;
+            sysvar_cache.set_clock(default_clock.clone());
+            default_clock
+        }
     };
 
     let epoch_schedule = match sysvar_cache.get_epoch_schedule() {
         Ok(epoch_schedule) => (*epoch_schedule).clone(),
-        Err(_) => EpochSchedule::default(),
+        Err(_) => {
+            let default_epoch_schedule = EpochSchedule::default();
+            sysvar_cache.set_epoch_schedule(default_epoch_schedule.clone());
+            default_epoch_schedule
+        }
     };
 
     // Add checks for rent boundaries
@@ -483,7 +494,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
         rent = (*rent_).clone();
     } else {
-        rent = Rent::default();
+        let default_rent = Rent::default();
+        sysvar_cache.set_rent(default_rent.clone());
+        rent = default_rent;
     }
 
     let mut transaction_accounts =
@@ -525,6 +538,13 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
     programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
     let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
+
+    // Skip if the program account is a native program and is not owned by the native loader
+    // (Would call the owner instead)
+    if loaded_builtins.contains(&transaction_accounts[program_idx].0) && 
+        transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
+        return None;
+    }
 
     let mut program_cache = ProgramCache::new(Slot::default(), Epoch::default());
     let program_runtime_environment_v1 =
@@ -616,13 +636,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             is_signer: account_meta.is_signer,
             is_writable: account_meta.is_writable,
         });
-    }
-
-    // The Agave impl of the stake program panics if there is no epoch schedule
-    if transaction_accounts[program_idx].0 == solana_stake_program::id()
-        && sysvar_cache.get_epoch_schedule().is_err()
-    {
-        return None;
     }
 
     // Precompiles (ed25519, secp256k1)
