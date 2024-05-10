@@ -1,5 +1,16 @@
 syntax = "proto3";
 package org.solana.sealevel.v1;
+import "invoke.proto";
+
+message ELFBinary {
+    bytes data = 1;
+}
+
+message ELFLoaderCtx {
+    ELFBinary elf = 1;
+    FeatureSet features = 2;
+}
+
 message ELFLoaderEffects {
     bytes rodata = 1;
     uint64 rodata_sz = 2;
