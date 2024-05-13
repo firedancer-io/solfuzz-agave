@@ -514,17 +514,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     {
         index
     } else {
-        transaction_accounts.push((
-            input.instruction.program_id,
-            AccountSharedData::from(Account {
-                lamports: 10000000,
-                data: b"Solana Program".to_vec(),
-                owner: solana_sdk::native_loader::id(),
-                executable: true,
-                rent_epoch: 0,
-            }),
-        ));
-        transaction_accounts.len() - 1
+        return None;
     };
 
     let mut transaction_context = TransactionContext::new(
