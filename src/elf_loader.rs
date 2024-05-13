@@ -36,11 +36,6 @@ pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
     let ro_section = elf_exec.get_ro_section();
     let (text_vaddr, text_bytes) = elf_exec.get_text_bytes();
     let raw_text_sz = text_bytes.len();
-    
-    let mut text = text_bytes.to_vec();
-    text.truncate(raw_text_sz - (raw_text_sz % 8));
-
-    let text_sz = text.len();
 
     let mut calldests = BTreeSet::<u64>::new();
 
@@ -53,12 +48,12 @@ pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
 
     Some(
         ElfLoaderEffects {
-            rodata: Vec::<u8>::new(),
+            rodata: ro_section.to_vec(),
             rodata_sz: ro_section.len() as u64,
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
-            text: text,
+            text: Vec::new(),
             text_off: (text_vaddr - ebpf::MM_PROGRAM_START) as u64, // FIXME: assumes ro offset is 0
-            text_cnt: (text_sz/8) as u64,
+            text_cnt: (raw_text_sz/8) as u64,
             calldests: calldests.into_iter().collect(),
         })
     
