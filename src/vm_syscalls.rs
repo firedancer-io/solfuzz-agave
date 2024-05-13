@@ -5,6 +5,7 @@ use crate::{
 };
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::solana_rbpf::vm::ContextObject;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{
@@ -13,7 +14,7 @@ use solana_program_runtime::{
     loaded_programs::LoadedProgramsForTxBatch,
     solana_rbpf::{
         ebpf::{self, MM_INPUT_START},
-        error::EbpfError,
+        error::{EbpfError, StableResult},
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::{Config, EbpfVm},
@@ -93,10 +94,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
         .unwrap_or_default();
 
+    let log_collector = LogCollector::new_ref();
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
         &sysvar_cache,
-        None,
+        Some(log_collector),
         compute_budget,
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
@@ -175,18 +177,16 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let (_, syscall_func) = program_runtime_environment_v1
         .get_function_registry()
         .lookup_by_name(&input.syscall_invocation?.function_name)?;
-    syscall_func(
-        &mut vm, vm_ctx.r1, vm_ctx.r2, vm_ctx.r3, vm_ctx.r4, vm_ctx.r5,
-    );
+    vm.invoke_function(syscall_func);
 
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
     Some(SyscallEffects {
         error: match program_result {
-            solana_program_runtime::solana_rbpf::error::StableResult::Ok(_) => 0,
-            solana_program_runtime::solana_rbpf::error::StableResult::Err(e) => unsafe {
-                let error_ptr = &e as *const EbpfError as *const u64;
-                (*error_ptr).try_into().unwrap()
+            StableResult::Ok(_) => 0,
+            StableResult::Err(e) => unsafe {
+                let error_ptr = &e as *const EbpfError as *const i64;
+                *error_ptr
             },
         },
         r0: vm.registers[0],
