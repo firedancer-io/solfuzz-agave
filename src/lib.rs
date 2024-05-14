@@ -514,17 +514,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     {
         index
     } else {
-        transaction_accounts.push((
-            input.instruction.program_id,
-            AccountSharedData::from(Account {
-                lamports: 10000000,
-                data: b"Solana Program".to_vec(),
-                owner: solana_sdk::native_loader::id(),
-                executable: true,
-                rent_epoch: 0,
-            }),
-        ));
-        transaction_accounts.len() - 1
+        return None;
     };
 
     let mut transaction_context = TransactionContext::new(
@@ -833,6 +823,8 @@ mod tests {
 
     #[test]
     fn test_system_program_exec() {
+        let native_loader_id = solana_sdk::native_loader::id().to_bytes().to_vec();
+
         // Ensure that a basic account transfer works
         let input = proto::InstrContext {
             program_id: vec![0u8; 32],
@@ -851,6 +843,14 @@ mod tests {
                     lamports: 0,
                     data: vec![],
                     executable: false,
+                    rent_epoch: 0,
+                },
+                proto::AcctState {
+                    address: vec![0u8; 32],
+                    owner: native_loader_id.clone(),
+                    lamports: 10000000,
+                    data: b"Solana Program".to_vec(),
+                    executable: true,
                     rent_epoch: 0,
                 },
             ],
