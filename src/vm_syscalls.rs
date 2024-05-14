@@ -3,28 +3,30 @@ use crate::{
     proto::{SyscallContext, SyscallEffects},
     InstrContext,
 };
-use solana_sdk::feature_set::FeatureSet;
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_program_runtime::{log_collector::LogCollector, sysvar_cache::SysvarCache};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     invoke_context::InvokeContext,
     loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
         ebpf::{self, MM_INPUT_START},
-        error::{EbpfError, StableResult},
+        error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::{Config, EbpfVm},
     },
 };
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
+use solana_program_runtime::{log_collector::LogCollector, sysvar_cache::SysvarCache};
+use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
 
 const STACK_SIZE: usize = 524288; // FD_VM_STACK_MAX
+
+const TRUNCATE_ERROR_WORDS: usize = 9;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
@@ -52,6 +54,13 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     *out_psz = out_vec.len() as u64;
 
     1
+}
+
+fn truncate_error_str(s: String) -> String {
+    s.split_whitespace()
+        .take(TRUNCATE_ERROR_WORDS)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
@@ -167,6 +176,10 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.registers[10] = vm_ctx.r10;
     vm.registers[11] = vm_ctx.r11;
 
+    if let Some(syscall_invocation) = input.syscall_invocation.clone() {
+        heap.copy_from_slice(&syscall_invocation.heap_prefix);
+    }
+
     // Actually invoke the syscall
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &instr_ctx.feature_set,
@@ -185,12 +198,33 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
     Some(SyscallEffects {
+        // Error matching.
+        // Errors are `EbpfError`` and in particular we need to match EbpfError::Syscall == Box<dyn Error>.
+        // In turn, the dynamic error can have multiple types, for example InstructionError or SyscallError.
+        // And... we need to match them against Firedancer errors.
+        // To make things as simple as possible, we match explicit error messages to Firedancer error numbers.
+        // Unfortunately even this is not that simple, because most error messages contain dynamic fields.
+        // So, the current solutio truncates the error message to TRUNCATE_ERROR_WORDS words, where the constant
+        // is chosen to be large enough to distinguish errors, and small enough to avoid variable strings.
         error: match program_result {
             StableResult::Ok(_) => 0,
-            StableResult::Err(e) => unsafe {
-                let error_ptr = &e as *const EbpfError as *const i64;
-                *error_ptr
-            },
+            StableResult::Err(ref ebpf_error) => {
+                match truncate_error_str(ebpf_error.to_string()).as_str() {
+                    // InstructionError
+                    // https://github.com/anza-xyz/agave/blob/v1.18.12/sdk/program/src/instruction.rs#L33
+                    "Syscall error: Computational budget exceeded" => 16,
+                    // SyscallError
+                    // https://github.com/anza-xyz/agave/blob/8c5a33a81a0504fd25d0465bed35d153ff84819f/programs/bpf_loader/src/syscalls/mod.rs#L77
+                    "Syscall error: Hashing too many sequences" => 1,
+                    "Syscall error: InvalidLength" => 1,
+                    // ??
+                    "Syscall error: Access violation in stack section at address" => 13,
+                    "Syscall error: Access violation in heap section at address" => 13,
+                    // EbpfError
+                    // https://github.com/solana-labs/rbpf/blob/main/src/error.rs#L17
+                    _ => -1,
+                }
+            }
         },
         r0: vm.registers[0],
         cu_avail: vm.context_object_pointer.get_remaining(),
