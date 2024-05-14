@@ -3,7 +3,7 @@ use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
 use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use solana_program_runtime::compute_budget::ComputeBudget;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 
 const ACTIVATE_FEATURES: &[Pubkey] = &[
@@ -14,7 +14,10 @@ const ACTIVATE_FEATURES: &[Pubkey] = &[
 
 
 pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
-    let mut feature_set = FeatureSet::default();
+    let mut feature_set = FeatureSet{
+        active: HashMap::new(),
+        inactive: HashSet::new(),
+    };
 
     for feature in ACTIVATE_FEATURES.iter() {
         feature_set.activate(feature, 0);
