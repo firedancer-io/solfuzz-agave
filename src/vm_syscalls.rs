@@ -3,15 +3,14 @@ use crate::{
     proto::{SyscallContext, SyscallEffects},
     InstrContext,
 };
+use solana_sdk::feature_set::FeatureSet;
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_program_runtime::log_collector::LogCollector;
-use solana_program_runtime::solana_rbpf::vm::ContextObject;
-use solana_program_runtime::sysvar_cache::SysvarCache;
+use solana_program_runtime::{log_collector::LogCollector, sysvar_cache::SysvarCache};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     invoke_context::InvokeContext,
-    loaded_programs::LoadedProgramsForTxBatch,
+    loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
         ebpf::{self, MM_INPUT_START},
         error::{EbpfError, StableResult},
@@ -20,6 +19,7 @@ use solana_program_runtime::{
         vm::{Config, EbpfVm},
     },
 };
+use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
@@ -81,9 +81,9 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     );
 
     // sigh ... What is this mess?
-    let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
+    let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
     load_builtins(&mut programs_loaded_for_tx_batch);
-    let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
+    let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
 
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
@@ -94,17 +94,20 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
         .unwrap_or_default();
 
+    let environment_config = EnvironmentConfig::new(
+        blockhash,
+        Arc::new(FeatureSet::all_enabled()),
+        lamports_per_signature,
+        &sysvar_cache,
+    );
     let log_collector = LogCollector::new_ref();
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
-        &sysvar_cache,
-        Some(log_collector),
+        environment_config,
+        Some(log_collector.clone()),
         compute_budget,
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
-        Arc::new(instr_ctx.feature_set.clone()),
-        blockhash,
-        lamports_per_signature,
     );
 
     // TODO: support different versions

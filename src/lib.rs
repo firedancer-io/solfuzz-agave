@@ -7,12 +7,13 @@ use prost::Message;
 use solana_program::clock::Slot;
 use solana_program::hash::Hash;
 use solana_program_runtime::compute_budget::ComputeBudget;
+use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::BlockRelation;
 use solana_program_runtime::loaded_programs::ForkGraph;
-use solana_program_runtime::loaded_programs::LoadedProgram;
-use solana_program_runtime::loaded_programs::LoadedProgramsForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramCache;
+use solana_program_runtime::loaded_programs::ProgramCacheEntry;
+use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
@@ -21,7 +22,6 @@ use solana_sdk::account::ReadableAccount;
 use solana_sdk::account::{Account, AccountSharedData};
 use solana_sdk::clock::Epoch;
 use solana_sdk::feature_set::*;
-use solana_sdk::fee::FeeStructure;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::{CompiledInstruction, InstructionError};
 use solana_sdk::precompiles::{is_precompile, verify_if_precompile, PrecompileError};
@@ -34,15 +34,14 @@ use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
-use solana_svm::runtime_config::RuntimeConfig;
-use solana_svm::transaction_processor::TransactionBatchProcessor;
-use solana_svm::transaction_processor::TransactionProcessingCallback;
+use solana_svm::program_loader;
+
+use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::Arc;
-use std::sync::RwLock;
 use thiserror::Error;
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
@@ -343,10 +342,10 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
+fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
     cache.replenish(
         solana_address_lookup_table_program::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_address_lookup_table_program::processor::Entrypoint::vm,
@@ -354,7 +353,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_sdk::bpf_loader_deprecated::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_bpf_loader_program::Entrypoint::vm,
@@ -362,7 +361,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_sdk::bpf_loader::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_bpf_loader_program::Entrypoint::vm,
@@ -370,7 +369,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_sdk::bpf_loader_upgradeable::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_bpf_loader_program::Entrypoint::vm,
@@ -378,7 +377,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_sdk::compute_budget::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_compute_budget_program::Entrypoint::vm,
@@ -386,7 +385,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_config_program::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_config_program::config_processor::Entrypoint::vm,
@@ -394,7 +393,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_stake_program::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_stake_program::stake_instruction::Entrypoint::vm,
@@ -402,7 +401,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_system_program::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_system_program::system_processor::Entrypoint::vm,
@@ -410,7 +409,7 @@ fn load_builtins(cache: &mut LoadedProgramsForTxBatch) -> HashSet<Pubkey> {
     );
     cache.replenish(
         solana_vote_program::id(),
-        Arc::new(LoadedProgram::new_builtin(
+        Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
             solana_vote_program::vote_processor::Entrypoint::vm,
@@ -525,19 +524,11 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     );
 
     // sigh ... What is this mess?
-    let mut programs_loaded_for_tx_batch = LoadedProgramsForTxBatch::default();
+    let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
     programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
     let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
 
-    // Skip if the program account is a native program and is not owned by the native loader
-    // (Would call the owner instead)
-    if loaded_builtins.contains(&transaction_accounts[program_idx].0) && 
-        transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
-        return None;
-    }
-
-    let mut program_cache = ProgramCache::new(Slot::default(), Epoch::default());
-    let program_runtime_environment_v1 =
+    let mut program_cache = ProgramCache::<DummyForkGraph>::new(Slot::default(), Epoch::default());    let program_runtime_environment_v1 =
         solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
             &input.feature_set,
             &compute_budget,
@@ -552,27 +543,36 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     program_cache.environments = environments.clone();
     program_cache.upcoming_environments = Some(environments);
 
-    let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
-        clock.slot,
-        clock.epoch,
-        epoch_schedule,
-        FeeStructure::default(),
-        Arc::<RuntimeConfig>::default(),
-        Arc::new(RwLock::new(program_cache)),
-        loaded_builtins,
-    );
+    // let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
+    //     clock.slot,
+    //     clock.epoch,
+    //     epoch_schedule,
+    //     Arc::<RuntimeConfig>::default(),
+    //     Arc::new(RwLock::new(program_cache)),
+    //     loaded_builtins,
+    // );
 
     for acc in &input.accounts {
         if acc.1.executable && programs_loaded_for_tx_batch.find(&acc.0).is_none() {
+    // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
+    /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
+    callbacks: &CB,
+    program_cache: &ProgramCache<FG>,
+    pubkey: &Pubkey,
+    slot: Slot,
+    effective_epoch: Epoch,
+    epoch_schedule: &EpochSchedule,
+    reload: bool,
+) -> Option<Arc<ProgramCacheEntry>> { */
             if let Some(loaded_program) =
-                tx_batch_processor.load_program_with_pubkey(&input, &acc.0, false, 0)
+                program_loader::load_program_with_pubkey(&input, &program_cache, &acc.0,  clock.slot, 0, &epoch_schedule, false)
             {
                 programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
             }
         }
     }
 
-    let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
+    let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
 
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache
@@ -583,16 +583,15 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         .unwrap_or_default();
 
     let log_collector = LogCollector::new_ref();
+    let env_config = EnvironmentConfig::new(blockhash, input.get_feature_set(), lamports_per_signature, &sysvar_cache);
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
-        &sysvar_cache,
+        env_config,
         Some(log_collector.clone()),
         compute_budget,
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
-        Arc::new(input.feature_set),
-        blockhash,
-        lamports_per_signature,
+      
     );
 
     let program_indices = &[program_idx as u16];
@@ -650,7 +649,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // cover the fact that the precompile can access data from other instructions.
     // This will be covered in separated tests.
     let program_id = &input.instruction.program_id;
-    let is_precompile = is_precompile(program_id, |id| invoke_context.feature_set.is_active(id));
+    let is_precompile = is_precompile(program_id, |id| invoke_context.environment_config.feature_set.is_active(id));
     if is_precompile {
         let compiled_instruction = CompiledInstruction {
             program_id_index: 0,
@@ -661,7 +660,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             program_id,
             &compiled_instruction,
             &[compiled_instruction.clone()],
-            &invoke_context.feature_set,
+            &invoke_context.environment_config.feature_set,
         );
         return Some(InstrEffects {
             custom_err: None,
