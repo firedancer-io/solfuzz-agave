@@ -218,15 +218,25 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                     "Syscall error: Hashing too many sequences" => 1,
                     "Syscall error: InvalidLength" => 1,
                     // ??
+                    "Syscall error: Access violation in program section at address" => 13,
                     "Syscall error: Access violation in stack section at address" => 13,
                     "Syscall error: Access violation in heap section at address" => 13,
+                    "Syscall error: Access violation in unknown section at address" => 13,
+                    // https://github.com/solana-labs/solana/blob/v1.18.12/sdk/program/src/poseidon.rs#L13
+                    "Syscall error: Invalid parameters." => 1,
+                    "Syscall error: Invalid endianness." => 1,
                     // EbpfError
                     // https://github.com/solana-labs/rbpf/blob/main/src/error.rs#L17
                     _ => -1,
                 }
             }
         },
-        r0: vm.registers[0],
+        // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
+        // Regardless, the result is available in vm.program_result, so we can return it from there.
+        r0: match program_result {
+            StableResult::Ok(n) => n,
+            StableResult::Err(_) => 0,
+        },
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
