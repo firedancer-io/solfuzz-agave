@@ -9,7 +9,7 @@ fn main() -> Result<()> {
     let protos = &[
         proto_base_path.join("invoke.proto"),
         proto_base_path.join("vm.proto"),
-        proto_base_path.join("prog.proto")
+        proto_base_path.join("elf.proto")
     ];
 
     protos
