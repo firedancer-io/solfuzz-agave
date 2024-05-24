@@ -1,9 +1,11 @@
-use crate::proto::ElfLoaderEffects;
+use crate::proto::{ElfLoaderEffects, ElfLoaderCtx};
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
 use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use solana_program_runtime::compute_budget::ComputeBudget;
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::ffi::c_int;
+use prost::Message;
 
 
 const ACTIVATE_FEATURES: &[Pubkey] = &[
@@ -54,9 +56,43 @@ pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
             rodata: ro_section.to_vec(),
             rodata_sz: ro_section.len() as u64,
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
-            text_off: (text_vaddr - ebpf::MM_PROGRAM_START) as u64, // FIXME: assumes ro offset is 0
+            // We need to subtract the start of the program to get the correct offset
+            text_off: (text_vaddr - ebpf::MM_PROGRAM_START) as u64,
             text_cnt: (raw_text_sz/8) as u64,
             calldests: calldests.into_iter().collect(),
         })
     
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn sol_compat_elf_loader_v1(
+    out_ptr: *mut u8,
+    out_psz: *mut u64,
+    in_ptr: *mut u8,
+    in_sz: u64,
+) -> c_int { 
+    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
+    let elf_loader_ctx = match ElfLoaderCtx::decode(in_slice) {
+        Ok(context) => context,
+        Err(_) => return 0,
+    };
+    let elf_bytes = match elf_loader_ctx.elf {
+        Some(elf) => elf.data,
+        None => return 0,
+    };
+
+    let elf_loader_effects = match load_elf(
+        elf_bytes.as_slice(),
+    ) {
+        Some(v) => v,
+        None => return 0,
+    };
+    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+    let out_vec = elf_loader_effects.encode_to_vec();
+    if out_vec.len() > out_slice.len() {
+        return 0;
+    }
+    out_slice[..out_vec.len()].copy_from_slice(&out_vec);
+    *out_psz = out_vec.len() as u64;
+    1
 }
