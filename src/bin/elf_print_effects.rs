@@ -1,7 +1,7 @@
 use clap::Parser;
 use prost::Message;
 use solfuzz_agave::proto::ElfLoaderEffects;
-use solfuzz_agave::sol_compat_elf_loader_v1;
+use solfuzz_agave::elf_loader::sol_compat_elf_loader_v1;
 use std::path::PathBuf;
 
 #[derive(Parser)]
