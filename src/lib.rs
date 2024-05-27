@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 mod vm_syscalls;
+pub mod elf_loader;
 
 use lazy_static::lazy_static;
 use prost::Message;
@@ -822,6 +823,7 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 
     1
 }
+
 
 #[cfg(test)]
 mod tests {
