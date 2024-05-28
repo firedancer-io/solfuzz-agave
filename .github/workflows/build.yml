@@ -12,7 +12,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.76.0
-      - run: sudo apt-get install protobuf-compiler && cargo check && cargo test && make build
+
+      - name: Install protobuf
+        run: sudo apt-get install protobuf-compiler
+
+      - name: Check lints and clippy
+        run: |
+          rustup component add rustfmt
+          rustup component add clippy
+          cargo fmt --all -- --check
+          cargo clippy --all
+
+      - name: Test
+        run: |
+          cargo check
+          cargo test
+
+      - name: Run build
+        run: make build
+
       - uses: actions/upload-artifact@v4
         with:
           name: libsolfuzz-agave.so
