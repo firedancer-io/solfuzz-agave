@@ -1,6 +1,6 @@
 syntax = "proto3";
 package org.solana.sealevel.v1;
-import "invoke.proto";
+import "context.proto";
 
 message ELFBinary {
     bytes data = 1;
