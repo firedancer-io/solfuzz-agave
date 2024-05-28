@@ -466,8 +466,10 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let clock = match sysvar_cache.get_clock() {
         Ok(clock) => (*clock).clone(),
         Err(_) => {
-            let mut default_clock = Clock::default();
-            default_clock.slot = 10;
+            let default_clock = Clock {
+                slot: 10,
+                ..Default::default()
+            };
             sysvar_cache.set_clock(default_clock.clone());
             default_clock
         }
@@ -508,14 +510,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
         .for_each(|x| transaction_accounts.push(x));
 
-    let program_idx = if let Some(index) = transaction_accounts
-        .iter()
-        .position(|(pubkey, _)| *pubkey == input.instruction.program_id)
-    {
-        index
-    } else {
-        return None;
-    };
+    let program_idx =  transaction_accounts
+             .iter()
+             .position(|(pubkey, _)| *pubkey == input.instruction.program_id)?;
 
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),

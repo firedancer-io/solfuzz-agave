@@ -57,7 +57,7 @@ pub fn load_elf(elf_bytes:&[u8]) -> Option<ElfLoaderEffects> {
             rodata_sz: ro_section.len() as u64,
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
             // We need to subtract the start of the program to get the correct offset
-            text_off: (text_vaddr - ebpf::MM_PROGRAM_START) as u64,
+            text_off: text_vaddr - ebpf::MM_PROGRAM_START,
             text_cnt: (raw_text_sz/8) as u64,
             calldests: calldests.into_iter().collect(),
         })
