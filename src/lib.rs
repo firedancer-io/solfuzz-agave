@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
-mod vm_syscalls;
 pub mod elf_loader;
+mod vm_syscalls;
 
 use lazy_static::lazy_static;
 use prost::Message;
@@ -466,8 +466,10 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let clock = match sysvar_cache.get_clock() {
         Ok(clock) => (*clock).clone(),
         Err(_) => {
-            let mut default_clock = Clock::default();
-            default_clock.slot = 10;
+            let default_clock = Clock {
+                slot: 10,
+                ..Default::default()
+            };
             sysvar_cache.set_clock(default_clock.clone());
             default_clock
         }
@@ -508,14 +510,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
         .for_each(|x| transaction_accounts.push(x));
 
-    let program_idx = if let Some(index) = transaction_accounts
+    let program_idx = transaction_accounts
         .iter()
-        .position(|(pubkey, _)| *pubkey == input.instruction.program_id)
-    {
-        index
-    } else {
-        return None;
-    };
+        .position(|(pubkey, _)| *pubkey == input.instruction.program_id)?;
 
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
@@ -531,12 +528,14 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     // Skip if the program account is a native program and is not owned by the native loader
     // (Would call the owner instead)
-    if loaded_builtins.contains(&transaction_accounts[program_idx].0) && 
-        transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id() {
+    if loaded_builtins.contains(&transaction_accounts[program_idx].0)
+        && transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id()
+    {
         return None;
     }
 
-    let mut program_cache = ProgramCache::<DummyForkGraph>::new(Slot::default(), Epoch::default());    let program_runtime_environment_v1 =
+    let mut program_cache = ProgramCache::<DummyForkGraph>::new(Slot::default(), Epoch::default());
+    let program_runtime_environment_v1 =
         solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
             &input.feature_set,
             &compute_budget,
@@ -562,19 +561,25 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     for acc in &input.accounts {
         if acc.1.executable && programs_loaded_for_tx_batch.find(&acc.0).is_none() {
-    // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
-    /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
-    callbacks: &CB,
-    program_cache: &ProgramCache<FG>,
-    pubkey: &Pubkey,
-    slot: Slot,
-    effective_epoch: Epoch,
-    epoch_schedule: &EpochSchedule,
-    reload: bool,
-) -> Option<Arc<ProgramCacheEntry>> { */
-            if let Some(loaded_program) =
-                program_loader::load_program_with_pubkey(&input, &program_cache, &acc.0,  clock.slot, 0, &epoch_schedule, false)
-            {
+            // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
+            /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
+                callbacks: &CB,
+                program_cache: &ProgramCache<FG>,
+                pubkey: &Pubkey,
+                slot: Slot,
+                effective_epoch: Epoch,
+                epoch_schedule: &EpochSchedule,
+                reload: bool,
+            ) -> Option<Arc<ProgramCacheEntry>> { */
+            if let Some(loaded_program) = program_loader::load_program_with_pubkey(
+                &input,
+                &program_cache,
+                &acc.0,
+                clock.slot,
+                0,
+                &epoch_schedule,
+                false,
+            ) {
                 programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
             }
         }
@@ -591,7 +596,12 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         .unwrap_or_default();
 
     let log_collector = LogCollector::new_ref();
-    let env_config = EnvironmentConfig::new(blockhash, input.get_feature_set(), lamports_per_signature, &sysvar_cache);
+    let env_config = EnvironmentConfig::new(
+        blockhash,
+        input.get_feature_set(),
+        lamports_per_signature,
+        &sysvar_cache,
+    );
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
         env_config,
@@ -599,7 +609,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         compute_budget,
         &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
-      
     );
 
     let program_indices = &[program_idx as u16];
@@ -657,7 +666,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     // cover the fact that the precompile can access data from other instructions.
     // This will be covered in separated tests.
     let program_id = &input.instruction.program_id;
-    let is_precompile = is_precompile(program_id, |id| invoke_context.environment_config.feature_set.is_active(id));
+    let is_precompile = is_precompile(program_id, |id| {
+        invoke_context.environment_config.feature_set.is_active(id)
+    });
     if is_precompile {
         let compiled_instruction = CompiledInstruction {
             program_id_index: 0,
@@ -823,7 +834,6 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 
     1
 }
-
 
 #[cfg(test)]
 mod tests {
