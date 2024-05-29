@@ -306,6 +306,7 @@ pub struct InstrEffects {
     pub custom_err: Option<u32>,
     pub modified_accounts: Vec<(Pubkey, Account)>,
     pub cu_avail: u64,
+    pub return_data: Vec<u8>,
 }
 
 impl From<InstrEffects> for proto::InstrEffects {
@@ -327,9 +328,11 @@ impl From<InstrEffects> for proto::InstrEffects {
                     data: account.data.to_vec(),
                     executable: account.executable,
                     rent_epoch: account.rent_epoch,
+                    seed_addr: None,
                 })
                 .collect(),
             cu_avail: val.cu_avail,
+            return_data: val.return_data,
         }
     }
 }
@@ -705,6 +708,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             },
             modified_accounts: vec![],
             cu_avail: input.cu_avail,
+            return_data: vec![],
         });
     }
 
@@ -715,6 +719,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         &mut compute_units_consumed,
         &mut timings,
     );
+
+    let return_data = transaction_context.get_return_data().1.to_vec();
 
     Some(InstrEffects {
         custom_err: if let Err(InstructionError::Custom(x)) = result {
@@ -732,6 +738,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             .map(|(index, data)| (transaction_accounts[index].0, data.into()))
             .collect(),
         cu_avail: input.cu_avail - compute_units_consumed,
+        return_data,
     })
 }
 
@@ -854,6 +861,7 @@ mod tests {
                     data: vec![],
                     executable: false,
                     rent_epoch: 0,
+                    seed_addr: None,
                 },
                 proto::AcctState {
                     address: vec![2u8; 32],
@@ -862,6 +870,7 @@ mod tests {
                     data: vec![],
                     executable: false,
                     rent_epoch: 0,
+                    seed_addr: None,
                 },
                 proto::AcctState {
                     address: vec![0u8; 32],
@@ -870,6 +879,7 @@ mod tests {
                     data: b"Solana Program".to_vec(),
                     executable: true,
                     rent_epoch: 0,
+                    seed_addr: None,
                 },
             ],
             instr_accounts: vec![
@@ -908,6 +918,7 @@ mod tests {
                         data: vec![],
                         executable: false,
                         rent_epoch: 0,
+                        seed_addr: None,
                     },
                     proto::AcctState {
                         address: vec![2u8; 32],
@@ -916,9 +927,11 @@ mod tests {
                         data: vec![],
                         executable: false,
                         rent_epoch: 0,
+                        seed_addr: None,
                     },
                 ],
                 cu_avail: 9850u64,
+                return_data: vec![],
             })
         );
     }
