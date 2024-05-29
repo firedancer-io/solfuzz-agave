@@ -75,7 +75,7 @@ message TxnContext {
   // The maximum age allowed for this transaction
   uint64 max_age = 2;
   // The limit of bytes allowed for this transaction to load
-  optional uint64 log_messages_byte_limit = 3;
+  uint64 log_messages_byte_limit = 3;
   
   EpochContext epoch_ctx = 4;
   SlotContext slot_ctx = 5;
@@ -85,7 +85,7 @@ message TxnContext {
 message ResultingState {
   AcctState state = 1;
   uint64 transaction_rent = 2;
-  optional RentDebits rent_debit = 3;
+  RentDebits rent_debit = 3;
 }
 
 // The rent state for an account after a transaction
