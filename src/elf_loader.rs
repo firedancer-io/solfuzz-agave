@@ -7,7 +7,7 @@ use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::ffi::c_int;
 
-const ACTIVATE_FEATURES: &[Pubkey] = &[
+pub const ACTIVATE_FEATURES: &[Pubkey] = &[
     switch_to_new_elf_parser::id(),
     error_on_syscall_bpf_function_hash_collisions::id(),
     bpf_account_data_direct_mapping::id(),
