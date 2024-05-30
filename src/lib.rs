@@ -562,7 +562,14 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     //     loaded_builtins,
     // );
 
+    let mut newly_loaded_programs = HashSet::<Pubkey>::new();
+
     for acc in &input.accounts {
+        // FD rejects duplicate account loads
+        if !newly_loaded_programs.insert(acc.0.clone()) {
+            return None;
+        }
+
         if acc.1.executable && programs_loaded_for_tx_batch.find(&acc.0).is_none() {
             // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
             /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
@@ -733,7 +740,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             .deconstruct_without_keys()
             .unwrap()
             .into_iter()
-            .take(transaction_accounts.len() - 1)
+            .take(transaction_accounts.len())
             .enumerate()
             .map(|(index, data)| (transaction_accounts[index].0, data.into()))
             .collect(),
@@ -926,6 +933,15 @@ mod tests {
                         lamports: 1,
                         data: vec![],
                         executable: false,
+                        rent_epoch: 0,
+                        seed_addr: None,
+                    },
+                    proto::AcctState {
+                        address: vec![0u8; 32],
+                        owner: native_loader_id.clone(),
+                        lamports: 10000000,
+                        data: b"Solana Program".to_vec(),
+                        executable: true,
                         rent_epoch: 0,
                         seed_addr: None,
                     },
