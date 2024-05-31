@@ -19,7 +19,6 @@ use solana_program_runtime::{
 };
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
 use solana_program_runtime::{log_collector::LogCollector, sysvar_cache::SysvarCache};
-use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
@@ -65,6 +64,7 @@ fn truncate_error_str(s: String) -> String {
 
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
+    let feature_set = instr_ctx.feature_set;
 
     // Create invoke context
     // TODO: factor this into common code with lib.rs
@@ -105,7 +105,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let environment_config = EnvironmentConfig::new(
         blockhash,
-        Arc::new(FeatureSet::all_enabled()),
+        Arc::new(feature_set.clone()),
         lamports_per_signature,
         &sysvar_cache,
     );
@@ -181,13 +181,9 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     }
 
     // Actually invoke the syscall
-    let program_runtime_environment_v1 = create_program_runtime_environment_v1(
-        &instr_ctx.feature_set,
-        &ComputeBudget::default(),
-        true,
-        false,
-    )
-    .unwrap();
+    let program_runtime_environment_v1 =
+        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
+            .unwrap();
 
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
@@ -217,6 +213,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                     // https://github.com/anza-xyz/agave/blob/8c5a33a81a0504fd25d0465bed35d153ff84819f/programs/bpf_loader/src/syscalls/mod.rs#L77
                     "Syscall error: Hashing too many sequences" => 1,
                     "Syscall error: InvalidLength" => 1,
+                    "Syscall error: InvalidAttribute" => 1,
                     // ??
                     "Syscall error: Access violation in program section at address" => 13,
                     "Syscall error: Access violation in stack section at address" => 13,
