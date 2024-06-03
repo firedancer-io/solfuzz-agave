@@ -72,10 +72,15 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
         Ok(context) => context,
         Err(_) => return 0,
     };
-    let elf_bytes = match elf_loader_ctx.elf {
+    let mut elf_bytes = match elf_loader_ctx.elf {
         Some(elf) => elf.data,
         None => return 0,
     };
+
+    if elf_bytes.len() != elf_loader_ctx.elf_sz as usize {
+        // setup elf bytes to match the size
+        elf_bytes.resize(elf_loader_ctx.elf_sz as usize, 0);
+    }
 
     let elf_loader_effects = match load_elf(elf_bytes.as_slice()) {
         Some(v) => v,
