@@ -5,9 +5,9 @@ mod vm_syscalls;
 
 use lazy_static::lazy_static;
 use prost::Message;
+use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_program::clock::Slot;
 use solana_program::hash::Hash;
-use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::BlockRelation;
@@ -473,7 +473,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
                 slot: 10,
                 ..Default::default()
             };
-            sysvar_cache.set_clock(default_clock.clone());
+            //XXX
+            // sysvar_cache.set_clock(default_clock.clone());
             default_clock
         }
     };
@@ -482,7 +483,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         Ok(epoch_schedule) => (*epoch_schedule).clone(),
         Err(_) => {
             let default_epoch_schedule = EpochSchedule::default();
-            sysvar_cache.set_epoch_schedule(default_epoch_schedule.clone());
+            //XXX
+            // sysvar_cache.set_epoch_schedule(default_epoch_schedule.clone());
             default_epoch_schedule
         }
     };
@@ -500,7 +502,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         rent = (*rent_).clone();
     } else {
         let default_rent = Rent::default();
-        sysvar_cache.set_rent(default_rent.clone());
+        //XXX
+        // sysvar_cache.set_rent(default_rent.clone());
         rent = default_rent;
     }
 
@@ -525,9 +528,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     );
 
     // sigh ... What is this mess?
-    let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
-    programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
-    let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
+    let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
+    program_cache_for_tx_batch.set_slot_for_tests(clock.slot);
+    let loaded_builtins = load_builtins(&mut program_cache_for_tx_batch);
 
     // Skip if the program account is a native program and is not owned by the native loader
     // (Would call the owner instead)
@@ -551,7 +554,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         ..ProgramRuntimeEnvironments::default()
     };
     program_cache.environments = environments.clone();
-    program_cache.upcoming_environments = Some(environments);
+    program_cache.upcoming_environments = Some(environments.clone());
 
     // let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
     //     clock.slot,
@@ -570,7 +573,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             return None;
         }
 
-        if acc.1.executable && programs_loaded_for_tx_batch.find(&acc.0).is_none() {
+        if acc.1.executable && program_cache_for_tx_batch.find(&acc.0).is_none() {
             // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
             /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
                 callbacks: &CB,
@@ -583,14 +586,13 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             ) -> Option<Arc<ProgramCacheEntry>> { */
             if let Some(loaded_program) = program_loader::load_program_with_pubkey(
                 &input,
-                &program_cache,
+                &environments,
                 &acc.0,
                 clock.slot,
-                0,
                 &epoch_schedule,
                 false,
             ) {
-                programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
+                program_cache_for_tx_batch.replenish(acc.0, loaded_program);
             }
         }
     }
@@ -614,10 +616,10 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     );
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
+        &program_cache_for_tx_batch,
         env_config,
         Some(log_collector.clone()),
         compute_budget,
-        &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
     );
 

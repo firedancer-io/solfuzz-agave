@@ -1,7 +1,7 @@
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_program_runtime::compute_budget::ComputeBudget;
+use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
 use solana_sdk::{feature_set::*, pubkey::Pubkey};
 use std::collections::{BTreeSet, HashMap, HashSet};
