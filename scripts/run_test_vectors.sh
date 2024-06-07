@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -x
 
 if [ "$LOG_PATH" == "" ]; then
   LOG_PATH="`mktemp -d`"
