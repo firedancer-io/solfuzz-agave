@@ -740,7 +740,6 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             .deconstruct_without_keys()
             .unwrap()
             .into_iter()
-            .take(transaction_accounts.len())
             .enumerate()
             .map(|(index, data)| (transaction_accounts[index].0, data.into()))
             .collect(),
