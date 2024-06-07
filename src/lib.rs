@@ -19,17 +19,17 @@ use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
-use solana_sdk::account::ReadableAccount;
-use solana_sdk::account::{Account, AccountSharedData};
-use solana_sdk::clock::Epoch;
+use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
+use solana_sdk::clock::{Clock, Epoch};
+use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::{CompiledInstruction, InstructionError};
 use solana_sdk::precompiles::{is_precompile, verify_if_precompile, PrecompileError};
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::rent::Rent;
 use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
-use solana_sdk::sysvar::clock::Clock;
 use solana_sdk::sysvar::SysvarId;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
@@ -470,6 +470,12 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             };
             let clock_data = bincode::serialize(&default_clock).unwrap();
             callbackback(&clock_data);
+        }
+        if *pubkey == EpochSchedule::id() {
+            callbackback(&bincode::serialize(&EpochSchedule::default()).unwrap());
+        }
+        if *pubkey == Rent::id() {
+            callbackback(&bincode::serialize(&Rent::default()).unwrap());
         }
     });
 
