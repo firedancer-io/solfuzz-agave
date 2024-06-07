@@ -30,8 +30,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
 use solana_sdk::sysvar::clock::Clock;
-use solana_sdk::sysvar::epoch_schedule::EpochSchedule;
-use solana_sdk::sysvar::rent::Rent;
+use solana_sdk::sysvar::SysvarId;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
@@ -462,50 +461,31 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
                 callbackback(&account.1.data);
             }
         }
-    });
-
-    // Set the default clock slot to something arbitrary beyond 0
-    // This prevents DelayedVisibility errors when executing BPF programs
-    let clock = match sysvar_cache.get_clock() {
-        Ok(clock) => (*clock).clone(),
-        Err(_) => {
+        if *pubkey == Clock::id() {
+            // Set the default clock slot to something arbitrary beyond 0
+            // This prevents DelayedVisibility errors when executing BPF programs
             let default_clock = Clock {
                 slot: 10,
                 ..Default::default()
             };
-            //XXX
-            // sysvar_cache.set_clock(default_clock.clone());
-            default_clock
+            let clock_data = bincode::serialize(&default_clock).unwrap();
+            callbackback(&clock_data);
         }
-    };
+    });
 
-    let epoch_schedule = match sysvar_cache.get_epoch_schedule() {
-        Ok(epoch_schedule) => (*epoch_schedule).clone(),
-        Err(_) => {
-            let default_epoch_schedule = EpochSchedule::default();
-            //XXX
-            // sysvar_cache.set_epoch_schedule(default_epoch_schedule.clone());
-            default_epoch_schedule
-        }
-    };
+    let clock = sysvar_cache.get_clock().unwrap();
+    let epoch_schedule = sysvar_cache.get_epoch_schedule().unwrap();
 
     // Add checks for rent boundaries
-    let rent: Rent;
-    if let Ok(rent_) = sysvar_cache.get_rent() {
-        if rent_.lamports_per_byte_year > u32::MAX.into()
-            || rent_.exemption_threshold > 999.0
-            || rent_.exemption_threshold < 0.0
-            || rent_.burn_percent > 100
-        {
-            return None;
-        }
-        rent = (*rent_).clone();
-    } else {
-        let default_rent = Rent::default();
-        //XXX
-        // sysvar_cache.set_rent(default_rent.clone());
-        rent = default_rent;
-    }
+    let rent = sysvar_cache.get_rent().unwrap();
+    let rent = (*rent).clone();
+    if rent.lamports_per_byte_year > u32::MAX.into()
+        || rent.exemption_threshold > 999.0
+        || rent.exemption_threshold < 0.0
+        || rent.burn_percent > 100
+    {
+        return None;
+    };
 
     let mut transaction_accounts =
         Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
@@ -569,7 +549,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     for acc in &input.accounts {
         // FD rejects duplicate account loads
-        if !newly_loaded_programs.insert(acc.0.clone()) {
+        if !newly_loaded_programs.insert(acc.0) {
             return None;
         }
 
