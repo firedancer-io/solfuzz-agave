@@ -5,9 +5,9 @@ mod vm_syscalls;
 
 use lazy_static::lazy_static;
 use prost::Message;
+use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_program::clock::Slot;
 use solana_program::hash::Hash;
-use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::BlockRelation;
@@ -19,23 +19,23 @@ use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
-use solana_sdk::account::ReadableAccount;
-use solana_sdk::account::{Account, AccountSharedData};
-use solana_sdk::clock::Epoch;
+use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
+use solana_sdk::clock::{Clock, Epoch};
+use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::{CompiledInstruction, InstructionError};
 use solana_sdk::precompiles::{is_precompile, verify_if_precompile, PrecompileError};
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::rent::Rent;
 use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
-use solana_sdk::sysvar::clock::Clock;
-use solana_sdk::sysvar::epoch_schedule::EpochSchedule;
-use solana_sdk::sysvar::rent::Rent;
+use solana_sdk::sysvar::SysvarId;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use solana_svm::program_loader;
+use solana_vote::vote_account::VoteAccountsHashMap;
 
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
@@ -189,6 +189,8 @@ pub struct InstrContext {
     pub instruction: StableInstruction,
     pub cu_avail: u64,
     pub rent_collector: RentCollector,
+    pub last_blockhash: Hash,
+    pub lamports_per_signature: u64,
 }
 
 impl TransactionProcessingCallback for InstrContext {
@@ -227,9 +229,7 @@ impl TransactionProcessingCallback for InstrContext {
     }
 
     fn get_last_blockhash_and_lamports_per_signature(&self) -> (Hash, u64) {
-        let blockhash = Hash::default();
-        let lamports_per_signature = 2;
-        (blockhash, lamports_per_signature)
+        (self.last_blockhash, self.lamports_per_signature)
     }
 
     fn get_rent_collector(&self) -> &RentCollector {
@@ -238,6 +238,14 @@ impl TransactionProcessingCallback for InstrContext {
 
     fn get_feature_set(&self) -> Arc<FeatureSet> {
         Arc::new(self.feature_set.clone())
+    }
+
+    fn get_epoch_total_stake(&self) -> Option<u64> {
+        None
+    }
+
+    fn get_epoch_vote_accounts(&self) -> Option<&VoteAccountsHashMap> {
+        None
     }
 }
 
@@ -292,6 +300,8 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             instruction,
             cu_avail: input.cu_avail,
             rent_collector: RentCollector::default(),
+            last_blockhash: Hash::default(),
+            lamports_per_signature: 0,
         })
     }
 }
@@ -447,7 +457,9 @@ impl ForkGraph for DummyForkGraph {
     }
 }
 
-fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
+fn execute_instr(input_const: InstrContext) -> Option<InstrEffects> {
+    let mut input = input_const;
+
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
         compute_unit_limit: input.cu_avail,
@@ -456,6 +468,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut sysvar_cache = SysvarCache::default();
 
+    // First try populating sysvars from accounts list
     sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
         if let Some(account) = input.accounts.iter().find(|(key, _)| key == pubkey) {
             if account.1.lamports > 0 {
@@ -464,45 +477,39 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         }
     });
 
-    // Set the default clock slot to something arbitrary beyond 0
-    // This prevents DelayedVisibility errors when executing BPF programs
-    let clock = match sysvar_cache.get_clock() {
-        Ok(clock) => (*clock).clone(),
-        Err(_) => {
+    // Any default values for missing sysvar values should be set here
+    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
+        if *pubkey == Clock::id() {
+            // Set the default clock slot to something arbitrary beyond 0
+            // This prevents DelayedVisibility errors when executing BPF programs
             let default_clock = Clock {
                 slot: 10,
                 ..Default::default()
             };
-            sysvar_cache.set_clock(default_clock.clone());
-            default_clock
+            let clock_data = bincode::serialize(&default_clock).unwrap();
+            callbackback(&clock_data);
         }
-    };
+        if *pubkey == EpochSchedule::id() {
+            callbackback(&bincode::serialize(&EpochSchedule::default()).unwrap());
+        }
+        if *pubkey == Rent::id() {
+            callbackback(&bincode::serialize(&Rent::default()).unwrap());
+        }
+    });
 
-    let epoch_schedule = match sysvar_cache.get_epoch_schedule() {
-        Ok(epoch_schedule) => (*epoch_schedule).clone(),
-        Err(_) => {
-            let default_epoch_schedule = EpochSchedule::default();
-            sysvar_cache.set_epoch_schedule(default_epoch_schedule.clone());
-            default_epoch_schedule
-        }
-    };
+    let clock = sysvar_cache.get_clock().unwrap();
+    let epoch_schedule = sysvar_cache.get_epoch_schedule().unwrap();
 
     // Add checks for rent boundaries
-    let rent: Rent;
-    if let Ok(rent_) = sysvar_cache.get_rent() {
-        if rent_.lamports_per_byte_year > u32::MAX.into()
-            || rent_.exemption_threshold > 999.0
-            || rent_.exemption_threshold < 0.0
-            || rent_.burn_percent > 100
-        {
-            return None;
-        }
-        rent = (*rent_).clone();
-    } else {
-        let default_rent = Rent::default();
-        sysvar_cache.set_rent(default_rent.clone());
-        rent = default_rent;
-    }
+    let rent_ = sysvar_cache.get_rent().unwrap();
+    let rent = (*rent_).clone();
+    if rent.lamports_per_byte_year > u32::MAX.into()
+        || rent.exemption_threshold > 999.0
+        || rent.exemption_threshold < 0.0
+        || rent.burn_percent > 100
+    {
+        return None;
+    };
 
     let mut transaction_accounts =
         Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
@@ -525,9 +532,9 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     );
 
     // sigh ... What is this mess?
-    let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
-    programs_loaded_for_tx_batch.set_slot_for_tests(clock.slot);
-    let loaded_builtins = load_builtins(&mut programs_loaded_for_tx_batch);
+    let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
+    program_cache_for_tx_batch.set_slot_for_tests(clock.slot);
+    let loaded_builtins = load_builtins(&mut program_cache_for_tx_batch);
 
     // Skip if the program account is a native program and is not owned by the native loader
     // (Would call the owner instead)
@@ -551,7 +558,7 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
         ..ProgramRuntimeEnvironments::default()
     };
     program_cache.environments = environments.clone();
-    program_cache.upcoming_environments = Some(environments);
+    program_cache.upcoming_environments = Some(environments.clone());
 
     // let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
     //     clock.slot,
@@ -562,15 +569,29 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     //     loaded_builtins,
     // );
 
+    #[allow(deprecated)]
+    let (blockhash, lamports_per_signature) = sysvar_cache
+        .get_recent_blockhashes()
+        .ok()
+        .and_then(|x| (*x).last().cloned())
+        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
+        .unwrap_or_default();
+
+    input.last_blockhash = blockhash;
+    input.lamports_per_signature = lamports_per_signature;
+    input.rent_collector.epoch = clock.epoch;
+    input.rent_collector.epoch_schedule = (*epoch_schedule).clone();
+    input.rent_collector.rent = (*rent_).clone();
+
     let mut newly_loaded_programs = HashSet::<Pubkey>::new();
 
     for acc in &input.accounts {
         // FD rejects duplicate account loads
-        if !newly_loaded_programs.insert(acc.0.clone()) {
+        if !newly_loaded_programs.insert(acc.0) {
             return None;
         }
 
-        if acc.1.executable && programs_loaded_for_tx_batch.find(&acc.0).is_none() {
+        if acc.1.executable && program_cache_for_tx_batch.find(&acc.0).is_none() {
             // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
             /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
                 callbacks: &CB,
@@ -583,41 +604,34 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
             ) -> Option<Arc<ProgramCacheEntry>> { */
             if let Some(loaded_program) = program_loader::load_program_with_pubkey(
                 &input,
-                &program_cache,
+                &environments,
                 &acc.0,
                 clock.slot,
-                0,
                 &epoch_schedule,
                 false,
             ) {
-                programs_loaded_for_tx_batch.replenish(acc.0, loaded_program);
+                program_cache_for_tx_batch.replenish(acc.0, loaded_program);
             }
         }
     }
 
     let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
 
-    #[allow(deprecated)]
-    let (blockhash, lamports_per_signature) = sysvar_cache
-        .get_recent_blockhashes()
-        .ok()
-        .and_then(|x| (*x).last().cloned())
-        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
-        .unwrap_or_default();
-
     let log_collector = LogCollector::new_ref();
     let env_config = EnvironmentConfig::new(
         blockhash,
+        None,
+        None,
         input.get_feature_set(),
         lamports_per_signature,
         &sysvar_cache,
     );
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
+        &program_cache_for_tx_batch,
         env_config,
         Some(log_collector.clone()),
         compute_budget,
-        &programs_loaded_for_tx_batch,
         &mut programs_modified_by_tx,
     );
 
