@@ -12,19 +12,21 @@ clap = { version = "4.5.2", features = ["derive"] }
 lazy_static = "1.4.0"
 prost = "0.11.9"
 prost-types = "0.11.9"
-solana-address-lookup-table-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-compute-budget = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-compute-budget-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-config-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-loader-v4-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-program-runtime = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-stake-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-svm = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
-solana-vote-program = { git = "https://github.com/anza-xyz/agave", rev = "026f88b" }
+libc = "0.2.155"
+solana-address-lookup-table-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-compute-budget = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-compute-budget-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-config-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-loader-v4-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-program-runtime = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-stake-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-svm = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-vote-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-vote = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 

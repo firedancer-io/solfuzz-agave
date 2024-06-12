@@ -105,6 +105,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let environment_config = EnvironmentConfig::new(
         blockhash,
+        None,
+        None,
         Arc::new(feature_set.clone()),
         lamports_per_signature,
         &sysvar_cache,

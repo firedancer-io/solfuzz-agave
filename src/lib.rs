@@ -35,6 +35,7 @@ use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use solana_svm::program_loader;
+use solana_vote::vote_account::VoteAccountsHashMap;
 
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
@@ -188,6 +189,8 @@ pub struct InstrContext {
     pub instruction: StableInstruction,
     pub cu_avail: u64,
     pub rent_collector: RentCollector,
+    pub last_blockhash: Hash,
+    pub lamports_per_signature: u64,
 }
 
 impl TransactionProcessingCallback for InstrContext {
@@ -226,9 +229,7 @@ impl TransactionProcessingCallback for InstrContext {
     }
 
     fn get_last_blockhash_and_lamports_per_signature(&self) -> (Hash, u64) {
-        let blockhash = Hash::default();
-        let lamports_per_signature = 2;
-        (blockhash, lamports_per_signature)
+        (self.last_blockhash, self.lamports_per_signature)
     }
 
     fn get_rent_collector(&self) -> &RentCollector {
@@ -237,6 +238,14 @@ impl TransactionProcessingCallback for InstrContext {
 
     fn get_feature_set(&self) -> Arc<FeatureSet> {
         Arc::new(self.feature_set.clone())
+    }
+
+    fn get_epoch_total_stake(&self) -> Option<u64> {
+        None
+    }
+
+    fn get_epoch_vote_accounts(&self) -> Option<&VoteAccountsHashMap> {
+        None
     }
 }
 
@@ -291,6 +300,8 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             instruction,
             cu_avail: input.cu_avail,
             rent_collector: RentCollector::default(),
+            last_blockhash: Hash::default(),
+            lamports_per_signature: 0,
         })
     }
 }
@@ -446,7 +457,9 @@ impl ForkGraph for DummyForkGraph {
     }
 }
 
-fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
+fn execute_instr(input_const: InstrContext) -> Option<InstrEffects> {
+    let mut input = input_const;
+
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
         compute_unit_limit: input.cu_avail,
@@ -488,8 +501,8 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     let epoch_schedule = sysvar_cache.get_epoch_schedule().unwrap();
 
     // Add checks for rent boundaries
-    let rent = sysvar_cache.get_rent().unwrap();
-    let rent = (*rent).clone();
+    let rent_ = sysvar_cache.get_rent().unwrap();
+    let rent = (*rent_).clone();
     if rent.lamports_per_byte_year > u32::MAX.into()
         || rent.exemption_threshold > 999.0
         || rent.exemption_threshold < 0.0
@@ -556,6 +569,20 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
     //     loaded_builtins,
     // );
 
+    #[allow(deprecated)]
+    let (blockhash, lamports_per_signature) = sysvar_cache
+        .get_recent_blockhashes()
+        .ok()
+        .and_then(|x| (*x).last().cloned())
+        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
+        .unwrap_or_default();
+
+    input.last_blockhash = blockhash;
+    input.lamports_per_signature = lamports_per_signature;
+    input.rent_collector.epoch = clock.epoch;
+    input.rent_collector.epoch_schedule = (*epoch_schedule).clone();
+    input.rent_collector.rent = (*rent_).clone();
+
     let mut newly_loaded_programs = HashSet::<Pubkey>::new();
 
     for acc in &input.accounts {
@@ -590,17 +617,11 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
 
-    #[allow(deprecated)]
-    let (blockhash, lamports_per_signature) = sysvar_cache
-        .get_recent_blockhashes()
-        .ok()
-        .and_then(|x| (*x).last().cloned())
-        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
-        .unwrap_or_default();
-
     let log_collector = LogCollector::new_ref();
     let env_config = EnvironmentConfig::new(
         blockhash,
+        None,
+        None,
         input.get_feature_set(),
         lamports_per_signature,
         &sysvar_cache,
