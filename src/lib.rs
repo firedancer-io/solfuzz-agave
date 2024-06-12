@@ -455,12 +455,17 @@ fn execute_instr(input: InstrContext) -> Option<InstrEffects> {
 
     let mut sysvar_cache = SysvarCache::default();
 
+    // First try populating sysvars from accounts list
     sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
         if let Some(account) = input.accounts.iter().find(|(key, _)| key == pubkey) {
             if account.1.lamports > 0 {
                 callbackback(&account.1.data);
             }
         }
+    });
+
+    // Any default values for missing sysvar values should be set here
+    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
         if *pubkey == Clock::id() {
             // Set the default clock slot to something arbitrary beyond 0
             // This prevents DelayedVisibility errors when executing BPF programs
