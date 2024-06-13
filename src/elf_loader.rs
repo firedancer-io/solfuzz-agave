@@ -23,12 +23,15 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
         feature_set.activate(feature, 0);
     }
 
-    let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), deploy_checks, false)
-            .unwrap();
+    let program_runtime_environment_v1 = create_program_runtime_environment_v1(
+        &feature_set,
+        &ComputeBudget::default(),
+        deploy_checks,
+        false,
+    )
+    .unwrap();
 
     let mut elf_effects = ElfLoaderEffects::default();
-
 
     // load the elf
     let elf_exec = match Executable::load(
