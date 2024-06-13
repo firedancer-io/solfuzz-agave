@@ -13,7 +13,7 @@ const ACTIVATE_FEATURES: &[Pubkey] = &[
     bpf_account_data_direct_mapping::id(),
 ];
 
-pub fn load_elf(elf_bytes: &[u8]) -> Option<ElfLoaderEffects> {
+pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffects> {
     let mut feature_set = FeatureSet {
         active: HashMap::new(),
         inactive: HashSet::new(),
@@ -24,7 +24,7 @@ pub fn load_elf(elf_bytes: &[u8]) -> Option<ElfLoaderEffects> {
     }
 
     let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
+        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), deploy_checks, false)
             .unwrap();
 
     let mut elf_effects = ElfLoaderEffects::default();
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
         elf_bytes.resize(elf_loader_ctx.elf_sz as usize, 0);
     }
 
-    let elf_loader_effects = match load_elf(elf_bytes.as_slice()) {
+    let elf_loader_effects = match load_elf(elf_bytes.as_slice(), elf_loader_ctx.deploy_checks) {
         Some(v) => v,
         None => return 0,
     };
