@@ -16,8 +16,8 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32{
     let ver_err = match ebpf_err {
         EbpfError::VerifierError(err) => err,
         _ => return -1,
-        
     };
+
     match ver_err {
         VerifierError::UnknownOpCode(_,_) => -25,
         VerifierError::InvalidSourceRegister(_) => -26,
@@ -45,7 +45,7 @@ pub fn validate_vm_text(text_bytes: &[u8]) -> Option<ValidateVmEffects>{
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set,
         &ComputeBudget::default(), 
-        false, // doesn't matter
+        false, // doesn't matter since bytes are "loaded"
         false // doesn't matter
     ).unwrap();
 
@@ -66,6 +66,7 @@ pub fn validate_vm_text(text_bytes: &[u8]) -> Option<ValidateVmEffects>{
 
     Some(ValidateVmEffects{
         result,
+        success: result == 0,
     })
 }
 
@@ -83,10 +84,18 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
     };
     let text_len = vm_ctx.rodata_text_section_length as usize;
     let text_off = vm_ctx.rodata_text_section_offset as usize;
-    let text_bytes = &vm_ctx.rodata[text_off..text_off+text_len];
-    let validate_vm_effects = match validate_vm_text(text_bytes){
-        Some(context) => context,
-        None => return 0,
+    let validate_vm_effects = match vm_ctx.rodata.get(text_off..text_off.saturating_add(text_len)) {
+        Some(bytes) => {
+            let validate_vm_effects = validate_vm_text(bytes);
+            match validate_vm_effects{
+                Some(context) => context,
+                None => return 0,
+            }
+        },
+        None => ValidateVmEffects{
+            result: -35, // FD error code for invalid text section
+            success: false,
+        },
     };
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
     let out_bytes = validate_vm_effects.encode_to_vec();
