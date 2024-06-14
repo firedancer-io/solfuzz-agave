@@ -1,9 +1,10 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod elf_loader;
+pub mod txn_fuzzer;
+mod utils;
 mod vm_syscalls;
 
-use lazy_static::lazy_static;
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_program::clock::Slot;
@@ -36,9 +37,9 @@ use solana_sdk::transaction_context::{
 };
 use solana_svm::program_loader;
 
+use crate::utils::feature_u64;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::Arc;
@@ -136,27 +137,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
-}
-
-lazy_static! {
-    static ref INDEXED_FEATURES: HashMap<u64, Pubkey> = {
-        FEATURE_NAMES
-            .iter()
-            .map(|(pubkey, _)| (feature_u64(pubkey), *pubkey))
-            .collect()
-    };
-}
-
-impl From<&proto::FeatureSet> for FeatureSet {
-    fn from(input: &proto::FeatureSet) -> Self {
-        let mut feature_set = FeatureSet::default();
-        for id in &input.features {
-            if let Some(pubkey) = INDEXED_FEATURES.get(id) {
-                feature_set.activate(pubkey, 0);
-            }
-        }
-        feature_set
-    }
 }
 
 #[derive(Debug, Error, PartialEq)]
@@ -789,18 +769,6 @@ pub struct SolCompatFeatures {
 
 unsafe impl Send for SolCompatFeatures {}
 unsafe impl Sync for SolCompatFeatures {}
-
-pub const fn feature_u64(feature: &Pubkey) -> u64 {
-    let feature_id = feature.to_bytes();
-    feature_id[0] as u64
-        | (feature_id[1] as u64) << 8
-        | (feature_id[2] as u64) << 16
-        | (feature_id[3] as u64) << 24
-        | (feature_id[4] as u64) << 32
-        | (feature_id[5] as u64) << 40
-        | (feature_id[6] as u64) << 48
-        | (feature_id[7] as u64) << 56
-}
 
 static FEATURES: SolCompatFeatures = SolCompatFeatures {
     struct_size: std::mem::size_of::<SolCompatFeatures>() as u64,
