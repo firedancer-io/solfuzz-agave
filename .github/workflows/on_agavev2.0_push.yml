@@ -1,4 +1,4 @@
-name: Trigger Repo B CI
+name: Trigger Solfuzz CI
 
 on:
   push:
