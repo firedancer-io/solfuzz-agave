@@ -13,7 +13,7 @@ const ACTIVATE_FEATURES: &[Pubkey] = &[
     bpf_account_data_direct_mapping::id(),
 ];
 
-pub fn load_elf(elf_bytes: &[u8]) -> Option<ElfLoaderEffects> {
+pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffects> {
     let mut feature_set = FeatureSet {
         active: HashMap::new(),
         inactive: HashSet::new(),
@@ -23,9 +23,15 @@ pub fn load_elf(elf_bytes: &[u8]) -> Option<ElfLoaderEffects> {
         feature_set.activate(feature, 0);
     }
 
-    let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
-            .unwrap();
+    let program_runtime_environment_v1 = create_program_runtime_environment_v1(
+        &feature_set,
+        &ComputeBudget::default(),
+        deploy_checks,
+        false,
+    )
+    .unwrap();
+
+    let mut elf_effects = ElfLoaderEffects::default();
 
     // load the elf
     let elf_exec = match Executable::load(
@@ -33,7 +39,7 @@ pub fn load_elf(elf_bytes: &[u8]) -> Option<ElfLoaderEffects> {
         std::sync::Arc::new(program_runtime_environment_v1),
     ) {
         Ok(v) => v,
-        Err(_) => return None,
+        Err(_) => return Some(elf_effects),
     };
 
     let ro_section = elf_exec.get_ro_section();
@@ -49,15 +55,13 @@ pub fn load_elf(elf_bytes: &[u8]) -> Option<ElfLoaderEffects> {
         calldests.insert(fn_addr as u64);
     }
 
-    Some(ElfLoaderEffects {
-        rodata: ro_section.to_vec(),
-        rodata_sz: ro_section.len() as u64,
-        entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
-        // We need to subtract the start of the program to get the correct offset
-        text_off: text_vaddr - ebpf::MM_PROGRAM_START,
-        text_cnt: (raw_text_sz / 8) as u64,
-        calldests: calldests.into_iter().collect(),
-    })
+    elf_effects.rodata = ro_section.to_vec();
+    elf_effects.rodata_sz = ro_section.len() as u64;
+    elf_effects.entry_pc = elf_exec.get_entrypoint_instruction_offset() as u64;
+    elf_effects.text_off = text_vaddr - ebpf::MM_PROGRAM_START;
+    elf_effects.text_cnt = (raw_text_sz / 8) as u64;
+    elf_effects.calldests = calldests.into_iter().collect();
+    Some(elf_effects)
 }
 
 #[no_mangle]
@@ -72,12 +76,17 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
         Ok(context) => context,
         Err(_) => return 0,
     };
-    let elf_bytes = match elf_loader_ctx.elf {
+    let mut elf_bytes = match elf_loader_ctx.elf {
         Some(elf) => elf.data,
         None => return 0,
     };
 
-    let elf_loader_effects = match load_elf(elf_bytes.as_slice()) {
+    if elf_bytes.len() != elf_loader_ctx.elf_sz as usize {
+        // setup elf bytes to match the size
+        elf_bytes.resize(elf_loader_ctx.elf_sz as usize, 0);
+    }
+
+    let elf_loader_effects = match load_elf(elf_bytes.as_slice(), elf_loader_ctx.deploy_checks) {
         Some(v) => v,
         None => return 0,
     };
