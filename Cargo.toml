@@ -35,3 +35,8 @@ thiserror = "1.0.61"
 
 [build-dependencies]
 prost-build = "0.11.9"
+
+
+[patch.crates-io]
+solana-program = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }
+solana-zk-token-sdk = { git = "https://github.com/anza-xyz/agave", rev = "06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3" }

@@ -24,7 +24,7 @@ use solana_sdk::transaction::{
 use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
-use solana_svm::transaction_processor::ExecutionRecordingConfig;
+use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use std::borrow::Cow;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
@@ -210,7 +210,7 @@ impl From<LoadedTransaction> for proto::ResultingState {
 
 impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     fn from(mut value: LoadAndExecuteTransactionsOutput) -> TxnResult {
-        let mut loaded_transaction = (Err(TransactionError::AccountInUse), None);
+        let mut loaded_transaction = Err(TransactionError::AccountInUse);
         std::mem::swap(&mut value.loaded_transactions[0], &mut loaded_transaction);
         let execution_results = &value.execution_results[0];
 
@@ -242,11 +242,10 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             };
 
         let rent = loaded_transaction
-            .0
             .as_ref()
             .map(|txn| txn.rent)
             .unwrap_or_default();
-        let resulting_state = if let Ok(txn) = loaded_transaction.0 {
+        let resulting_state = if let Ok(txn) = loaded_transaction {
             Some(txn.into())
         } else {
             None
@@ -402,7 +401,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let batch = TransactionBatch::new(lock_results, &bank, Cow::Borrowed(&transactions));
 
-    let recoding_config = ExecutionRecordingConfig {
+    let recording_config = ExecutionRecordingConfig {
         enable_cpi_recording: false,
         enable_log_recording: true,
         enable_return_data_recording: true,
@@ -415,15 +414,17 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         None
     };
 
-    let result = bank.load_and_execute_transactions(
-        &batch,
-        context.max_age as usize,
-        recoding_config,
-        &mut timings,
-        None,
-        log_limit,
-        true,
-    );
+    let configs = TransactionProcessingConfig {
+        account_overrides: None,
+        compute_budget: bank.compute_budget(),
+        log_messages_bytes_limit: log_limit,
+        limit_to_load_programs: true,
+        recording_config,
+        transaction_account_lock_limit: None,
+    };
+
+    let result =
+        bank.load_and_execute_transactions(&batch, context.max_age as usize, &mut timings, configs);
 
     Some(result.into())
 }
