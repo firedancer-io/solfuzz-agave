@@ -27,6 +27,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
         VerifierError::UnsupportedLEBEArgument(_) => -31,
         VerifierError::LDDWCannotBeLast => -32, // should change this in FD
         VerifierError::IncompleteLDDW(_) => -33,
+        VerifierError::ShiftWithOverflow(_, _, _) =>  -36,
         _ => -1,
     }
 }
