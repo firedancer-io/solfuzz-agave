@@ -19,6 +19,8 @@ Build:
 make build
 ```
 
+**Note:** You may have to periodically run `make build` to ensure that Protobuf definitions stay in sync with [Protosol](https://github.com/firedancer-io/protosol/). Alternatively, you can run `./scripts/fetch_proto.sh` to keep Protosol up to date.
+
 Optional variables:
 
 ```
