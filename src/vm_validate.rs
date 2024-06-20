@@ -18,9 +18,11 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
     };
 
     match ver_err {
+        VerifierError::DivisionByZero(_) => -18,
         VerifierError::UnknownOpCode(_, _) => -25,
         VerifierError::InvalidSourceRegister(_) => -26,
         VerifierError::InvalidDestinationRegister(_) => -27,
+        VerifierError::CannotWriteR10(_) => -27, // FD treats this the same as InvalidDestinationRegister, which makes sense
         VerifierError::InfiniteLoop(_) => -28,
         VerifierError::JumpOutOfCode(_, _) => -29,
         VerifierError::JumpToMiddleOfLDDW(_, _) => -30,
