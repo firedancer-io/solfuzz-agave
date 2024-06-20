@@ -18,6 +18,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
     };
 
     match ver_err {
+        VerifierError::NoProgram => -6,
         VerifierError::DivisionByZero(_) => -18,
         VerifierError::UnknownOpCode(_, _) => -25,
         VerifierError::InvalidSourceRegister(_) => -26,
