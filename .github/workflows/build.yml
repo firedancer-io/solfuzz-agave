@@ -16,6 +16,9 @@ jobs:
       - name: Install protobuf
         run: sudo apt-get install protobuf-compiler
 
+      - name: Clone protosol
+        run: ./scripts/fetch_proto.sh
+
       - name: Check lints and clippy
         run: |
           rustup component add rustfmt
