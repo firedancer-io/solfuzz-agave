@@ -2964,7 +2964,6 @@ dependencies = [
  "solana-stake-program",
  "solana-svm",
  "solana-system-program",
- "solana-vote",
  "solana-vote-program",
  "solfuzz-agave-macro",
  "thiserror",
