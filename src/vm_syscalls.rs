@@ -85,14 +85,13 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
         Rent::default(),
-        compute_budget.max_invoke_stack_height,
+        compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
     );
 
     // sigh ... What is this mess?
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     load_builtins(&mut program_cache_for_tx_batch);
-    let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
 
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
@@ -114,11 +113,10 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let log_collector = LogCollector::new_ref();
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
-        &program_cache_for_tx_batch,
+        &mut program_cache_for_tx_batch,
         environment_config,
         Some(log_collector.clone()),
         compute_budget,
-        &mut programs_modified_by_tx,
     );
 
     // TODO: support different versions

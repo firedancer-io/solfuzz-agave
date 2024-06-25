@@ -63,7 +63,7 @@ fn exec(input: &PathBuf) -> bool {
     } else {
         println!("FAIL: {:?}", input);
     }
-    return ok;
+    ok
 }
 
 fn main() {
