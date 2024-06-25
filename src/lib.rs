@@ -35,7 +35,6 @@ use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use solana_svm::program_loader;
-use solana_vote::vote_account::VoteAccountsHashMap;
 
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
@@ -226,26 +225,6 @@ impl TransactionProcessingCallback for InstrContext {
             .find(|(_pubkey, _)| *_pubkey == *pubkey)
             .map(|(_, shared_account)| shared_account)
             .cloned()
-    }
-
-    fn get_last_blockhash_and_lamports_per_signature(&self) -> (Hash, u64) {
-        (self.last_blockhash, self.lamports_per_signature)
-    }
-
-    fn get_rent_collector(&self) -> &RentCollector {
-        &self.rent_collector
-    }
-
-    fn get_feature_set(&self) -> Arc<FeatureSet> {
-        Arc::new(self.feature_set.clone())
-    }
-
-    fn get_epoch_total_stake(&self) -> Option<u64> {
-        None
-    }
-
-    fn get_epoch_vote_accounts(&self) -> Option<&VoteAccountsHashMap> {
-        None
     }
 }
 
@@ -457,9 +436,7 @@ impl ForkGraph for DummyForkGraph {
     }
 }
 
-fn execute_instr(input_const: InstrContext) -> Option<InstrEffects> {
-    let mut input = input_const;
-
+fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
         compute_unit_limit: input.cu_avail,
@@ -527,7 +504,7 @@ fn execute_instr(input_const: InstrContext) -> Option<InstrEffects> {
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
         rent,
-        compute_budget.max_invoke_stack_height,
+        compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
     );
 
@@ -607,7 +584,6 @@ fn execute_instr(input_const: InstrContext) -> Option<InstrEffects> {
                 &environments,
                 &acc.0,
                 clock.slot,
-                &epoch_schedule,
                 false,
             ) {
                 program_cache_for_tx_batch.replenish(acc.0, loaded_program);
@@ -615,24 +591,21 @@ fn execute_instr(input_const: InstrContext) -> Option<InstrEffects> {
         }
     }
 
-    let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
-
     let log_collector = LogCollector::new_ref();
     let env_config = EnvironmentConfig::new(
         blockhash,
         None,
         None,
-        input.get_feature_set(),
+        Arc::new(input.feature_set.clone()),
         lamports_per_signature,
         &sysvar_cache,
     );
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
-        &program_cache_for_tx_batch,
+        &mut program_cache_for_tx_batch,
         env_config,
         Some(log_collector.clone()),
         compute_budget,
-        &mut programs_modified_by_tx,
     );
 
     let program_indices = &[program_idx as u16];
