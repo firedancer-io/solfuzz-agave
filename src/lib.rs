@@ -129,6 +129,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     cost_model_requested_write_lock_cost,
     enable_gossip_duplicate_proof_ingestion,
     enable_chained_merkle_shreds,
+    zk_elgamal_proof_program_enabled,
     // These two were force-activated, but the gate remains on the BPF Loader.
     disable_bpf_loader_instructions,
 ];
@@ -408,6 +409,14 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
             solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
+    cache.replenish(
+        solana_zk_sdk::zk_elgamal_proof_program::id(),
+        Arc::new(ProgramCacheEntry::new_builtin(
+            0u64,
+            0usize,
+            solana_zk_elgamal_proof_program::Entrypoint::vm,
+        )),
+    );
 
     // Will overwrite a builtin if environment variable `CORE_BPF_PROGRAM_ID`
     // is set to a valid program id.
@@ -424,6 +433,7 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
     builtins.insert(solana_stake_program::id());
     builtins.insert(solana_system_program::id());
     builtins.insert(solana_vote_program::id());
+    builtins.insert(solana_zk_sdk::zk_elgamal_proof_program::id());
     builtins
 }
 
