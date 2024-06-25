@@ -122,7 +122,8 @@ fn build_versioned_message(value: &TransactionMessage, bank: &Bank) -> Option<Ve
         .iter()
         .map(|key| Pubkey::new_from_array(key.clone().try_into().unwrap()))
         .collect::<Vec<Pubkey>>();
-    let recent_blockhash = bank.last_blockhash();
+    let recent_blockhash = Hash::new_from_array(value.recent_blockhash.clone().try_into().unwrap());
+    bank.register_recent_blockhash_for_test(&recent_blockhash);
     let instructions = value
         .instructions
         .iter()
@@ -279,6 +280,8 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .unwrap_or_default();
 
     let genesis_config = GenesisConfig::default();
+
+    let genesis_hash = Hash::new_from_array(context.genesis_hash.try_into().unwrap());
     // Bank on slot 0
     let mut bank = Bank::new_with_paths(
         &genesis_config,
@@ -293,6 +296,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         None,
         Some(fee_collector),
         Arc::new(AtomicBool::new(false)),
+        Some(genesis_hash),
     );
     bank.feature_set = feature_set.clone();
     let bank_forks = BankForks::new_rw_arc(bank);
@@ -421,6 +425,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         limit_to_load_programs: true,
         recording_config,
         transaction_account_lock_limit: None,
+        check_program_modification_slot: false,
     };
 
     let result =

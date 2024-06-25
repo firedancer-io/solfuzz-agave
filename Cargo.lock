@@ -2242,7 +2242,7 @@ version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d6ea3c4595b96363c13943497db34af4460fb474a95c43f4446ad341b8c9785"
 dependencies = [
- "toml 0.5.11",
+ "toml",
 ]
 
 [[package]]
@@ -2251,7 +2251,7 @@ version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d37c51ca738a55da99dc0c4a34860fd675453b8b36209178c2249bb13651284"
 dependencies = [
- "toml_edit 0.21.1",
+ "toml_edit",
 ]
 
 [[package]]
@@ -2747,15 +2747,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_spanned"
-version = "0.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79e674e01f999af37c49f70a6ede167a8a60b2503e56c5599532a65baa5969a0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3193,52 +3184,6 @@ dependencies = [
 [[package]]
 name = "solana-program"
 version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3#06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "ark-serialize",
- "base64 0.22.1",
- "bincode",
- "bitflags 2.6.0",
- "blake3",
- "borsh 0.10.3",
- "borsh 1.5.1",
- "bs58 0.5.1",
- "bv",
- "bytemuck",
- "cc",
- "console_error_panic_hook",
- "console_log",
- "curve25519-dalek",
- "getrandom 0.2.15",
- "itertools 0.12.1",
- "js-sys",
- "lazy_static",
- "libsecp256k1",
- "log",
- "memoffset",
- "num-bigint 0.4.5",
- "num-derive",
- "num-traits",
- "parking_lot",
- "rand 0.8.5",
- "rustc_version",
- "rustversion",
- "serde",
- "serde_bytes",
- "serde_derive",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "solana-sdk-macro 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
- "thiserror",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "solana-program"
-version = "2.0.0"
 source = "git+https://github.com/anza-xyz/agave?rev=d36954cb72679dbe130f4a0a212b8c8a0026ea78#d36954cb72679dbe130f4a0a212b8c8a0026ea78"
 dependencies = [
  "ark-bn254",
@@ -3280,7 +3225,7 @@ dependencies = [
  "serde_derive",
  "sha2 0.10.8",
  "sha3 0.10.8",
- "solana-sdk-macro 2.0.0 (git+https://github.com/anza-xyz/agave?rev=d36954cb72679dbe130f4a0a212b8c8a0026ea78)",
+ "solana-sdk-macro 2.0.0",
  "thiserror",
  "wasm-bindgen",
  "zeroize",
@@ -3436,7 +3381,7 @@ dependencies = [
  "solana-zk-elgamal-proof-program",
  "solana-zk-sdk",
  "solana-zk-token-proof-program",
- "solana-zk-token-sdk 2.1.0",
+ "solana-zk-token-sdk",
  "static_assertions",
  "strum",
  "strum_macros",
@@ -3445,53 +3390,6 @@ dependencies = [
  "tempfile",
  "thiserror",
  "zstd",
-]
-
-[[package]]
-name = "solana-sdk"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3#06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3"
-dependencies = [
- "bincode",
- "bitflags 2.6.0",
- "borsh 1.5.1",
- "bs58 0.5.1",
- "bytemuck",
- "byteorder",
- "chrono",
- "derivation-path",
- "digest 0.10.7",
- "ed25519-dalek",
- "ed25519-dalek-bip32",
- "generic-array",
- "getrandom 0.1.16",
- "hmac 0.12.1",
- "itertools 0.12.1",
- "js-sys",
- "lazy_static",
- "libsecp256k1",
- "log",
- "memmap2",
- "num_enum",
- "pbkdf2",
- "qstring",
- "rand 0.7.3",
- "rand 0.8.5",
- "rustc_version",
- "rustversion",
- "serde",
- "serde_bytes",
- "serde_derive",
- "serde_json",
- "serde_with",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "siphasher",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
- "solana-sdk-macro 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
- "thiserror",
- "uriparse",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -3539,8 +3437,8 @@ dependencies = [
  "siphasher",
  "solana-frozen-abi",
  "solana-frozen-abi-macro",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=d36954cb72679dbe130f4a0a212b8c8a0026ea78)",
- "solana-sdk-macro 2.0.0 (git+https://github.com/anza-xyz/agave?rev=d36954cb72679dbe130f4a0a212b8c8a0026ea78)",
+ "solana-program 2.0.0",
+ "solana-sdk-macro 2.0.0",
  "thiserror",
  "uriparse",
  "wasm-bindgen",
@@ -3592,19 +3490,6 @@ dependencies = [
  "thiserror",
  "uriparse",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "solana-sdk-macro"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3#06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3"
-dependencies = [
- "bs58 0.5.1",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn 2.0.68",
- "toml 0.8.14",
 ]
 
 [[package]]
@@ -3823,36 +3708,7 @@ dependencies = [
  "num-traits",
  "solana-program-runtime",
  "solana-sdk 2.1.0",
- "solana-zk-token-sdk 2.1.0",
-]
-
-[[package]]
-name = "solana-zk-token-sdk"
-version = "2.0.0"
-source = "git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3#06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3"
-dependencies = [
- "aes-gcm-siv",
- "base64 0.22.1",
- "bincode",
- "bytemuck",
- "byteorder",
- "curve25519-dalek",
- "getrandom 0.1.16",
- "itertools 0.12.1",
- "lazy_static",
- "merlin",
- "num-derive",
- "num-traits",
- "rand 0.7.3",
- "serde",
- "serde_derive",
- "serde_json",
- "sha3 0.9.1",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
- "solana-sdk 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
- "subtle",
- "thiserror",
- "zeroize",
+ "solana-zk-token-sdk",
 ]
 
 [[package]]
@@ -3942,7 +3798,7 @@ version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "solana-sdk 2.0.0 (git+https://github.com/anza-xyz/agave?rev=d36954cb72679dbe130f4a0a212b8c8a0026ea78)",
+ "solana-sdk 2.0.0",
  "syn 1.0.109",
 ]
 
@@ -3962,7 +3818,7 @@ dependencies = [
  "borsh 1.5.1",
  "num-derive",
  "num-traits",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-token",
  "spl-token-2022",
  "thiserror",
@@ -3975,7 +3831,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34d1814406e98b08c5cd02c1126f83fd407ad084adce0b05fda5730677822eac"
 dependencies = [
  "bytemuck",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-discriminator-derive",
 ]
 
@@ -4009,7 +3865,7 @@ version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58e9bae02de3405079a057fe244c867a08f92d48327d231fc60da831f94caf0a"
 dependencies = [
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
 ]
 
 [[package]]
@@ -4020,8 +3876,8 @@ checksum = "046ce669f48cf2eca1ec518916d8725596bfb655beb1c74374cf71dc6cb773c9"
 dependencies = [
  "borsh 1.5.1",
  "bytemuck",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
- "solana-zk-token-sdk 2.0.0",
+ "solana-program 2.1.0",
+ "solana-zk-token-sdk",
  "spl-program-error",
 ]
 
@@ -4033,7 +3889,7 @@ checksum = "49065093ea91f57b9b2bd81493ff705e2ad4e64507a07dbc02b085778e02770e"
 dependencies = [
  "num-derive",
  "num-traits",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-program-error-derive",
  "thiserror",
 ]
@@ -4057,7 +3913,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cace91ba08984a41556efe49cbf2edca4db2f577b649da7827d3621161784bf8"
 dependencies = [
  "bytemuck",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -4075,7 +3931,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "thiserror",
 ]
 
@@ -4090,9 +3946,9 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "solana-security-txt",
- "solana-zk-token-sdk 2.0.0",
+ "solana-zk-token-sdk",
  "spl-memo",
  "spl-pod",
  "spl-token",
@@ -4110,7 +3966,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d419b5cfa3ee8e0f2386fd7e02a33b3ec8a7db4a9c7064a2ea24849dc4a273b6"
 dependencies = [
  "bytemuck",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -4123,7 +3979,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30179c47e93625680dabb620c6e7931bd12d62af390f447bc7beb4a3a9b5feee"
 dependencies = [
  "borsh 1.5.1",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -4138,7 +3994,7 @@ checksum = "66a98359769cd988f7b35c02558daa56d496a7e3bd8626e61f90a7c757eedb9b"
 dependencies = [
  "arrayref",
  "bytemuck",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -4153,7 +4009,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "422ce13429dbd41d2cee8a73931c05fda0b0c8ca156a8b0c19445642550bb61a"
 dependencies = [
  "bytemuck",
- "solana-program 2.0.0 (git+https://github.com/anza-xyz/agave?rev=06f1131e6ffe4ecdc42a1ab9db3085e111a5eaa3)",
+ "solana-program 2.1.0",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -4378,25 +4234,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "toml"
-version = "0.8.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f49eb2ab21d2f26bd6db7bf383edc527a7ebaee412d17af4d40fdccd442f335"
-dependencies = [
- "serde",
- "serde_spanned",
- "toml_datetime",
- "toml_edit 0.22.14",
-]
-
-[[package]]
 name = "toml_datetime"
 version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4badfd56924ae69bcc9039335b2e017639ce3f9b001c393c1b2d1ef846ce2cbf"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "toml_edit"
@@ -4406,20 +4247,7 @@ checksum = "6a8534fd7f78b5405e860340ad6575217ce99f38d4d5c8f2442cb5ecb50090e1"
 dependencies = [
  "indexmap",
  "toml_datetime",
- "winnow 0.5.40",
-]
-
-[[package]]
-name = "toml_edit"
-version = "0.22.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f21c7aaf97f1bd9ca9d4f9e73b0a6c74bd5afef56f2bc931943a6e1c37e04e38"
-dependencies = [
- "indexmap",
- "serde",
- "serde_spanned",
- "toml_datetime",
- "winnow 0.6.13",
+ "winnow",
 ]
 
 [[package]]
@@ -4853,15 +4681,6 @@ name = "winnow"
 version = "0.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
-dependencies = [
- "memchr",
-]
-
-[[package]]
-name = "winnow"
-version = "0.6.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59b5e5f6c299a3c7890b876a2a587f3115162487e704907d9b6cd29473052ba1"
 dependencies = [
  "memchr",
 ]

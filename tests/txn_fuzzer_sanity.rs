@@ -129,6 +129,7 @@ fn test_txn_execute_clock() {
             fee_payer.to_bytes().to_vec(),
             program_info[0].0.to_bytes().to_vec(),
         ],
+        recent_blockhash: Hash::new_unique().to_bytes().to_vec(),
         account_shared_data: vec![fee_payer_data, p_acc, pd_acc],
         instructions: vec![instr],
         address_table_lookups: vec![],
@@ -148,6 +149,7 @@ fn test_txn_execute_clock() {
         log_messages_byte_limit: 200,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
+        genesis_hash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -245,6 +247,7 @@ fn test_simple_transfer() {
         instructions: vec![instr],
         address_table_lookups: vec![],
         loaded_addresses: None,
+        recent_blockhash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let tx = SanitizedTransaction {
@@ -263,6 +266,7 @@ fn test_simple_transfer() {
         log_messages_byte_limit: 200,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
+        genesis_hash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -396,6 +400,7 @@ fn test_lookup_table() {
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
         loaded_addresses: Some(loaded_addresses),
+        recent_blockhash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let tx = SanitizedTransaction {
@@ -414,6 +419,7 @@ fn test_lookup_table() {
         log_messages_byte_limit: 200,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
+        genesis_hash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
