@@ -1,5 +1,5 @@
 use crate::elf_loader::ACTIVATE_FEATURES;
-use crate::proto::{ValidateVmEffects, VmContext};
+use crate::proto::{ValidateVmEffects, FullVmContext};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -82,10 +82,11 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let vm_ctx = match VmContext::decode(in_slice) {
+    let ctx = match FullVmContext::decode(in_slice) {
         Ok(context) => context,
         Err(_) => return 0,
     };
+    let vm_ctx = ctx.vm_ctx.unwrap();
     let text_len = vm_ctx.rodata_text_section_length as usize;
     let text_off = vm_ctx.rodata_text_section_offset as usize;
     let validate_vm_effects = match vm_ctx
