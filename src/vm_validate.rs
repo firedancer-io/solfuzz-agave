@@ -30,8 +30,8 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
         VerifierError::UnsupportedLEBEArgument(_) => -31,
         VerifierError::LDDWCannotBeLast => -32, // should change this in FD
         VerifierError::IncompleteLDDW(_) => -33,
-        VerifierError::ShiftWithOverflow(_, _, _) => -36,
-        VerifierError::ProgramLengthNotMultiple => -37,
+        VerifierError::ShiftWithOverflow(_, _, _) => -37,
+        VerifierError::ProgramLengthNotMultiple => -38,
         _ => -1,
     }
 }
@@ -101,7 +101,7 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
             }
         }
         None => ValidateVmEffects {
-            result: -35, // FD error code for invalid text section
+            result: -36, // FD error code for invalid text section
             success: false,
         },
     };
