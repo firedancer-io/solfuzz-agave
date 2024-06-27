@@ -1,6 +1,5 @@
 use crate::elf_loader::ACTIVATE_FEATURES;
-use crate::proto::{ValidateVmEffects, FullVmContext};
-use crate::InstrContext;
+use crate::proto::{FullVmContext, ValidateVmEffects};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -24,12 +23,12 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
         VerifierError::UnknownOpCode(_, _) => -25,
         VerifierError::InvalidSourceRegister(_) => -26,
         VerifierError::InvalidDestinationRegister(_) => -27,
-        VerifierError::CannotWriteR10(_) => -27, // FD treats this the same as InvalidDestinationRegister, which makes sense
-        VerifierError::InfiniteLoop(_) => -28,
+        VerifierError::CannotWriteR10(_) => -27, // FD treats this the same as InvalidDestinationRegister
+        VerifierError::InfiniteLoop(_) => -28, // Not checked here (nor in FD)
         VerifierError::JumpOutOfCode(_, _) => -29,
         VerifierError::JumpToMiddleOfLDDW(_, _) => -30,
         VerifierError::UnsupportedLEBEArgument(_) => -31,
-        VerifierError::LDDWCannotBeLast => -32, // should change this in FD
+        VerifierError::LDDWCannotBeLast => -32,
         VerifierError::IncompleteLDDW(_) => -33,
         VerifierError::ShiftWithOverflow(_, _, _) => -37,
         VerifierError::ProgramLengthNotMultiple => -38,
@@ -37,7 +36,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
     }
 }
 
-fn gen_feature_set()->FeatureSet{
+fn gen_feature_set() -> FeatureSet {
     let mut feature_set = FeatureSet {
         active: HashMap::new(),
         inactive: HashSet::new(),
@@ -97,7 +96,7 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
     let feature_set: FeatureSet = ctx
         .features
         .as_ref()
-        .map(| fs | fs.into())
+        .map(|fs| fs.into())
         .unwrap_or(gen_feature_set());
 
     let text_len = vm_ctx.rodata_text_section_length as usize;
