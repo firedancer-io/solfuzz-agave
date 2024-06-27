@@ -86,7 +86,10 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
         Ok(context) => context,
         Err(_) => return 0,
     };
-    let vm_ctx = ctx.vm_ctx.unwrap();
+    let vm_ctx = match ctx.vm_ctx {
+        Some(vm_ctx) => vm_ctx,
+        None => return 0,
+    };
     let text_len = vm_ctx.rodata_text_section_length as usize;
     let text_off = vm_ctx.rodata_text_section_offset as usize;
     let validate_vm_effects = match vm_ctx
