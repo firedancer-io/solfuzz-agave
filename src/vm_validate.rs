@@ -24,7 +24,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
         VerifierError::InvalidSourceRegister(_) => -26,
         VerifierError::InvalidDestinationRegister(_) => -27,
         VerifierError::CannotWriteR10(_) => -27, // FD treats this the same as InvalidDestinationRegister
-        VerifierError::InfiniteLoop(_) => -28, // Not checked here (nor in FD)
+        VerifierError::InfiniteLoop(_) => -28,   // Not checked here (nor in FD)
         VerifierError::JumpOutOfCode(_, _) => -29,
         VerifierError::JumpToMiddleOfLDDW(_, _) => -30,
         VerifierError::UnsupportedLEBEArgument(_) => -31,
