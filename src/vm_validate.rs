@@ -94,10 +94,12 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
         Some(vm_ctx) => vm_ctx,
         None => return 0,
     };
-    let feature_set = match InstrContext::try_from(ctx.instr_ctx.unwrap()){
-        Ok(context) => context.feature_set,
-        Err(_) => gen_feature_set(),
-    };
+    let feature_set: FeatureSet = ctx
+        .features
+        .as_ref()
+        .map(| fs | fs.into())
+        .unwrap_or(gen_feature_set());
+
     let text_len = vm_ctx.rodata_text_section_length as usize;
     let text_off = vm_ctx.rodata_text_section_offset as usize;
     let validate_vm_effects = match vm_ctx
