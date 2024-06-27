@@ -1,5 +1,6 @@
 use crate::elf_loader::ACTIVATE_FEATURES;
 use crate::proto::{ValidateVmEffects, FullVmContext};
+use crate::InstrContext;
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -36,7 +37,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
     }
 }
 
-pub fn validate_vm_text(text_bytes: &[u8]) -> Option<ValidateVmEffects> {
+fn gen_feature_set()->FeatureSet{
     let mut feature_set = FeatureSet {
         active: HashMap::new(),
         inactive: HashSet::new(),
@@ -45,9 +46,12 @@ pub fn validate_vm_text(text_bytes: &[u8]) -> Option<ValidateVmEffects> {
     for feature in ACTIVATE_FEATURES.iter() {
         feature_set.activate(feature, 0);
     }
+    feature_set
+}
 
+pub fn validate_vm_text(text_bytes: &[u8], feature_set: &FeatureSet) -> Option<ValidateVmEffects> {
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
-        &feature_set,
+        feature_set,
         &ComputeBudget::default(),
         false, // doesn't matter since bytes are "loaded"
         false, // doesn't matter
@@ -90,6 +94,10 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
         Some(vm_ctx) => vm_ctx,
         None => return 0,
     };
+    let feature_set = match InstrContext::try_from(ctx.instr_ctx.unwrap()){
+        Ok(context) => context.feature_set,
+        Err(_) => gen_feature_set(),
+    };
     let text_len = vm_ctx.rodata_text_section_length as usize;
     let text_off = vm_ctx.rodata_text_section_offset as usize;
     let validate_vm_effects = match vm_ctx
@@ -97,7 +105,7 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
         .get(text_off..text_off.saturating_add(text_len))
     {
         Some(bytes) => {
-            let validate_vm_effects = validate_vm_text(bytes);
+            let validate_vm_effects = validate_vm_text(bytes, &feature_set);
             match validate_vm_effects {
                 Some(context) => context,
                 None => return 0,
