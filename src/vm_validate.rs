@@ -16,7 +16,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
         EbpfError::VerifierError(err) => err,
         _ => return -1,
     };
-
+    // https://github.com/firedancer-io/firedancer/blob/f878e448e5511c3600e2dd6360a4f06ce793af6f/src/flamenco/vm/fd_vm_base.h#L67
     match ver_err {
         VerifierError::NoProgram => -6,
         VerifierError::DivisionByZero(_) => -18,
@@ -101,6 +101,8 @@ pub unsafe extern "C" fn sol_compat_vm_validate_v1(
 
     let text_len = vm_ctx.rodata_text_section_length as usize;
     let text_off = vm_ctx.rodata_text_section_offset as usize;
+    // Rust panics if text_off + text_len overflows (or is out of range),
+    // but we want to return an error instead.
     let validate_vm_effects = match vm_ctx
         .rodata
         .get(text_off..text_off.saturating_add(text_len))
