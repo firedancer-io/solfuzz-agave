@@ -1,5 +1,5 @@
 /programs
-/target
+/target*
 test/self_test
 .vscode/
 *.so

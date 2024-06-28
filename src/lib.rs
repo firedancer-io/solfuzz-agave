@@ -4,6 +4,7 @@ pub mod elf_loader;
 pub mod txn_fuzzer;
 mod utils;
 mod vm_syscalls;
+mod vm_validate;
 
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
