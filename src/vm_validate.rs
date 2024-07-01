@@ -30,6 +30,7 @@ fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
         VerifierError::UnsupportedLEBEArgument(_) => -31,
         VerifierError::LDDWCannotBeLast => -32,
         VerifierError::IncompleteLDDW(_) => -33,
+        VerifierError::InvalidRegister(_) => -35,
         VerifierError::ShiftWithOverflow(_, _, _) => -37,
         VerifierError::ProgramLengthNotMultiple => -38,
         _ => -1,
