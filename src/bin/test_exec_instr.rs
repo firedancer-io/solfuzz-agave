@@ -9,6 +9,16 @@ struct Cli {
     inputs: Vec<PathBuf>,
 }
 
+// Custom compare function since we now have a seed_addr field in AcctState (0 if equal, 1 if not)
+fn compare_account(a: &AcctState, b: &AcctState) -> bool {
+    return !(a.address == b.address
+        && a.lamports == b.lamports
+        && a.data == b.data
+        && a.executable == b.executable
+        && a.rent_epoch == b.rent_epoch
+        && a.owner == b.owner);
+}
+
 fn exec(input: &PathBuf) -> bool {
     let blob = std::fs::read(input).unwrap();
     let fixture = InstrFixture::decode(&blob[..]).unwrap();
@@ -19,6 +29,7 @@ fn exec(input: &PathBuf) -> bool {
             return false;
         }
     };
+
     let context_accounts = context.accounts.clone();
     let expected = match fixture.output {
         Some(e) => e,
@@ -45,7 +56,7 @@ fn exec(input: &PathBuf) -> bool {
         for input_account in context_accounts.iter() {
             if input_account.address == output_account.address {
                 present_in_input = true;
-                if input_account != output_account {
+                if compare_account(input_account, output_account) {
                     modified_accounts.push(output_account.clone());
                 }
             }
@@ -63,7 +74,6 @@ fn exec(input: &PathBuf) -> bool {
     } else {
         println!("FAIL: {:?}", input);
     }
-
     ok
 }
 

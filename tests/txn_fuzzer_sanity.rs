@@ -4,12 +4,12 @@ use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
-use solfuzz_agave::proto;
 use solfuzz_agave::proto::{
-    AcctState, CompiledInstruction, EpochContext, MessageHeader, SanitizedTransaction, SlotContext,
-    TransactionMessage, TxnContext, TxnResult,
+    AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
+    SlotContext, TransactionMessage, TxnContext, TxnResult,
 };
 use solfuzz_agave::txn_fuzzer::sol_compat_txn_execute_v1;
+use solfuzz_agave::{proto, HARDCODED_FEATURES};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::{env, fs};
@@ -50,7 +50,7 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
         address: program_account.to_bytes().to_vec(),
         lamports: 25,
         data: bincode::serialize(&state).unwrap(),
-        executable: false,
+        executable: true,
         rent_epoch: 0,
         owner: bpf_loader_upgradeable::id().to_bytes().to_vec(),
         seed_addr: None,
@@ -92,7 +92,12 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
 fn test_txn_execute_clock() {
     let slot_ctx = SlotContext { slot: 20 };
 
-    let epoch_ctx = EpochContext { features: None };
+    let mut hardcoded_features: FeatureSet = FeatureSet::default();
+    hardcoded_features.features = HARDCODED_FEATURES.into();
+    hardcoded_features.features.sort();
+    let epoch_ctx = EpochContext {
+        features: Some(hardcoded_features),
+    };
 
     let header = MessageHeader {
         num_required_signatures: 1,
@@ -156,7 +161,7 @@ fn test_txn_execute_clock() {
     let buffer_len = buffer.len() as u64;
 
     // Uncomment to write the data to a file
-    //write_to_file("clock-test", &buffer);
+    // write_to_file("clock-test", &buffer);
 
     let mut res_buffer: Vec<u8> = vec![0; 512];
     let mut res_buffer_len = res_buffer.len() as u64;
@@ -180,7 +185,12 @@ fn test_txn_execute_clock() {
 fn test_simple_transfer() {
     let slot_ctx = SlotContext { slot: 20 };
 
-    let epoch_ctx = EpochContext { features: None };
+    let mut hardcoded_features: FeatureSet = FeatureSet::default();
+    hardcoded_features.features = HARDCODED_FEATURES.into();
+    hardcoded_features.features.sort();
+    let epoch_ctx = EpochContext {
+        features: Some(hardcoded_features),
+    };
 
     let header = MessageHeader {
         num_required_signatures: 2,
@@ -305,7 +315,12 @@ fn test_simple_transfer() {
 fn test_lookup_table() {
     let slot_ctx = SlotContext { slot: 20 };
 
-    let epoch_ctx = EpochContext { features: None };
+    let mut hardcoded_features: FeatureSet = FeatureSet::default();
+    hardcoded_features.features = HARDCODED_FEATURES.into();
+    hardcoded_features.features.sort();
+    let epoch_ctx = EpochContext {
+        features: Some(hardcoded_features),
+    };
 
     let header = MessageHeader {
         num_required_signatures: 2,
