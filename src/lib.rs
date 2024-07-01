@@ -53,7 +53,7 @@ macro_rules! feature_list {
     };
 }
 
-static HARDCODED_FEATURES: &[u64] = feature_list![
+pub static HARDCODED_FEATURES: &[u64] = feature_list![
     secp256k1_program_enabled,
     system_transfer_zero_check,
     native_programs_consume_cu,
@@ -65,6 +65,9 @@ static HARDCODED_FEATURES: &[u64] = feature_list![
     vote_authorize_with_seed,
     allow_votes_to_directly_update_vote_state,
     compact_vote_state_updates,
+    set_exempt_rent_epoch_max,
+    incremental_snapshot_only_incremental_hash_calculation,
+    enable_early_verification_of_account_modifications,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -73,14 +76,11 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     warp_timestamp_again,
     disable_fees_sysvar,
     disable_deploy_of_alloc_free_syscall,
-    set_exempt_rent_epoch_max,
-    incremental_snapshot_only_incremental_hash_calculation,
     relax_authority_signer_check_for_lookup_table_creation,
     commission_updates_only_allowed_in_first_half_of_epoch,
     enable_turbine_fanout_experiments,
     update_hashes_per_tick,
     reduce_stake_warmup_cooldown,
-    enable_early_verification_of_account_modifications,
     // Active on testnet & devnet.
     libsecp256k1_fail_on_bad_count2,
     enable_bpf_loader_set_authority_checked_ix,

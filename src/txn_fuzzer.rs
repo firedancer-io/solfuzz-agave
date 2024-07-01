@@ -271,6 +271,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .as_ref()
         .map(|ctx| ctx.features.clone().unwrap_or_default())
         .unwrap_or_default();
+
     let feature_set = Arc::new(FeatureSet::from(&fd_features));
     let fee_collector = Pubkey::new_unique();
     let slot = context
@@ -311,6 +312,27 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .insert(new_bank)
             .clone_without_scheduler();
     }
+
+    let account_keys = context
+        .tx
+        .as_ref()
+        .and_then(|tx| tx.message.as_ref())
+        .map(|message| message.account_keys.clone())
+        .unwrap_or_else(Vec::new);
+    let loaded_account_keys_writable = context
+        .tx
+        .as_ref()
+        .and_then(|tx| tx.message.as_ref())
+        .and_then(|message| message.loaded_addresses.as_ref())
+        .map(|addresses| addresses.writable.clone())
+        .unwrap_or_else(Vec::new);
+    let loaded_account_keys_readonly = context
+        .tx
+        .as_ref()
+        .and_then(|tx| tx.message.as_ref())
+        .and_then(|message| message.loaded_addresses.as_ref())
+        .map(|addresses| addresses.readonly.clone())
+        .unwrap_or_else(Vec::new);
 
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
@@ -431,5 +453,15 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let result =
         bank.load_and_execute_transactions(&batch, context.max_age as usize, &mut timings, configs);
 
-    Some(result.into())
+    // Only keep accounts that were passed in as account_keys
+    let mut txn_result: TxnResult = result.into();
+    let mut relevant_accounts = txn_result.resulting_state.clone().unwrap();
+    relevant_accounts.acct_states.retain(|account| {
+        account_keys.contains(&account.address)
+            || loaded_account_keys_writable.contains(&account.address)
+            || loaded_account_keys_readonly.contains(&account.address)
+    });
+    txn_result.resulting_state = Some(relevant_accounts);
+
+    Some(txn_result)
 }
