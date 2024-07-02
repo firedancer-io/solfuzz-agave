@@ -3,13 +3,14 @@ use solana_program::bpf_loader_upgradeable;
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
+use solana_sdk::feature_set::*;
 use solana_sdk::signature::Signature;
 use solfuzz_agave::proto::{
     AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
     SlotContext, TransactionMessage, TxnContext, TxnResult,
 };
 use solfuzz_agave::txn_fuzzer::sol_compat_txn_execute_v1;
-use solfuzz_agave::{proto, HARDCODED_FEATURES};
+use solfuzz_agave::{feature_list, proto, utils::feature_u64, HARDCODED_FEATURES};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::{env, fs};
@@ -23,6 +24,16 @@ fn write_to_file(filename: &str, buffer: &[u8]) {
 
     let mut file = File::create(dir).unwrap();
     file.write_all(buffer).expect("Failed to write to file");
+}
+
+fn get_features() -> FeatureSet {
+    // Add any other features that should be appended to the hardcoded features list
+    let additional_features = feature_list![set_exempt_rent_epoch_max];
+    let mut features = FeatureSet::default();
+
+    features.features = HARDCODED_FEATURES.into();
+    features.features.extend_from_slice(additional_features);
+    features
 }
 
 fn load_program(name: String) -> Vec<u8> {
@@ -91,12 +102,9 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
 #[test]
 fn test_txn_execute_clock() {
     let slot_ctx = SlotContext { slot: 20 };
-
-    let mut hardcoded_features: FeatureSet = FeatureSet::default();
-    hardcoded_features.features = HARDCODED_FEATURES.into();
-    hardcoded_features.features.sort();
+    let features = get_features();
     let epoch_ctx = EpochContext {
-        features: Some(hardcoded_features),
+        features: Some(features),
     };
 
     let header = MessageHeader {
@@ -184,12 +192,9 @@ fn test_txn_execute_clock() {
 #[test]
 fn test_simple_transfer() {
     let slot_ctx = SlotContext { slot: 20 };
-
-    let mut hardcoded_features: FeatureSet = FeatureSet::default();
-    hardcoded_features.features = HARDCODED_FEATURES.into();
-    hardcoded_features.features.sort();
+    let features = get_features();
     let epoch_ctx = EpochContext {
-        features: Some(hardcoded_features),
+        features: Some(features),
     };
 
     let header = MessageHeader {
@@ -313,12 +318,9 @@ fn test_simple_transfer() {
 #[test]
 fn test_lookup_table() {
     let slot_ctx = SlotContext { slot: 20 };
-
-    let mut hardcoded_features: FeatureSet = FeatureSet::default();
-    hardcoded_features.features = HARDCODED_FEATURES.into();
-    hardcoded_features.features.sort();
+    let features = get_features();
     let epoch_ctx = EpochContext {
-        features: Some(hardcoded_features),
+        features: Some(features),
     };
 
     let header = MessageHeader {
