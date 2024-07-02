@@ -11,12 +11,12 @@ struct Cli {
 
 // Custom compare function since we now have a seed_addr field in AcctState (0 if equal, 1 if not)
 fn compare_account(a: &AcctState, b: &AcctState) -> bool {
-    return !(a.address == b.address
+    !(a.address == b.address
         && a.lamports == b.lamports
         && a.data == b.data
         && a.executable == b.executable
         && a.rent_epoch == b.rent_epoch
-        && a.owner == b.owner);
+        && a.owner == b.owner)
 }
 
 fn exec(input: &PathBuf) -> bool {
