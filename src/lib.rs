@@ -65,11 +65,11 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     vote_authorize_with_seed,
     allow_votes_to_directly_update_vote_state,
     compact_vote_state_updates,
-    set_exempt_rent_epoch_max,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     // Active on all clusters, but not cleaned up.
+    set_exempt_rent_epoch_max,
     incremental_snapshot_only_incremental_hash_calculation,
     enable_early_verification_of_account_modifications,
     pico_inflation,
