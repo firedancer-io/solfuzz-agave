@@ -318,21 +318,21 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .as_ref()
         .and_then(|tx| tx.message.as_ref())
         .map(|message| message.account_keys.clone())
-        .unwrap_or_else(Vec::new);
+        .unwrap_or_default();
     let loaded_account_keys_writable = context
         .tx
         .as_ref()
         .and_then(|tx| tx.message.as_ref())
         .and_then(|message| message.loaded_addresses.as_ref())
         .map(|addresses| addresses.writable.clone())
-        .unwrap_or_else(Vec::new);
+        .unwrap_or_default();
     let loaded_account_keys_readonly = context
         .tx
         .as_ref()
         .and_then(|tx| tx.message.as_ref())
         .and_then(|message| message.loaded_addresses.as_ref())
         .map(|addresses| addresses.readonly.clone())
-        .unwrap_or_else(Vec::new);
+        .unwrap_or_default();
 
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);

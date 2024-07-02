@@ -195,7 +195,7 @@ fn test_simple_transfer() {
     let header = MessageHeader {
         num_required_signatures: 2,
         num_readonly_signed_accounts: 0,
-        num_readonly_unsigned_accounts: 2,
+        num_readonly_unsigned_accounts: 1,
     };
 
     let fee_payer = Pubkey::new_unique();
@@ -238,7 +238,7 @@ fn test_simple_transfer() {
 
     let instr = CompiledInstruction {
         program_id_index: 3,
-        accounts: vec![1, 2, 5],
+        accounts: vec![1, 2, 4],
         data: vec![0, 0, 0, 0, 0, 0, 0, 10],
     };
 
@@ -250,7 +250,6 @@ fn test_simple_transfer() {
             sender.to_bytes().to_vec(),
             recipient.to_bytes().to_vec(),
             program_info[0].0.to_bytes().to_vec(),
-            program_info[1].0.to_bytes().to_vec(),
             vec![0; 32],
         ],
         account_shared_data: vec![fee_payer_data, recipient_data, sender_data, p_acc, pd_acc],
@@ -325,7 +324,7 @@ fn test_lookup_table() {
     let header = MessageHeader {
         num_required_signatures: 2,
         num_readonly_signed_accounts: 0,
-        num_readonly_unsigned_accounts: 3,
+        num_readonly_unsigned_accounts: 2,
     };
 
     let fee_payer = Pubkey::new_unique();
@@ -379,7 +378,7 @@ fn test_lookup_table() {
 
     let instr = CompiledInstruction {
         program_id_index: 2,
-        accounts: vec![1, 5, 4, 6],
+        accounts: vec![1, 4, 3, 5],
         data: vec![0, 0, 0, 0, 0, 0, 0, 10],
     };
 
@@ -401,7 +400,6 @@ fn test_lookup_table() {
             fee_payer.to_bytes().to_vec(),
             sender.to_bytes().to_vec(),
             program_info[0].0.to_bytes().to_vec(),
-            program_info[1].0.to_bytes().to_vec(),
             vec![0; 32],
         ],
         account_shared_data: vec![
