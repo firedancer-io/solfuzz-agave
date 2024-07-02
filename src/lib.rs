@@ -2,7 +2,7 @@
 
 pub mod elf_loader;
 pub mod txn_fuzzer;
-mod utils;
+pub mod utils;
 mod vm_syscalls;
 mod vm_validate;
 
@@ -47,6 +47,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
+#[macro_export]
 macro_rules! feature_list {
     ($($feature:ident),*$(,)?) => {
         &[$(feature_u64(&$feature::id())),*]
