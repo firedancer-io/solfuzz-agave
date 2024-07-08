@@ -386,8 +386,26 @@ fn test_lookup_table() {
 
     let table_lookup = proto::MessageAddressTableLookup {
         account_key: vec![1; 32],
-        writable_indexes: vec![1],
+        writable_indexes: vec![0],
         readonly_indexes: vec![1],
+    };
+
+    // Fill ALUT account data (first 56 bytes dont matter except discriminant)
+    let mut alut_data = vec![1];
+    for _ in 0..55 {
+        alut_data.push(0);
+    }
+    alut_data.extend_from_slice(&recipient.to_bytes());
+    alut_data.extend_from_slice(&extra_account.to_bytes());
+
+    let address_lookup_table_acc = AcctState {
+        address: vec![1; 32],
+        lamports: 1,
+        data: alut_data,
+        executable: false,
+        rent_epoch: 0,
+        owner: fee_payer.to_bytes().to_vec(),
+        seed_addr: None,
     };
 
     let loaded_addresses = proto::LoadedAddresses {
@@ -411,6 +429,7 @@ fn test_lookup_table() {
             p_acc,
             pd_acc,
             extra_data,
+            address_lookup_table_acc,
         ],
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
