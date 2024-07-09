@@ -8,6 +8,7 @@ mod vm_validate;
 
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_log_collector::LogCollector;
 use solana_program::clock::Slot;
 use solana_program::hash::Hash;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
@@ -18,7 +19,6 @@ use solana_program_runtime::loaded_programs::ProgramCache;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
-use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
@@ -320,7 +320,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
 
 fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
     cache.replenish(
-        solana_address_lookup_table_program::id(),
+        solana_sdk::address_lookup_table::program::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -406,7 +406,7 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
 
     // Return builtins as a HashSet
     let mut builtins: HashSet<Pubkey> = HashSet::new();
-    builtins.insert(solana_address_lookup_table_program::id());
+    builtins.insert(solana_sdk::address_lookup_table::program::id());
     builtins.insert(solana_sdk::bpf_loader_deprecated::id());
     builtins.insert(solana_sdk::bpf_loader::id());
     builtins.insert(solana_sdk::bpf_loader_upgradeable::id());
