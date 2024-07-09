@@ -261,6 +261,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             return_data,
             executed_units,
             accounts_data_len_delta,
+            fee_details: None,
         }
     }
 }
@@ -372,6 +373,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                     return_data: vec![],
                     executed_units: 0,
                     accounts_data_len_delta: 0,
+                    fee_details: None,
                 })
             }
         };
@@ -417,6 +419,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                 return_data: vec![],
                 executed_units: 0,
                 accounts_data_len_delta: 0,
+                fee_details: None,
             });
         }
     };
