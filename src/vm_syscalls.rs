@@ -6,6 +6,8 @@ use crate::{
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_log_collector::LogCollector;
+use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
 use solana_program_runtime::{
     invoke_context::InvokeContext,
@@ -18,7 +20,6 @@ use solana_program_runtime::{
         vm::{Config, EbpfVm},
     },
 };
-use solana_program_runtime::{log_collector::LogCollector, sysvar_cache::SysvarCache};
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
