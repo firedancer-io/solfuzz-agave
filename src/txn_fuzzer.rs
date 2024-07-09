@@ -215,7 +215,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
         std::mem::swap(&mut value.loaded_transactions[0], &mut loaded_transaction);
         let execution_results = &value.execution_results[0];
 
-        let (is_ok, status, executed_units, accounts_data_len_delta, return_data) =
+        let (is_ok, status, executed_units, accounts_data_len_delta, return_data, fee_details) =
             if execution_results.was_executed() {
                 let details = execution_results.details().unwrap();
                 let is_ok = details.status.is_ok();
@@ -237,9 +237,10 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                         .as_ref()
                         .map(|info| info.data.clone())
                         .unwrap_or_default(),
+                    Some(details.fee_details),
                 )
             } else {
-                (false, 0, 0, 0, vec![])
+                (false, 0, 0, 0, vec![], None)
             };
 
         let rent = loaded_transaction
@@ -261,7 +262,10 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             return_data,
             executed_units,
             accounts_data_len_delta,
-            fee_details: None,
+            fee_details: fee_details.map(|fees| proto::FeeDetails {
+                transaction_fee: fees.transaction_fee(),
+                prioritization_fee: fees.prioritization_fee(),
+            }),
         }
     }
 }
