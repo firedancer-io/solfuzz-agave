@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod elf_loader;
-pub mod txn_fuzzer;
+// pub mod txn_fuzzer;
 pub mod utils;
 mod vm_syscalls;
 mod vm_validate;
@@ -561,6 +561,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         }
 
         if acc.1.executable && program_cache_for_tx_batch.find(&acc.0).is_none() {
+            // load_program_with_pubkey expects the owner to be one of the bpf loader
+            if !solana_sdk::loader_v4::check_id(&acc.1.owner)
+                && !solana_sdk::bpf_loader_deprecated::check_id(&acc.1.owner)
+                && !solana_sdk::bpf_loader::check_id(&acc.1.owner)
+                && !solana_sdk::bpf_loader_upgradeable::check_id(&acc.1.owner) {
+                continue
+            }
             // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
             /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
                 callbacks: &CB,
