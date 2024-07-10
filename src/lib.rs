@@ -565,8 +565,9 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             if !solana_sdk::loader_v4::check_id(&acc.1.owner)
                 && !solana_sdk::bpf_loader_deprecated::check_id(&acc.1.owner)
                 && !solana_sdk::bpf_loader::check_id(&acc.1.owner)
-                && !solana_sdk::bpf_loader_upgradeable::check_id(&acc.1.owner) {
-                continue
+                && !solana_sdk::bpf_loader_upgradeable::check_id(&acc.1.owner)
+            {
+                continue;
             }
             // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
             /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
@@ -882,7 +883,6 @@ mod tests {
             cu_avail: 10000u64,
             epoch_context: None,
             slot_context: None,
-            txn_context: None,
         };
         let output = execute_instr_proto(input);
         assert_eq!(
