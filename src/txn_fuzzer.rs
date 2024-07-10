@@ -343,12 +343,16 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|addresses| addresses.readonly.clone())
         .unwrap_or_default();
 
+    // Load accounts + sysvars
+    bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         let account_data = AccountSharedData::from(account);
 
         bank.store_account(&pubkey, &account_data);
     }
+    bank.get_transaction_processor()
+        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     // Register blockhashes in bank
     for blockhash in blockhash_queue.iter() {
@@ -471,6 +475,21 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                 || loaded_account_keys_writable.contains(&account.address)
                 || loaded_account_keys_readonly.contains(&account.address)
         });
+        
+        // Fill values for executable accounts with no lamports reported in output (this metadata was omitted by Agave for performance reasons)
+        for account in relevant_accounts.acct_states.iter_mut() {
+            if account.lamports == 0 && account.executable {
+                let account_data = bank.get_account(&Pubkey::new_from_array(
+                    account.address.clone().try_into().unwrap(),
+                ));
+                if let Some(account_data) = account_data {
+                    account.lamports = account_data.lamports();
+                    account.data = account_data.data().to_vec();
+                    account.rent_epoch = account_data.rent_epoch();
+                }
+            }
+        }
+        txn_result.resulting_state = Some(relevant_accounts.clone());
     }
 
     Some(txn_result)
