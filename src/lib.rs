@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod elf_loader;
-// pub mod txn_fuzzer;
+pub mod txn_fuzzer;
 pub mod utils;
 mod vm_syscalls;
 mod vm_validate;
