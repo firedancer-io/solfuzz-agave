@@ -17,7 +17,7 @@ jobs:
         run: sudo apt-get install protobuf-compiler
 
       - name: Clone protosol
-        run: ./scripts/fetch_proto.sh
+        run: make fetch_proto
 
       - name: Check lints and clippy
         run: |
@@ -32,11 +32,10 @@ jobs:
           cargo test
 
       - name: Run build
-        run: make build
+        run: make -j build binaries
 
       - name: Run test-vectors
         run: |
-          cargo build --release
           ./scripts/run_test_vectors.sh
 
       - uses: actions/upload-artifact@v4
