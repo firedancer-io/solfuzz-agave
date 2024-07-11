@@ -441,16 +441,11 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     };
 
     let mut timings = ExecuteTimings::default();
-    let log_limit = if context.log_messages_byte_limit > 0 {
-        Some(context.log_messages_byte_limit as usize)
-    } else {
-        None
-    };
 
     let configs = TransactionProcessingConfig {
         account_overrides: None,
         compute_budget: bank.compute_budget(),
-        log_messages_bytes_limit: log_limit,
+        log_messages_bytes_limit: None,
         limit_to_load_programs: true,
         recording_config,
         transaction_account_lock_limit: None,
