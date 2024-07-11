@@ -1,0 +1,74 @@
+use solana_program_runtime::solana_rbpf::error::EbpfError;
+use solana_program_runtime::solana_rbpf::verifier::VerifierError;
+const TRUNCATE_ERROR_WORDS: usize = 9;
+
+pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
+    match ebpf_err {
+        EbpfError::VerifierError(err) => verifer_error_match(err), // See FIXME below
+        EbpfError::SyscallError(err) => syscall_error_match(err),
+        _ => -1,
+    }
+    
+}
+
+fn truncate_error_str(s: String) -> String {
+    s.split_whitespace()
+    .take(TRUNCATE_ERROR_WORDS)
+    .collect::<Vec<_>>()
+    .join(" ")
+}
+
+
+fn verifer_error_match(ver_err: &VerifierError) -> i32{
+    // https://github.com/firedancer-io/firedancer/blob/f878e448e5511c3600e2dd6360a4f06ce793af6f/src/flamenco/vm/fd_vm_base.h#L67
+    match ver_err {
+        VerifierError::NoProgram => 6,
+        VerifierError::DivisionByZero(_) => 18,
+        VerifierError::UnknownOpCode(_, _) => 25,
+        VerifierError::InvalidSourceRegister(_) => 26,
+        VerifierError::InvalidDestinationRegister(_) => 27,
+        VerifierError::CannotWriteR10(_) => 27, // FD treats this the same as InvalidDestinationRegister
+        VerifierError::InfiniteLoop(_) => 28,   // Not checked here (nor in FD)
+        VerifierError::JumpOutOfCode(_, _) => 29,
+        VerifierError::JumpToMiddleOfLDDW(_, _) => 30,
+        VerifierError::UnsupportedLEBEArgument(_) => 31,
+        VerifierError::LDDWCannotBeLast => 32,
+        VerifierError::IncompleteLDDW(_) => 33,
+        VerifierError::InvalidRegister(_) => 35,
+        VerifierError::ShiftWithOverflow(_, _, _) => 37,
+        VerifierError::ProgramLengthNotMultiple => 38,
+        _ => -1,
+    }
+}
+
+fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32{
+    // Error matching.
+    // Errors are `EbpfError`` and in particular we need to match EbpfError::Syscall == Box<dyn Error>.
+    // In turn, the dynamic error can have multiple types, for example InstructionError or SyscallError.
+    // And... we need to match them against Firedancer errors.
+    // To make things as simple as possible, we match explicit error messages to Firedancer error numbers.
+    // Unfortunately even this is not that simple, because most error messages contain dynamic fields.
+    // So, the current solutio truncates the error message to TRUNCATE_ERROR_WORDS words, where the constant
+    // is chosen to be large enough to distinguish errors, and small enough to avoid variable strings.
+    match truncate_error_str(sys_err.to_string()).as_str() {
+         // InstructionError
+        // https://github.com/anza-xyz/agave/blob/v1.18.12/sdk/program/src/instruction.rs#L33
+        "Syscall error: Computational budget exceeded" => -16,
+        // SyscallError
+        // https://github.com/anza-xyz/agave/blob/8c5a33a81a0504fd25d0465bed35d153ff84819f/programs/bpf_loader/src/syscalls/mod.rs#L77
+        "Syscall error: Hashing too many sequences" => -1,
+        "Syscall error: InvalidLength" => -1,
+        "Syscall error: InvalidAttribute" => -1,
+        // ??
+        "Syscall error: Access violation in program section at address" => -13,
+        "Syscall error: Access violation in stack section at address" => -13,
+        "Syscall error: Access violation in heap section at address" => -13,
+        "Syscall error: Access violation in unknown section at address" => -13,
+        // https://github.com/solana-labs/solana/blob/v1.18.12/sdk/program/src/poseidon.rs#L13
+        "Syscall error: Invalid parameters." => -1,
+        "Syscall error: Invalid endianness." => -1,
+        // EbpfError
+        // https://github.com/solana-labs/rbpf/blob/main/src/error.rs#L17
+        _ => -1,
+    }
+}

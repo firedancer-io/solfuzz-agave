@@ -2,6 +2,7 @@ use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
     InstrContext,
+    utils,
 };
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -205,39 +206,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
     Some(SyscallEffects {
-        // Error matching.
-        // Errors are `EbpfError`` and in particular we need to match EbpfError::Syscall == Box<dyn Error>.
-        // In turn, the dynamic error can have multiple types, for example InstructionError or SyscallError.
-        // And... we need to match them against Firedancer errors.
-        // To make things as simple as possible, we match explicit error messages to Firedancer error numbers.
-        // Unfortunately even this is not that simple, because most error messages contain dynamic fields.
-        // So, the current solutio truncates the error message to TRUNCATE_ERROR_WORDS words, where the constant
-        // is chosen to be large enough to distinguish errors, and small enough to avoid variable strings.
+        
         error: match program_result {
             StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => {
-                match truncate_error_str(ebpf_error.to_string()).as_str() {
-                    // InstructionError
-                    // https://github.com/anza-xyz/agave/blob/v1.18.12/sdk/program/src/instruction.rs#L33
-                    "Syscall error: Computational budget exceeded" => 16,
-                    // SyscallError
-                    // https://github.com/anza-xyz/agave/blob/8c5a33a81a0504fd25d0465bed35d153ff84819f/programs/bpf_loader/src/syscalls/mod.rs#L77
-                    "Syscall error: Hashing too many sequences" => 1,
-                    "Syscall error: InvalidLength" => 1,
-                    "Syscall error: InvalidAttribute" => 1,
-                    // ??
-                    "Syscall error: Access violation in program section at address" => 13,
-                    "Syscall error: Access violation in stack section at address" => 13,
-                    "Syscall error: Access violation in heap section at address" => 13,
-                    "Syscall error: Access violation in unknown section at address" => 13,
-                    // https://github.com/solana-labs/solana/blob/v1.18.12/sdk/program/src/poseidon.rs#L13
-                    "Syscall error: Invalid parameters." => 1,
-                    "Syscall error: Invalid endianness." => 1,
-                    // EbpfError
-                    // https://github.com/solana-labs/rbpf/blob/main/src/error.rs#L17
-                    _ => -1,
-                }
-            }
+            StableResult::Err(ref ebpf_error) => 
+                utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
         },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
