@@ -159,7 +159,6 @@ fn test_txn_execute_clock() {
     let txn_input = TxnContext {
         tx: Some(tx),
         max_age: 500,
-        log_messages_byte_limit: 200,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
         genesis_hash: Hash::new_unique().to_bytes().to_vec(),
@@ -277,7 +276,6 @@ fn test_simple_transfer() {
     let txn_input = TxnContext {
         tx: Some(tx),
         max_age: 500,
-        log_messages_byte_limit: 200,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
         genesis_hash: Hash::new_unique().to_bytes().to_vec(),
@@ -450,7 +448,6 @@ fn test_lookup_table() {
     let txn_input = TxnContext {
         tx: Some(tx),
         max_age: 500,
-        log_messages_byte_limit: 200,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
         genesis_hash: Hash::new_unique().to_bytes().to_vec(),
