@@ -27,8 +27,6 @@ use std::{ffi::c_int, sync::Arc};
 
 const STACK_SIZE: usize = 524288; // FD_VM_STACK_MAX
 
-const TRUNCATE_ERROR_WORDS: usize = 9;
-
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     out_ptr: *mut u8,
@@ -55,13 +53,6 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     *out_psz = out_vec.len() as u64;
 
     1
-}
-
-fn truncate_error_str(s: String) -> String {
-    s.split_whitespace()
-        .take(TRUNCATE_ERROR_WORDS)
-        .collect::<Vec<_>>()
-        .join(" ")
 }
 
 fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
