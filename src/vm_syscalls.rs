@@ -3,6 +3,7 @@ use crate::{
     proto::{SyscallContext, SyscallEffects},
     InstrContext,
     utils,
+    utils::vm::STACK_SIZE
 };
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -25,7 +26,6 @@ use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
 
-const STACK_SIZE: usize = 524288; // FD_VM_STACK_MAX
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(

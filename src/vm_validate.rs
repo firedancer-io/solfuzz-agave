@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::c_int;
 
 // FIXME: VM Validator fuzzer needs to be tweaked to use +ve error codes
-//        so that we can use utils::vm::err_map::get_fd_vm_err_code here
+//        so that we can use utils::vm::err_map::get_fd_vm_err_code instead.
 fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
     let ver_err = match ebpf_err {
         EbpfError::VerifierError(err) => err,

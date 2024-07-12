@@ -8,7 +8,6 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
         EbpfError::SyscallError(err) => syscall_error_match(err),
         _ => -1,
     }
-    
 }
 
 fn truncate_error_str(s: String) -> String {
