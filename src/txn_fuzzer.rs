@@ -115,7 +115,7 @@ impl From<&proto::LoadedAddresses> for LoadedAddresses {
     }
 }
 
-fn build_versioned_message(value: &TransactionMessage, bank: &Bank) -> Option<VersionedMessage> {
+fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessage> {
     let header = MessageHeader::from(value.header.as_ref()?);
     let account_keys = value
         .account_keys
@@ -123,7 +123,6 @@ fn build_versioned_message(value: &TransactionMessage, bank: &Bank) -> Option<Ve
         .map(|key| Pubkey::new_from_array(key.clone().try_into().unwrap()))
         .collect::<Vec<Pubkey>>();
     let recent_blockhash = Hash::new_from_array(value.recent_blockhash.clone().try_into().unwrap());
-    bank.register_recent_blockhash_for_test(&recent_blockhash);
     let instructions = value
         .instructions
         .iter()
@@ -287,7 +286,9 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let genesis_config = GenesisConfig::default();
 
-    let genesis_hash = Hash::new_from_array(context.genesis_hash.try_into().unwrap());
+    let blockhash_queue = context.blockhash_queue;
+    let genesis_hash = Hash::new(blockhash_queue[0].as_slice());
+
     // Bank on slot 0
     let mut bank = Bank::new_with_paths(
         &genesis_config,
@@ -346,7 +347,13 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         bank.store_account(&pubkey, &account_data);
     }
 
-    let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?, &bank)?;
+    // Register blockhashes in bank
+    for blockhash in blockhash_queue.iter() {
+        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
+        bank.register_recent_blockhash_for_test(&blockhash_hash);
+    }
+
+    let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
 
     let signatures = context
         .tx

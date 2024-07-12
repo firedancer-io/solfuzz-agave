@@ -135,6 +135,11 @@ fn test_txn_execute_clock() {
         data: vec![],
     };
 
+    let blockhash_queue = vec![
+        Hash::new_unique().to_bytes().to_vec(),
+        Hash::new_unique().to_bytes().to_vec(),
+    ];
+
     let message = TransactionMessage {
         is_legacy: true,
         header: Some(header),
@@ -142,7 +147,7 @@ fn test_txn_execute_clock() {
             fee_payer.to_bytes().to_vec(),
             program_info[0].0.to_bytes().to_vec(),
         ],
-        recent_blockhash: Hash::new_unique().to_bytes().to_vec(),
+        recent_blockhash: blockhash_queue[1].clone(),
         account_shared_data: vec![fee_payer_data, p_acc, pd_acc],
         instructions: vec![instr],
         address_table_lookups: vec![],
@@ -159,9 +164,9 @@ fn test_txn_execute_clock() {
     let txn_input = TxnContext {
         tx: Some(tx),
         max_age: 500,
+        blockhash_queue: blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
-        genesis_hash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -246,6 +251,11 @@ fn test_simple_transfer() {
         data: vec![0, 0, 0, 0, 0, 0, 0, 10],
     };
 
+    let blockhash_queue = vec![
+        Hash::new_unique().to_bytes().to_vec(),
+        Hash::new_unique().to_bytes().to_vec(),
+    ];
+
     let message = TransactionMessage {
         is_legacy: false,
         header: Some(header),
@@ -260,7 +270,7 @@ fn test_simple_transfer() {
         instructions: vec![instr],
         address_table_lookups: vec![],
         loaded_addresses: None,
-        recent_blockhash: Hash::new_unique().to_bytes().to_vec(),
+        recent_blockhash: blockhash_queue[1].clone(),
     };
 
     let tx = SanitizedTransaction {
@@ -276,9 +286,9 @@ fn test_simple_transfer() {
     let txn_input = TxnContext {
         tx: Some(tx),
         max_age: 500,
+        blockhash_queue: blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
-        genesis_hash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -411,6 +421,11 @@ fn test_lookup_table() {
         readonly: vec![extra_account.to_bytes().to_vec()],
     };
 
+    let blockhash_queue = vec![
+        Hash::new_unique().to_bytes().to_vec(),
+        Hash::new_unique().to_bytes().to_vec(),
+    ];
+
     let message = TransactionMessage {
         is_legacy: false,
         header: Some(header),
@@ -432,7 +447,7 @@ fn test_lookup_table() {
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
         loaded_addresses: Some(loaded_addresses),
-        recent_blockhash: Hash::new_unique().to_bytes().to_vec(),
+        recent_blockhash: blockhash_queue[1].clone(),
     };
 
     let tx = SanitizedTransaction {
@@ -448,9 +463,9 @@ fn test_lookup_table() {
     let txn_input = TxnContext {
         tx: Some(tx),
         max_age: 500,
+        blockhash_queue: blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
-        genesis_hash: Hash::new_unique().to_bytes().to_vec(),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
