@@ -243,7 +243,7 @@ fn test_txn_execute_clock() {
     let buffer_len = buffer.len() as u64;
 
     // Uncomment to write the data to a file
-    write_to_file("clock-test", &buffer);
+    // write_to_file("clock-test", &buffer);
 
     let mut res_buffer: Vec<u8> = vec![0; 512];
     let mut res_buffer_len = res_buffer.len() as u64;
@@ -378,7 +378,7 @@ fn test_simple_transfer() {
     let buffer_len = buffer.len() as u64;
 
     // Uncomment to write the data to a file
-    write_to_file("simple-transfer", &buffer);
+    // write_to_file("simple-transfer", &buffer);
 
     let mut res_buffer: Vec<u8> = vec![0; 68007];
     let mut res_buffer_len = res_buffer.len() as u64;
@@ -562,7 +562,7 @@ fn test_lookup_table() {
     let buffer_len = buffer.len() as u64;
 
     // Uncomment to write the data to a file
-    write_to_file("lookup-table", &buffer);
+    // write_to_file("lookup-table", &buffer);
 
     let mut res_buffer: Vec<u8> = vec![0; 120761];
     let mut res_buffer_len = res_buffer.len() as u64;
