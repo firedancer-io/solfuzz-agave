@@ -5,6 +5,7 @@ pub mod txn_fuzzer;
 pub mod utils;
 mod vm_syscalls;
 mod vm_validate;
+mod vm_cpi_syscall;
 
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -414,6 +415,8 @@ impl From<InstrEffects> for proto::InstrEffects {
                     executable: account.executable,
                     rent_epoch: account.rent_epoch,
                     seed_addr: None,
+                    is_signer: false,
+                    is_writable: false,
                 })
                 .collect(),
             cu_avail: val.cu_avail,
@@ -944,6 +947,8 @@ mod tests {
                     executable: false,
                     rent_epoch: 0,
                     seed_addr: None,
+                    is_signer: false,
+                    is_writable: false,
                 },
                 proto::AcctState {
                     address: vec![2u8; 32],
@@ -953,6 +958,8 @@ mod tests {
                     executable: false,
                     rent_epoch: 0,
                     seed_addr: None,
+                    is_signer: true,
+                    is_writable: false,
                 },
                 proto::AcctState {
                     address: vec![0u8; 32],
@@ -962,6 +969,8 @@ mod tests {
                     executable: true,
                     rent_epoch: 0,
                     seed_addr: None,
+                    is_signer: false,
+                    is_writable: true,
                 },
             ],
             instr_accounts: vec![
@@ -1000,6 +1009,8 @@ mod tests {
                         executable: false,
                         rent_epoch: 0,
                         seed_addr: None,
+                        is_signer: false,
+                        is_writable: false,
                     },
                     proto::AcctState {
                         address: vec![2u8; 32],
@@ -1009,6 +1020,8 @@ mod tests {
                         executable: false,
                         rent_epoch: 0,
                         seed_addr: None,
+                        is_signer: true,
+                        is_writable: false,
                     },
                     proto::AcctState {
                         address: vec![0u8; 32],
@@ -1018,6 +1031,8 @@ mod tests {
                         executable: true,
                         rent_epoch: 0,
                         seed_addr: None,
+                        is_signer: false,
+                        is_writable: true,
                     },
                 ],
                 cu_avail: 9850u64,
