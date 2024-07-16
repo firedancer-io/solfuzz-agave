@@ -189,7 +189,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
         .get_function_registry()
-        .lookup_by_name(&input.syscall_invocation?.function_name.into_bytes())?;
+        .lookup_by_name(&input.syscall_invocation?.function_name)?;
     vm.invoke_function(syscall_func);
 
     // Unwrap and return the effects of the syscall
