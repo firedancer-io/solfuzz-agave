@@ -118,7 +118,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     );
 
     // TODO: support different versions
-    let sbpf_version = &SBPFVersion::V2;
+    let sbpf_version = &SBPFVersion::V1;
 
     // Set up memory mapping
     let vm_ctx = input.vm_ctx.unwrap();
@@ -160,7 +160,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let loader = std::sync::Arc::new(BuiltinProgram::new_mock());
     let mut vm = EbpfVm::new(
         loader,
-        &SBPFVersion::V2,
+        &SBPFVersion::V1,
         &mut invoke_context,
         memory_mapping,
         STACK_SIZE,
