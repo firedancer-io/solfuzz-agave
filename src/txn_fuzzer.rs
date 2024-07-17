@@ -317,6 +317,11 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .unwrap()
             .insert(new_bank)
             .clone_without_scheduler();
+        bank.get_transaction_processor()
+            .program_cache
+            .write()
+            .unwrap()
+            .prune(slot, bank.epoch());
     }
 
     let account_keys = context
