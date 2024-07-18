@@ -17,6 +17,7 @@ use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::signature::Signature;
+use solana_sdk::sysvar;
 use solana_sdk::transaction::{
     SanitizedTransaction, SanitizedVersionedTransaction, TransactionError, VersionedTransaction,
 };
@@ -27,6 +28,7 @@ use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionPro
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::ffi::c_int;
+use std::io::Read;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
@@ -471,11 +473,13 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let mut txn_result: TxnResult = result.into();
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
         relevant_accounts.acct_states.retain(|account| {
-            account_keys.contains(&account.address)
+            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok().unwrap());
+            (account_keys.contains(&account.address)
                 || loaded_account_keys_writable.contains(&account.address)
-                || loaded_account_keys_readonly.contains(&account.address)
+                || loaded_account_keys_readonly.contains(&account.address))
+                && pubkey != sysvar::instructions::id()
         });
-        
+
         // Fill values for executable accounts with no lamports reported in output (this metadata was omitted by Agave for performance reasons)
         for account in relevant_accounts.acct_states.iter_mut() {
             if account.lamports == 0 && account.executable {
