@@ -317,6 +317,11 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .unwrap()
             .insert(new_bank)
             .clone_without_scheduler();
+        bank.get_transaction_processor()
+            .program_cache
+            .write()
+            .unwrap()
+            .prune(slot, bank.epoch());
     }
 
     let account_keys = context
@@ -464,13 +469,13 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     // Only keep accounts that were passed in as account_keys
     let mut txn_result: TxnResult = result.into();
-    let mut relevant_accounts = txn_result.resulting_state.clone().unwrap();
-    relevant_accounts.acct_states.retain(|account| {
-        account_keys.contains(&account.address)
-            || loaded_account_keys_writable.contains(&account.address)
-            || loaded_account_keys_readonly.contains(&account.address)
-    });
-    txn_result.resulting_state = Some(relevant_accounts);
+    if let Some(relevant_accounts) = &mut txn_result.resulting_state {
+        relevant_accounts.acct_states.retain(|account| {
+            account_keys.contains(&account.address)
+                || loaded_account_keys_writable.contains(&account.address)
+                || loaded_account_keys_readonly.contains(&account.address)
+        });
+    }
 
     Some(txn_result)
 }
