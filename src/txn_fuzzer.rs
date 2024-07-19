@@ -28,7 +28,6 @@ use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionPro
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::ffi::c_int;
-use std::io::Read;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
