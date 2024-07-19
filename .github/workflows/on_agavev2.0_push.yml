@@ -1,7 +1,10 @@
 name: Trigger Solfuzz CI
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build, check, test, release"]
+    types:
+      - completed
     branches:
       - agave-v2.0
 jobs:
