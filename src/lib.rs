@@ -415,8 +415,6 @@ impl From<InstrEffects> for proto::InstrEffects {
                     executable: account.executable,
                     rent_epoch: account.rent_epoch,
                     seed_addr: None,
-                    is_signer: false,
-                    is_writable: false,
                 })
                 .collect(),
             cu_avail: val.cu_avail,
@@ -947,8 +945,6 @@ mod tests {
                     executable: false,
                     rent_epoch: 0,
                     seed_addr: None,
-                    is_signer: false,
-                    is_writable: false,
                 },
                 proto::AcctState {
                     address: vec![2u8; 32],
@@ -958,8 +954,6 @@ mod tests {
                     executable: false,
                     rent_epoch: 0,
                     seed_addr: None,
-                    is_signer: true,
-                    is_writable: false,
                 },
                 proto::AcctState {
                     address: vec![0u8; 32],
@@ -969,8 +963,6 @@ mod tests {
                     executable: true,
                     rent_epoch: 0,
                     seed_addr: None,
-                    is_signer: false,
-                    is_writable: true,
                 },
             ],
             instr_accounts: vec![
@@ -993,6 +985,9 @@ mod tests {
             cu_avail: 10000u64,
             epoch_context: None,
             slot_context: None,
+            starting_lamports_h: 0,
+            starting_lamports_l: 0,
+            heap_size: 32 << 10,
         };
         let output = execute_instr_proto(input);
         assert_eq!(
@@ -1009,8 +1004,6 @@ mod tests {
                         executable: false,
                         rent_epoch: 0,
                         seed_addr: None,
-                        is_signer: false,
-                        is_writable: false,
                     },
                     proto::AcctState {
                         address: vec![2u8; 32],
@@ -1020,8 +1013,6 @@ mod tests {
                         executable: false,
                         rent_epoch: 0,
                         seed_addr: None,
-                        is_signer: true,
-                        is_writable: false,
                     },
                     proto::AcctState {
                         address: vec![0u8; 32],
@@ -1031,8 +1022,6 @@ mod tests {
                         executable: true,
                         rent_epoch: 0,
                         seed_addr: None,
-                        is_signer: false,
-                        is_writable: true,
                     },
                 ],
                 cu_avail: 9850u64,
