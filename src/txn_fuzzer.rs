@@ -214,7 +214,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
         std::mem::swap(&mut value.loaded_transactions[0], &mut loaded_transaction);
         let execution_results = &value.execution_results[0];
 
-        let (is_ok, status, executed_units, accounts_data_len_delta, return_data, fee_details) =
+        let (is_ok, status, executed_units, return_data, fee_details) =
             if execution_results.was_executed() {
                 let details = execution_results.details().unwrap();
                 let is_ok = details.status.is_ok();
@@ -230,7 +230,6 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     is_ok,
                     error_no,
                     details.executed_units,
-                    details.accounts_data_len_delta,
                     details
                         .return_data
                         .as_ref()
@@ -260,7 +259,6 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             status,
             return_data,
             executed_units,
-            accounts_data_len_delta,
             fee_details: fee_details.map(|fees| proto::FeeDetails {
                 transaction_fee: fees.transaction_fee(),
                 prioritization_fee: fees.prioritization_fee(),
@@ -388,7 +386,6 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                     status: 0,
                     return_data: vec![],
                     executed_units: 0,
-                    accounts_data_len_delta: 0,
                     fee_details: None,
                 })
             }
@@ -434,7 +431,6 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                 status,
                 return_data: vec![],
                 executed_units: 0,
-                accounts_data_len_delta: 0,
                 fee_details: None,
             });
         }
