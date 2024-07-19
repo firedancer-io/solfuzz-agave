@@ -20,7 +20,6 @@ use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
-use solana_timings::ExecuteTimings;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
 use solana_sdk::clock::{Clock, Epoch};
 use solana_sdk::epoch_schedule::EpochSchedule;
@@ -37,6 +36,7 @@ use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use solana_svm::program_loader;
+use solana_timings::ExecuteTimings;
 
 use crate::utils::feature_u64;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;

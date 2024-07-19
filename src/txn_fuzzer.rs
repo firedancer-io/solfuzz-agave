@@ -10,7 +10,6 @@ use solana_program::message::{
     legacy, v0, AddressLoader, AddressLoaderError, MessageHeader, VersionedMessage,
 };
 use solana_program::pubkey::Pubkey;
-use solana_timings::ExecuteTimings;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::transaction_batch::TransactionBatch;
@@ -25,6 +24,7 @@ use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
+use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
