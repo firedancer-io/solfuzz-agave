@@ -10,7 +10,7 @@ use solana_program::message::{
     legacy, v0, AddressLoader, AddressLoaderError, MessageHeader, VersionedMessage,
 };
 use solana_program::pubkey::Pubkey;
-use solana_program_runtime::timings::ExecuteTimings;
+use solana_timings::ExecuteTimings;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::transaction_batch::TransactionBatch;

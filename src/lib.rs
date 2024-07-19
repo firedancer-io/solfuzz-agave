@@ -20,7 +20,7 @@ use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
-use solana_program_runtime::timings::ExecuteTimings;
+use solana_timings::ExecuteTimings;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
 use solana_sdk::clock::{Clock, Epoch};
 use solana_sdk::epoch_schedule::EpochSchedule;
