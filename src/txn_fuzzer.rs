@@ -238,7 +238,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     Some(details.fee_details),
                 )
             } else {
-                (false, 0, 0, 0, vec![], None)
+                (false, 0, 0, vec![], None)
             };
 
         let rent = loaded_transaction
