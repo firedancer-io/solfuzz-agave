@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.76.0
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2 # hopefully this works!
 
       - name: Install protobuf
         run: sudo apt-get install protobuf-compiler
