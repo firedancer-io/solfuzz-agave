@@ -182,8 +182,6 @@ impl From<TransactionAccount> for proto::AcctState {
             rent_epoch: value.1.rent_epoch(),
             owner: value.1.owner().to_bytes().to_vec(),
             seed_addr: None,
-            is_signer: false,
-            is_writable: false,
         }
     }
 }
