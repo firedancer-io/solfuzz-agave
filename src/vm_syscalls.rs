@@ -178,7 +178,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.registers[11] = vm_ctx.r11;
 
     if let Some(syscall_invocation) = input.syscall_invocation.clone() {
-        heap.copy_from_slice(&syscall_invocation.heap_prefix);
+        let size = syscall_invocation.heap_prefix.len().min(heap_max as usize);
+        heap[..size].copy_from_slice(&syscall_invocation.heap_prefix[..size]);
     }
 
     // Actually invoke the syscall
