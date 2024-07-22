@@ -153,7 +153,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         enable_sbpf_v2: true,
         ..Config::default()
     };
-    let memory_mapping = MemoryMapping::new(regions, config, sbpf_version).unwrap();
+
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
+        Ok(mapping) => mapping,
+        Err(_) => return None,
+    };
 
     // Set up the vm instance
     let loader = std::sync::Arc::new(BuiltinProgram::new_mock());
