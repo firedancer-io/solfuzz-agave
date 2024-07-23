@@ -3,8 +3,12 @@ use solana_program::bpf_loader_upgradeable;
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
+use solana_sdk::clock::Clock;
+use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::*;
+use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
+use solana_sdk::sysvar::SysvarId;
 use solfuzz_agave::proto::{
     AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
     SlotContext, TransactionMessage, TxnContext, TxnResult,
@@ -34,6 +38,61 @@ fn get_features() -> FeatureSet {
     features.features = HARDCODED_FEATURES.into();
     features.features.extend_from_slice(additional_features);
     features
+}
+
+fn get_clock_sysvar_account() -> AcctState {
+    let clock = Clock {
+        slot: 20,
+        epoch_start_timestamp: 1720556855,
+        epoch: 0,
+        leader_schedule_epoch: 1,
+        unix_timestamp: 1720556855,
+    };
+    AcctState {
+        address: Clock::id().to_bytes().to_vec(),
+        lamports: 1,
+        data: bincode::serialize(&clock).unwrap(),
+        executable: false,
+        rent_epoch: u64::MAX,
+        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+        seed_addr: None,
+    }
+}
+
+fn get_epoch_schedule_sysvar_account() -> AcctState {
+    let epoch_schedule = EpochSchedule {
+        slots_per_epoch: 432000,
+        leader_schedule_slot_offset: 432000,
+        warmup: true,
+        first_normal_epoch: 14,
+        first_normal_slot: 524256,
+    };
+    AcctState {
+        address: EpochSchedule::id().to_bytes().to_vec(),
+        lamports: 1,
+        data: bincode::serialize(&epoch_schedule).unwrap(),
+        executable: false,
+        rent_epoch: u64::MAX,
+        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+        seed_addr: None,
+    }
+}
+
+fn get_rent_sysvar_account() -> AcctState {
+    let rent = solana_sdk::rent::Rent {
+        lamports_per_byte_year: 3480,
+        exemption_threshold: 2.0,
+        burn_percent: 50,
+    };
+    AcctState {
+        address: Rent::id().to_bytes().to_vec(),
+        lamports: 1,
+        data: bincode::serialize(&rent).unwrap(),
+        executable: false,
+        rent_epoch: u64::MAX,
+        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+        seed_addr: None,
+    }
 }
 
 fn load_program(name: String) -> Vec<u8> {
@@ -101,6 +160,10 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
 
 #[test]
 fn test_txn_execute_clock() {
+    let clock_sysvar = get_clock_sysvar_account();
+    let epoch_schedule = get_epoch_schedule_sysvar_account();
+    let rent = get_rent_sysvar_account();
+
     let slot_ctx = SlotContext { slot: 20 };
     let features = get_features();
     let epoch_ctx = EpochContext {
@@ -148,7 +211,14 @@ fn test_txn_execute_clock() {
             program_info[0].0.to_bytes().to_vec(),
         ],
         recent_blockhash: blockhash_queue[1].clone(),
-        account_shared_data: vec![fee_payer_data, p_acc, pd_acc],
+        account_shared_data: vec![
+            fee_payer_data,
+            p_acc,
+            pd_acc,
+            clock_sysvar,
+            epoch_schedule,
+            rent,
+        ],
         instructions: vec![instr],
         address_table_lookups: vec![],
         loaded_addresses: None,
@@ -195,6 +265,10 @@ fn test_txn_execute_clock() {
 
 #[test]
 fn test_simple_transfer() {
+    let clock_sysvar = get_clock_sysvar_account();
+    let epoch_schedule = get_epoch_schedule_sysvar_account();
+    let rent = get_rent_sysvar_account();
+
     let slot_ctx = SlotContext { slot: 20 };
     let features = get_features();
     let epoch_ctx = EpochContext {
@@ -266,7 +340,16 @@ fn test_simple_transfer() {
             program_info[0].0.to_bytes().to_vec(),
             vec![0; 32],
         ],
-        account_shared_data: vec![fee_payer_data, recipient_data, sender_data, p_acc, pd_acc],
+        account_shared_data: vec![
+            fee_payer_data,
+            recipient_data,
+            sender_data,
+            p_acc,
+            pd_acc,
+            clock_sysvar,
+            epoch_schedule,
+            rent,
+        ],
         instructions: vec![instr],
         address_table_lookups: vec![],
         loaded_addresses: None,
@@ -325,6 +408,10 @@ fn test_simple_transfer() {
 
 #[test]
 fn test_lookup_table() {
+    let clock_sysvar = get_clock_sysvar_account();
+    let epoch_schedule = get_epoch_schedule_sysvar_account();
+    let rent = get_rent_sysvar_account();
+
     let slot_ctx = SlotContext { slot: 20 };
     let features = get_features();
     let epoch_ctx = EpochContext {
@@ -443,6 +530,9 @@ fn test_lookup_table() {
             pd_acc,
             extra_data,
             address_lookup_table_acc,
+            clock_sysvar,
+            epoch_schedule,
+            rent,
         ],
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
