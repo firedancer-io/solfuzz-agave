@@ -25,11 +25,16 @@ all: | fetch_proto shared_obj binaries
 # Alias for backwards compatibility
 build: | fetch_proto shared_obj
 
+debug: | fetch_proto shared_obj_debug
+
 fetch_proto:
 	./scripts/fetch_proto.sh
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
+
+shared_obj_debug:
+	$(CARGO) build --lib
 
 binaries:
 	LLVM_PROFILE_FILE="compiler_artifacts.tmp" RUSTFLAGS="-Cinstrument-coverage" $(CARGO) build --bins
