@@ -32,6 +32,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent::Rent;
 use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
+use solana_sdk::stable_layout::stable_vec::StableVec;
 use solana_sdk::sysvar::SysvarId;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
@@ -389,6 +390,33 @@ fn instr_err_to_num(error: &InstructionError) -> i32 {
     i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()) + 1
 }
 
+pub fn get_instr_accounts( txn_accounts: &Vec<TransactionAccount>, acct_metas: &StableVec<AccountMeta>) -> Vec<InstructionAccount> {
+    let mut instruction_accounts: Vec<InstructionAccount> = Vec::with_capacity(acct_metas.len());
+    for (instruction_account_index, account_meta) in acct_metas.iter().enumerate() {
+        let index_in_transaction = txn_accounts
+            .iter()
+            .position(|(key, _account)| *key == account_meta.pubkey)
+            .unwrap_or(txn_accounts.len())
+            as IndexOfAccount;
+        let index_in_callee = instruction_accounts
+            .get(0..instruction_account_index)
+            .unwrap()
+            .iter()
+            .position(|instruction_account| {
+                instruction_account.index_in_transaction == index_in_transaction
+            })
+            .unwrap_or(instruction_account_index) as IndexOfAccount;
+        instruction_accounts.push(InstructionAccount {
+            index_in_transaction,
+            index_in_caller: index_in_transaction,
+            index_in_callee,
+            is_signer: account_meta.is_signer,
+            is_writable: account_meta.is_writable,
+        });
+    }
+    instruction_accounts
+}
+
 pub struct InstrEffects {
     pub result: Option<InstructionError>,
     pub custom_err: Option<u32>,
@@ -730,32 +758,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
 
     let mut timings = ExecuteTimings::default();
 
-    let mut instruction_accounts: Vec<InstructionAccount> =
-        Vec::with_capacity(input.instruction.accounts.len());
-    for (instruction_account_index, account_meta) in
-        input.instruction.accounts.as_ref().iter().enumerate()
-    {
-        let index_in_transaction = transaction_accounts
-            .iter()
-            .position(|(key, _account)| *key == account_meta.pubkey)
-            .unwrap_or(transaction_accounts.len())
-            as IndexOfAccount;
-        let index_in_callee = instruction_accounts
-            .get(0..instruction_account_index)
-            .unwrap()
-            .iter()
-            .position(|instruction_account| {
-                instruction_account.index_in_transaction == index_in_transaction
-            })
-            .unwrap_or(instruction_account_index) as IndexOfAccount;
-        instruction_accounts.push(InstructionAccount {
-            index_in_transaction,
-            index_in_caller: index_in_transaction,
-            index_in_callee,
-            is_signer: account_meta.is_signer,
-            is_writable: account_meta.is_writable,
-        });
-    }
+    let instruction_accounts = get_instr_accounts(&transaction_accounts, &input.instruction.accounts);
 
     // Precompiles (ed25519, secp256k1)
     // Precompiles are programs that run without the VM and without loading any account.
@@ -987,8 +990,6 @@ mod tests {
             cu_avail: 10000u64,
             epoch_context: None,
             slot_context: None,
-            starting_lamports_h: 0,
-            starting_lamports_l: 0,
             heap_size: 32 << 10,
         };
         let output = execute_instr_proto(input);

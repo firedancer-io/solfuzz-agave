@@ -1,26 +1,29 @@
 use crate::{
-    load_builtins, proto::{ CpiSnapshot, Cpiabi, SyscallEffects}, utils::{self, vm::STACK_SIZE}, InstrContext
+    load_builtins, proto::{ CpiSnapshot, Cpiabi, SyscallEffects},
+    utils::{self, vm::STACK_SIZE},
+    InstrContext
 };
 use prost::Message;
 use solana_bpf_loader_program::syscalls::{
   create_program_runtime_environment_v1
 };
 use solana_log_collector::LogCollector;
-use std::{ffi::c_int, sync::Arc};
+use solana_svm::program_loader;
+use std::{collections::HashSet, ffi::c_int, sync::Arc};
 use solana_program_runtime::{
-    invoke_context::{EnvironmentConfig, InvokeContext},
-    loaded_programs::ProgramCacheForTxBatch,
+    invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata, SyscallContext},
+    loaded_programs::{ProgramCacheForTxBatch, ProgramRuntimeEnvironments},
     solana_rbpf::{
         ebpf::{self, MM_INPUT_START},
         error::StableResult,
         memory_region::{AccessType, MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
-        vm::{Config, EbpfVm, ContextObject}  
+        vm::{Config, ContextObject, EbpfVm}  
     },
     sysvar_cache::SysvarCache
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
+use solana_sdk::{pubkey::Pubkey, transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext}};
 use solana_sdk::account::AccountSharedData;
 use solana_sdk::sysvar::rent::Rent;
 use std::{slice, vec, alloc::Layout};
@@ -58,7 +61,7 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
 
     let abi = input.abi().clone();
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
-    let feature_set = instr_ctx.feature_set;
+    // let feature_set = instr_ctx.feature_set;
 
 
     let mut transaction_accounts =
@@ -86,6 +89,53 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     load_builtins(&mut program_cache_for_tx_batch);
 
+    let program_runtime_environment_v1 =
+        create_program_runtime_environment_v1(&instr_ctx.feature_set, &ComputeBudget::default(), true, false)
+            .unwrap();
+
+    // let environments = ProgramRuntimeEnvironments{
+    //     program_runtime_v1: Arc::new(program_runtime_environment_v1),
+    //     ..ProgramRuntimeEnvironments::default()
+    // };
+
+    // let mut newly_loaded_programs = HashSet::<Pubkey>::new();
+    // for acc in &instr_ctx.accounts {
+    //     // FD rejects duplicate account loads
+    //     if !newly_loaded_programs.insert(acc.0) {
+    //         return None;
+    //     }
+
+    //     if acc.1.executable && program_cache_for_tx_batch.find(&acc.0).is_none() {
+    //         // load_program_with_pubkey expects the owner to be one of the bpf loader
+    //         if !solana_sdk::loader_v4::check_id(&acc.1.owner)
+    //             && !solana_sdk::bpf_loader_deprecated::check_id(&acc.1.owner)
+    //             && !solana_sdk::bpf_loader::check_id(&acc.1.owner)
+    //             && !solana_sdk::bpf_loader_upgradeable::check_id(&acc.1.owner)
+    //         {
+    //             continue;
+    //         }
+    //         // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
+    //         /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
+    //             callbacks: &CB,
+    //             program_cache: &ProgramCache<FG>,
+    //             pubkey: &Pubkey,
+    //             slot: Slot,
+    //             effective_epoch: Epoch,
+    //             epoch_schedule: &EpochSchedule,
+    //             reload: bool,
+    //         ) -> Option<Arc<ProgramCacheEntry>> { */
+    //         if let Some(loaded_program) = program_loader::load_program_with_pubkey(
+    //             &instr_ctx,
+    //             &environments,
+    //             &acc.0,
+    //             10, // FIXME: slot
+    //             false,
+    //         ) {
+    //             program_cache_for_tx_batch.replenish(acc.0, loaded_program);
+    //         }
+    //     }
+    // }
+
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache
@@ -99,7 +149,7 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         blockhash,
         None,
         None,
-        Arc::new(feature_set.clone()),
+        Arc::new(instr_ctx.feature_set.clone()),
         lamports_per_signature,
         &sysvar_cache,
     );
@@ -111,6 +161,42 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         Some(log_collector.clone()),
         compute_budget,
     );
+
+    // Setup syscall context in the invoke context
+
+    // Setup the instruction context in the invoke context
+    let instr = &instr_ctx.instruction;
+    let instr_accounts = crate::get_instr_accounts(
+        &transaction_accounts,
+        &instr.accounts
+    );
+
+    let caller_instr_ctx = invoke_context.transaction_context
+        .get_next_instruction_context()
+        .unwrap();
+
+    let program_idx_in_txn = transaction_accounts
+        .iter()
+        .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
+        as IndexOfAccount;
+
+    caller_instr_ctx.configure(&[program_idx_in_txn], instr_accounts.as_slice(), &instr.data);
+
+    match invoke_context.push(){
+        Ok(_) => (),
+        Err(_) => eprintln!("Failed to push invoke context")
+    }
+    invoke_context.set_syscall_context(SyscallContext {
+        allocator: BpfAllocator::new(instr_ctx.heap_size as u64),
+        accounts_metadata: vec![SerializedAccountMetadata{
+            original_data_len: 0,
+            vm_data_addr: 0,
+            vm_key_addr: 0,
+            vm_owner_addr: 0,
+            vm_lamports_addr: 0,
+        };instr_accounts.len()], // TODO: accounts metadata for direct mapping support
+        trace_log: Vec::new(),
+    }).unwrap();
 
     // TODO: support different versions
     let sbpf_version = &SBPFVersion::V1;
@@ -127,7 +213,7 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
     // FIXME: Do it the "Agave" way (i.e, individual sub regions for each account info with custom perms)
     let mut input_region = input.input_region;
 
-    let mut regions = vec![
+    let regions = vec![
         MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
@@ -158,9 +244,6 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
     vm.registers[5] = input.signers_seeds_cnt;
 
 
-    let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
-            .unwrap();
     
     let syscall_fn_name = match abi {
       Cpiabi::Rust => "sol_invoke_signed_rust".as_bytes(),
@@ -172,8 +255,13 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         .get_function_registry()
         .lookup_by_name(syscall_fn_name)?;
     
-
     vm.invoke_function(syscall_func);
+
+    // Print error if any
+    if let StableResult::Err(ref ebpf_error) = vm.program_result {
+        let e = ebpf_error.clone();
+        eprintln!("Error: {:?}", e);
+    }
 
 
     Some( SyscallEffects{
