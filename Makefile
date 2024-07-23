@@ -25,7 +25,7 @@ all: | fetch_proto shared_obj binaries
 # Alias for backwards compatibility
 build: | fetch_proto shared_obj
 
-debug: | fetch_proto shared_obj_debug
+conformance: | fetch_proto shared_obj_debug
 
 fetch_proto:
 	./scripts/fetch_proto.sh
