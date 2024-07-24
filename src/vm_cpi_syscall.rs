@@ -4,29 +4,32 @@ use crate::{
     InstrContext
 };
 use prost::Message;
-use solana_bpf_loader_program::syscalls::{
-  create_program_runtime_environment_v1
-};
+use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_log_collector::LogCollector;
-use solana_svm::program_loader;
-use std::{collections::HashSet, ffi::c_int, sync::Arc};
+use std::{ffi::c_int, sync::Arc};
 use solana_program_runtime::{
-    invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata, SyscallContext},
-    loaded_programs::{ProgramCacheForTxBatch, ProgramRuntimeEnvironments},
+    invoke_context::{
+                    BpfAllocator,
+                    EnvironmentConfig,
+                    InvokeContext, 
+                    SerializedAccountMetadata, 
+                    SyscallContext
+    },
+    loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
         ebpf::{self, MM_INPUT_START},
         error::{ProgramResult, StableResult},
-        memory_region::{AccessType, MemoryMapping, MemoryRegion},
+        memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::{Config, ContextObject, EbpfVm}  
     },
     sysvar_cache::SysvarCache
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_sdk::{pubkey::Pubkey, transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext}};
+use solana_sdk::transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext};
 use solana_sdk::account::AccountSharedData;
 use solana_sdk::sysvar::rent::Rent;
-use std::{slice, vec, alloc::Layout};
+use std::vec;
 
 
 #[no_mangle]
@@ -61,7 +64,6 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
 
     let abi = input.abi().clone();
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
-    // let feature_set = instr_ctx.feature_set;
 
 
     let mut transaction_accounts =
@@ -120,6 +122,7 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         compute_budget,
     );
 
+    
 
     // Setup the instruction context in the invoke context
     let instr = &instr_ctx.instruction;
@@ -143,7 +146,8 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         &instr.data
     );
 
-    // Push the invoke context, also pushes empty 
+    // Push the invoke context. This sets up the instruction context trace, which is used in the CPI Syscall.
+    // Also pushes empty syscall context, which we will setup later
     match invoke_context.push(){
         Ok(_) => (),
         Err(_) => eprintln!("Failed to push invoke context")
@@ -161,9 +165,6 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         };instr_accounts.len()], // TODO: accounts metadata for direct mapping support
         trace_log: Vec::new(),
     }).unwrap();
-
-    // TODO: support different versions
-    let sbpf_version = &SBPFVersion::V1;
 
     // Set up memory mapping
     let rodata = input.ro_region;
@@ -184,13 +185,12 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         MemoryRegion::new_writable(&mut input_region, MM_INPUT_START),
     ];
 
-
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: false,
         ..Config::default()
     };
-    let memory_mapping = MemoryMapping::new(regions, config, sbpf_version).unwrap();
+    let memory_mapping = MemoryMapping::new(regions, config, &SBPFVersion::V1).unwrap();
 
     // Set up the vm instance
     let loader = std::sync::Arc::new(BuiltinProgram::new_mock());
@@ -208,7 +208,7 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
     vm.registers[5] = input.signers_seeds_cnt;
 
 
-    
+    // Follows Firedancer target's way of invoking the syscall
     if let Some(syscall_fn_name) = match abi {
         Cpiabi::Rust => Some("sol_invoke_signed_rust".as_bytes()),
         Cpiabi::C => Some("sol_invoke_signed_c".as_bytes()),
@@ -223,7 +223,7 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
 
     // Print error if any
     if let StableResult::Err(ref ebpf_error) = vm.program_result {
-        let e = ebpf_error.clone();
+        let e = ebpf_error;
         eprintln!("Error: {:?}", e);
     }
 
