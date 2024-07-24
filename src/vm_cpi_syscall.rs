@@ -15,7 +15,7 @@ use solana_program_runtime::{
     loaded_programs::{ProgramCacheForTxBatch, ProgramRuntimeEnvironments},
     solana_rbpf::{
         ebpf::{self, MM_INPUT_START},
-        error::StableResult,
+        error::{ProgramResult, StableResult},
         memory_region::{AccessType, MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::{Config, ContextObject, EbpfVm}  
@@ -93,48 +93,6 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         create_program_runtime_environment_v1(&instr_ctx.feature_set, &ComputeBudget::default(), true, false)
             .unwrap();
 
-    // let environments = ProgramRuntimeEnvironments{
-    //     program_runtime_v1: Arc::new(program_runtime_environment_v1),
-    //     ..ProgramRuntimeEnvironments::default()
-    // };
-
-    // let mut newly_loaded_programs = HashSet::<Pubkey>::new();
-    // for acc in &instr_ctx.accounts {
-    //     // FD rejects duplicate account loads
-    //     if !newly_loaded_programs.insert(acc.0) {
-    //         return None;
-    //     }
-
-    //     if acc.1.executable && program_cache_for_tx_batch.find(&acc.0).is_none() {
-    //         // load_program_with_pubkey expects the owner to be one of the bpf loader
-    //         if !solana_sdk::loader_v4::check_id(&acc.1.owner)
-    //             && !solana_sdk::bpf_loader_deprecated::check_id(&acc.1.owner)
-    //             && !solana_sdk::bpf_loader::check_id(&acc.1.owner)
-    //             && !solana_sdk::bpf_loader_upgradeable::check_id(&acc.1.owner)
-    //         {
-    //             continue;
-    //         }
-    //         // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
-    //         /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
-    //             callbacks: &CB,
-    //             program_cache: &ProgramCache<FG>,
-    //             pubkey: &Pubkey,
-    //             slot: Slot,
-    //             effective_epoch: Epoch,
-    //             epoch_schedule: &EpochSchedule,
-    //             reload: bool,
-    //         ) -> Option<Arc<ProgramCacheEntry>> { */
-    //         if let Some(loaded_program) = program_loader::load_program_with_pubkey(
-    //             &instr_ctx,
-    //             &environments,
-    //             &acc.0,
-    //             10, // FIXME: slot
-    //             false,
-    //         ) {
-    //             program_cache_for_tx_batch.replenish(acc.0, loaded_program);
-    //         }
-    //     }
-    // }
 
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
@@ -251,17 +209,17 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
 
 
     
-    let syscall_fn_name = match abi {
-      Cpiabi::Rust => "sol_invoke_signed_rust".as_bytes(),
-      Cpiabi::C => "sol_invoke_signed_c".as_bytes(),
-      _ => "sol_invoke_signed_rust".as_bytes() // FIXME: should be an error
-    };
-
-    let (_, syscall_func) = program_runtime_environment_v1
-        .get_function_registry()
-        .lookup_by_name(syscall_fn_name)?;
-    
-    vm.invoke_function(syscall_func);
+    if let Some(syscall_fn_name) = match abi {
+        Cpiabi::Rust => Some("sol_invoke_signed_rust".as_bytes()),
+        Cpiabi::C => Some("sol_invoke_signed_c".as_bytes()),
+        _ => None
+    } {
+      let (_, syscall_func) = program_runtime_environment_v1
+          .get_function_registry()
+          .lookup_by_name(syscall_fn_name)?;
+      
+      vm.invoke_function(syscall_func);
+    }
 
     // Print error if any
     if let StableResult::Err(ref ebpf_error) = vm.program_result {
@@ -272,15 +230,15 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
 
     Some( SyscallEffects{
       error: match vm.program_result {
-        StableResult::Ok(_) => 0,
-        StableResult::Err(ref ebpf_error) => 
+        ProgramResult::Ok(_) => 0,
+        ProgramResult::Err(ref ebpf_error) => 
             utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
       },
       // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
       // Regardless, the result is available in vm.program_result, so we can return it from there.
       r0: match vm.program_result {
-          StableResult::Ok(n) => n,
-          StableResult::Err(_) => 0,
+        ProgramResult::Ok(n) => n,
+        ProgramResult::Err(_) => 0,
       },
       cu_avail: vm.context_object_pointer.get_remaining(),
       frame_count: vm.call_depth,

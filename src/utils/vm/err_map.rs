@@ -1,6 +1,6 @@
 use solana_program_runtime::solana_rbpf::error::EbpfError;
 use solana_program_runtime::solana_rbpf::verifier::VerifierError;
-const TRUNCATE_ERROR_WORDS: usize = 9;
+const TRUNCATE_ERROR_WORDS: usize = 7;
 
 pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
     match ebpf_err {
@@ -11,6 +11,7 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
 }
 
 fn truncate_error_str(s: String) -> String {
+    eprintln!("Truncating error message: {}", s);
     s.split_whitespace()
     .take(TRUNCATE_ERROR_WORDS)
     .collect::<Vec<_>>()
@@ -52,20 +53,20 @@ fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32{
     match truncate_error_str(sys_err.to_string()).as_str() {
          // InstructionError
         // https://github.com/anza-xyz/agave/blob/v1.18.12/sdk/program/src/instruction.rs#L33
-        "Syscall error: Computational budget exceeded" => -16,
+        "Computational budget exceeded" => -16,
         // SyscallError
         // https://github.com/anza-xyz/agave/blob/8c5a33a81a0504fd25d0465bed35d153ff84819f/programs/bpf_loader/src/syscalls/mod.rs#L77
-        "Syscall error: Hashing too many sequences" => -1,
-        "Syscall error: InvalidLength" => -1,
-        "Syscall error: InvalidAttribute" => -1,
+        "Hashing too many sequences" => -1,
+        "InvalidLength" => -1,
+        "InvalidAttribute" => -1,
         // ??
-        "Syscall error: Access violation in program section at address" => -13,
-        "Syscall error: Access violation in stack section at address" => -13,
-        "Syscall error: Access violation in heap section at address" => -13,
-        "Syscall error: Access violation in unknown section at address" => -13,
+        "Access violation in program section at address" => -13,
+        "Access violation in stack section at address" => -13,
+        "Access violation in heap section at address" => -13,
+        "Access violation in unknown section at address" => -13,
         // https://github.com/solana-labs/solana/blob/v1.18.12/sdk/program/src/poseidon.rs#L13
-        "Syscall error: Invalid parameters." => -1,
-        "Syscall error: Invalid endianness." => -1,
+        "Invalid parameters." => -1,
+        "Invalid endianness." => -1,
         // EbpfError
         // https://github.com/solana-labs/rbpf/blob/main/src/error.rs#L17
         _ => -1,
