@@ -32,7 +32,7 @@ fetch_proto:
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
-	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --features stub-agave --target-dir target/stub-agave
+	# RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --features stub-agave --target-dir target/stub-agave
 
 shared_obj_debug:
 	$(CARGO) build --lib
