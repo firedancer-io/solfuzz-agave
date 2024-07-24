@@ -162,7 +162,6 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         compute_budget,
     );
 
-    // Setup syscall context in the invoke context
 
     // Setup the instruction context in the invoke context
     let instr = &instr_ctx.instruction;
@@ -180,12 +179,19 @@ fn execute_cpi_syscall(input: CpiSnapshot) -> Option<SyscallEffects> {
         .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
         as IndexOfAccount;
 
-    caller_instr_ctx.configure(&[program_idx_in_txn], instr_accounts.as_slice(), &instr.data);
+    caller_instr_ctx.configure(
+        &[program_idx_in_txn],
+        instr_accounts.as_slice(),
+        &instr.data
+    );
 
+    // Push the invoke context, also pushes empty 
     match invoke_context.push(){
         Ok(_) => (),
         Err(_) => eprintln!("Failed to push invoke context")
     }
+
+    // Setup syscall context in the invoke context
     invoke_context.set_syscall_context(SyscallContext {
         allocator: BpfAllocator::new(instr_ctx.heap_size as u64),
         accounts_metadata: vec![SerializedAccountMetadata{
