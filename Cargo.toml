@@ -46,3 +46,6 @@ prost-build = "0.13.1"
 [patch.crates-io]
 solana-program = { git = "https://github.com/firedancer-io/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
 solana-zk-token-sdk = { git = "https://github.com/firedancer-io/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+
+[features]
+stub-agave = ["solana-program-runtime/stub-proc-instr"]
