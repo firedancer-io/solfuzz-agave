@@ -31,8 +31,10 @@ use solana_sdk::account::AccountSharedData;
 use solana_sdk::sysvar::rent::Rent;
 use std::vec;
 
+// Requires "stub-agave" feature to be enabled
 
 #[no_mangle]
+#[cfg(feature = "stub-agave")]
 pub unsafe extern "C" fn sol_compat_vm_cpi_syscall_v1(
     out_ptr: *mut u8,
     out_psz: *mut u64,
