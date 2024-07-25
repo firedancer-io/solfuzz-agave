@@ -32,7 +32,10 @@ fetch_proto:
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
+	# FIXME: Convert to a cargo workspace to create original and stubbed .so files in one go
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --features stub-agave --target-dir target/stub-agave
+	# to avoid conflicts when uploading as GH artifact
+	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed.so
 
 shared_obj_debug:
 	$(CARGO) build --lib
