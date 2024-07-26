@@ -202,10 +202,9 @@ impl From<LoadedTransaction> for proto::ResultingState {
         // Take out duplicate account keys
         let mut seen = std::collections::HashSet::<Pubkey>::new();
         for item in value.accounts {
-            if seen.contains(&item.0) {
+            if !seen.insert(item.0) {
                 continue;
             }
-            seen.insert(item.0);
             acct_states.push(item.into());
         }
 
@@ -223,7 +222,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
         let (is_ok, status, executed_units, return_data, fee_details, rent, resulting_state) =
             match execution_results {
                 TransactionExecutionResult::Executed(executed_tx) => {
-                    let details = executed_tx.execution_details.clone();
+                    let details = &executed_tx.execution_details;
                     let is_ok = details.status.is_ok();
                     let error = details
                         .status
@@ -371,7 +370,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
         let mut lamports_per_signature: Option<u64> = None;
         if blockhashes_provided {
-            if let Ok(recent_blockhashes) = sysvar_recent_blockhashes.clone() {
+            if let Ok(recent_blockhashes) = sysvar_recent_blockhashes.as_ref() {
                 if index + recent_blockhashes.len() >= blockhash_queue.len() {
                     if let Some(hash) = recent_blockhashes
                         .get(recent_blockhashes.len() - 1 - recent_blockhashes_idx)
