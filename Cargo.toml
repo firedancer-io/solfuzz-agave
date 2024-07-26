@@ -7,6 +7,8 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+arrayref = "0.3.8" 
+blake3 = "1.5.1"
 serde = "1.0.204"
 bincode = "1.3.3"
 clap = { version = "4.5.2", features = ["derive"] }
@@ -14,25 +16,25 @@ lazy_static = "1.4.0"
 prost = "0.13.1"
 prost-types = "0.13.1"
 libc = "0.2.155"
-solana-address-lookup-table-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-accounts-db = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-compute-budget = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-compute-budget-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-config-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-loader-v4-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-log-collector = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-program-runtime = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-runtime = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1", features = ["dev-context-only-utils"] }
-solana-stake-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-svm = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-timings = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-vote-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-zk-sdk = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-zk-elgamal-proof-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
+solana-address-lookup-table-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-accounts-db = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-compute-budget = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-compute-budget-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-config-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-loader-v4-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-log-collector = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-program-runtime = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-runtime = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44", features = ["dev-context-only-utils"] }
+solana-stake-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-system-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-svm = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-timings = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-vote-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-zk-sdk = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-zk-elgamal-proof-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 log = "0.4.22" # without this, prost 0.11-0.13 complain
@@ -42,5 +44,5 @@ prost-build = "0.13.1"
 
 
 [patch.crates-io]
-solana-program = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
-solana-zk-token-sdk = { git = "https://github.com/anza-xyz/agave", rev = "2c4b61e777c20379d91396340aea4f0b8d9984c1" }
+solana-program = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
+solana-zk-token-sdk = { git = "https://github.com/anza-xyz/agave", rev = "6a242355e010c628f9531955fbf5f0f9136d0c44" }
