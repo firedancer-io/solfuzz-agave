@@ -370,7 +370,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
         let mut lamports_per_signature: Option<u64> = None;
         if blockhashes_provided {
-            if let Ok(recent_blockhashes) = sysvar_recent_blockhashes.as_ref() {
+            if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
                 if index + recent_blockhashes.len() >= blockhash_queue.len() {
                     if let Some(hash) = recent_blockhashes
                         .get(recent_blockhashes.len() - 1 - recent_blockhashes_idx)
