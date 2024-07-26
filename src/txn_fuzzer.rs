@@ -1,4 +1,4 @@
-use crate::proto;
+use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TransactionMessage, TxnContext, TxnResult};
 use prost::Message;
 use solana_accounts_db::accounts_db::AccountShrinkThreshold;
@@ -25,6 +25,7 @@ use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
+use solana_svm::transaction_results::TransactionExecutionResult;
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::ffi::c_int;
@@ -197,7 +198,14 @@ impl From<LoadedTransaction> for proto::ResultingState {
             .collect::<Vec<proto::RentDebits>>();
 
         let mut acct_states: Vec<AcctState> = Vec::with_capacity(value.accounts.len());
+
+        // Take out duplicate account keys
+        let mut seen = std::collections::HashSet::<Pubkey>::new();
         for item in value.accounts {
+            if seen.contains(&item.0) {
+                continue;
+            }
+            seen.insert(item.0);
             acct_states.push(item.into());
         }
 
@@ -210,47 +218,40 @@ impl From<LoadedTransaction> for proto::ResultingState {
 }
 
 impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
-    fn from(mut value: LoadAndExecuteTransactionsOutput) -> TxnResult {
-        let mut loaded_transaction = Err(TransactionError::AccountInUse);
-        std::mem::swap(&mut value.loaded_transactions[0], &mut loaded_transaction);
+    fn from(value: LoadAndExecuteTransactionsOutput) -> TxnResult {
         let execution_results = &value.execution_results[0];
-
-        let (is_ok, status, executed_units, return_data, fee_details) =
-            if execution_results.was_executed() {
-                let details = execution_results.details().unwrap();
-                let is_ok = details.status.is_ok();
-                let error = details
-                    .status
-                    .as_ref()
-                    .err()
-                    .unwrap_or(&TransactionError::AccountInUse);
-                let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
-                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
-
-                (
-                    is_ok,
-                    error_no,
-                    details.executed_units,
-                    details
-                        .return_data
+        let (is_ok, status, executed_units, return_data, fee_details, rent, resulting_state) =
+            match execution_results {
+                TransactionExecutionResult::Executed(executed_tx) => {
+                    let details = executed_tx.execution_details.clone();
+                    let is_ok = details.status.is_ok();
+                    let error = details
+                        .status
                         .as_ref()
-                        .map(|info| info.data.clone())
-                        .unwrap_or_default(),
-                    Some(details.fee_details),
-                )
-            } else {
-                (false, 0, 0, vec![], None)
+                        .err()
+                        .unwrap_or(&TransactionError::AccountInUse);
+                    let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
+                    let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
+                    let rent = executed_tx.loaded_transaction.rent;
+                    let resulting_state: Option<ResultingState> =
+                        Some(executed_tx.loaded_transaction.clone().into());
+                    (
+                        is_ok,
+                        error_no,
+                        details.executed_units,
+                        details
+                            .return_data
+                            .as_ref()
+                            .map(|info| info.data.clone())
+                            .unwrap_or_default(),
+                        Some(executed_tx.loaded_transaction.fee_details),
+                        rent,
+                        resulting_state,
+                    )
+                }
+                TransactionExecutionResult::NotExecuted(_) => (false, 0, 0, vec![], None, 0, None),
             };
 
-        let rent = loaded_transaction
-            .as_ref()
-            .map(|txn| txn.rent)
-            .unwrap_or_default();
-        let resulting_state = if let Ok(txn) = loaded_transaction {
-            Some(txn.into())
-        } else {
-            None
-        };
         TxnResult {
             executed: execution_results.was_executed(),
             sanitization_error: false,
@@ -268,6 +269,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     }
 }
 
+#[allow(deprecated)]
 fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fd_features = context
         .epoch_ctx
@@ -310,7 +312,6 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     if slot > 0 {
         let new_bank = Bank::new_from_parent(bank.clone(), &fee_collector, slot);
-
         bank = bank_forks
             .write()
             .unwrap()
@@ -344,21 +345,44 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|addresses| addresses.readonly.clone())
         .unwrap_or_default();
 
-    // Load accounts + sysvars
+    /* Load accounts + sysvars
+    NOTE: For fuzzing, the clock sysvar is MANDATORY. Recent blockhashes are optional. These two sysvars MUST be fixed up (aka no error when loading them in). */
+    let mut blockhashes_provided = false;
     bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         let account_data = AccountSharedData::from(account);
+
+        // THIS ASSUMES THE RECENT BLOCKHASHES SYSVAR ACCOUNT DATA IS VALID. THINGS WILL BREAK OTHERWISE!!!
+        if pubkey == sysvar::recent_blockhashes::id() {
+            blockhashes_provided = true;
+        }
 
         bank.store_account(&pubkey, &account_data);
     }
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
+    let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
+    let mut recent_blockhashes_idx = 0;
+
     // Register blockhashes in bank
-    for blockhash in blockhash_queue.iter() {
+    for (index, blockhash) in blockhash_queue.iter().enumerate() {
         let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
-        bank.register_recent_blockhash_for_test(&blockhash_hash);
+        let mut lamports_per_signature: Option<u64> = None;
+        if blockhashes_provided {
+            if let Ok(recent_blockhashes) = sysvar_recent_blockhashes.clone() {
+                if index + recent_blockhashes.len() >= blockhash_queue.len() {
+                    if let Some(hash) = recent_blockhashes
+                        .get(recent_blockhashes.len() - 1 - recent_blockhashes_idx)
+                    {
+                        lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
+                    }
+                    recent_blockhashes_idx += 1;
+                }
+            }
+        }
+        bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
