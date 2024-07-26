@@ -884,6 +884,11 @@ pub struct SolCompatFeatures {
     pub supported_features_len: u64,
 }
 
+#[repr(C)]
+pub struct SolCompatMetadata {
+    pub validator_type: u16
+}
+
 unsafe impl Send for SolCompatFeatures {}
 unsafe impl Sync for SolCompatFeatures {}
 
@@ -895,9 +900,18 @@ static FEATURES: SolCompatFeatures = SolCompatFeatures {
     supported_features_len: SUPPORTED_FEATURES.len() as u64,
 };
 
+static METADATA: SolCompatMetadata = SolCompatMetadata {
+    validator_type: 2 // solfuzz-agave
+};
+
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeatures {
     &FEATURES
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn sol_compat_get_metadata_v1() -> *const SolCompatMetadata {
+    &METADATA
 }
 
 #[no_mangle]
