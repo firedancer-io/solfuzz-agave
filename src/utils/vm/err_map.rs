@@ -11,7 +11,6 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
 }
 
 fn truncate_error_str(s: String) -> String {
-    eprintln!("Truncating error message: {}", s);
     s.split_whitespace()
     .take(TRUNCATE_ERROR_WORDS)
     .collect::<Vec<_>>()
