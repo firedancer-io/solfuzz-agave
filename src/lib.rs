@@ -288,7 +288,6 @@ pub struct InstrContext {
     pub rent_collector: RentCollector,
     pub last_blockhash: Hash,
     pub lamports_per_signature: u64,
-    pub heap_size: u64, // TODO: should go to a Txn Context instead?
 }
 
 impl TransactionProcessingCallback for InstrContext {
@@ -380,7 +379,6 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             rent_collector: RentCollector::default(),
             last_blockhash: Hash::default(),
             lamports_per_signature: 0,
-            heap_size: input.heap_size
         })
     }
 }

@@ -150,10 +150,12 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         Ok(_) => (),
         Err(_) => eprintln!("Failed to push invoke context")
     }
-
+    
     // Setup syscall context in the invoke context
+    let vm_ctx = input.vm_ctx.unwrap();
+    
     invoke_context.set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
-        allocator: BpfAllocator::new(instr_ctx.heap_size as u64),
+        allocator: BpfAllocator::new(vm_ctx.heap_max as u64),
         accounts_metadata: vec![SerializedAccountMetadata{
             original_data_len: 0,
             vm_data_addr: 0,
@@ -165,7 +167,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     }).unwrap();
 
     // Set up memory mapping
-    let vm_ctx = input.vm_ctx.unwrap();
     let syscall_inv = input.syscall_invocation.unwrap();
 
     let rodata = vm_ctx.rodata;
