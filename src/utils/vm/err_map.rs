@@ -52,20 +52,20 @@ fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32{
     match truncate_error_str(sys_err.to_string()).as_str() {
          // InstructionError
         // https://github.com/anza-xyz/agave/blob/v1.18.12/sdk/program/src/instruction.rs#L33
-        "Computational budget exceeded" => -16,
+        "Computational budget exceeded" => 16,
         // SyscallError
         // https://github.com/anza-xyz/agave/blob/8c5a33a81a0504fd25d0465bed35d153ff84819f/programs/bpf_loader/src/syscalls/mod.rs#L77
-        "Hashing too many sequences" => -1,
-        "InvalidLength" => -1,
-        "InvalidAttribute" => -1,
+        "Hashing too many sequences" => 1,
+        "InvalidLength" => 1,
+        "InvalidAttribute" => 1,
         // ??
-        "Access violation in program section at address" => -13,
-        "Access violation in stack section at address" => -13,
-        "Access violation in heap section at address" => -13,
-        "Access violation in unknown section at address" => -13,
+        "Access violation in program section at address" => 13,
+        "Access violation in stack section at address" => 13,
+        "Access violation in heap section at address" => 13,
+        "Access violation in unknown section at address" => 13,
         // https://github.com/solana-labs/solana/blob/v1.18.12/sdk/program/src/poseidon.rs#L13
-        "Invalid parameters." => -1,
-        "Invalid endianness." => -1,
+        "Invalid parameters." => 1,
+        "Invalid endianness." => 1,
         // EbpfError
         // https://github.com/solana-labs/rbpf/blob/main/src/error.rs#L17
         _ => -1,
