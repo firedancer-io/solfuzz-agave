@@ -106,7 +106,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     zk_token_sdk_enabled,
     enable_partitioned_epoch_reward,
     stake_minimum_delegation_for_rewards,
-    stake_redelegate_instruction,
     skip_rent_rewrites,
     loosen_cpi_size_restriction,
     disable_turbine_fanout_experiments,
