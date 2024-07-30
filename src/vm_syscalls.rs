@@ -9,7 +9,7 @@ use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
-use solana_program_runtime::{invoke_context::{BpfAllocator, SerializedAccountMetadata}, sysvar_cache::SysvarCache};
+use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
 use solana_program_runtime::{
     invoke_context::InvokeContext,
@@ -22,7 +22,7 @@ use solana_program_runtime::{
         vm::{Config, EbpfVm},
     },
 };
-use solana_sdk::transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext};
+use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
 
@@ -60,8 +60,9 @@ fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
     dst[..size].copy_from_slice(&src[..size]);
 }
 
-pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
+fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
+    let feature_set = instr_ctx.feature_set;
 
     // Create invoke context
     // TODO: factor this into common code with lib.rs
@@ -90,11 +91,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     load_builtins(&mut program_cache_for_tx_batch);
 
-    let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&instr_ctx.feature_set, &ComputeBudget::default(), true, false)
-        .unwrap();
-
-
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache
@@ -108,7 +104,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         blockhash,
         None,
         None,
-        Arc::new(instr_ctx.feature_set.clone()),
+        Arc::new(feature_set.clone()),
         lamports_per_signature,
         &sysvar_cache,
     );
@@ -121,61 +117,15 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         compute_budget,
     );
 
-
-    // Setup the instruction context in the invoke context
-    let instr = &instr_ctx.instruction;
-    let instr_accounts = crate::get_instr_accounts(
-        &transaction_accounts,
-        &instr.accounts
-    );
-
-    let caller_instr_ctx = invoke_context.transaction_context
-        .get_next_instruction_context()
-        .unwrap();
-
-    let program_idx_in_txn = transaction_accounts
-        .iter()
-        .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
-        as IndexOfAccount;
-
-    caller_instr_ctx.configure(
-        &[program_idx_in_txn],
-        instr_accounts.as_slice(),
-        &instr.data
-    );
-
-    // Push the invoke context. This sets up the instruction context trace, which is used in the CPI Syscall.
-    // Also pushes empty syscall context, which we will setup later
-    match invoke_context.push(){
-        Ok(_) => (),
-        Err(_) => eprintln!("Failed to push invoke context")
-    }
-    
-    // Setup syscall context in the invoke context
-    let vm_ctx = input.vm_ctx.unwrap();
-    
-    invoke_context.set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
-        allocator: BpfAllocator::new(vm_ctx.heap_max as u64),
-        accounts_metadata: vec![SerializedAccountMetadata{
-            original_data_len: 0,
-            vm_data_addr: 0,
-            vm_key_addr: 0,
-            vm_owner_addr: 0,
-            vm_lamports_addr: 0,
-        };instr_accounts.len()], // TODO: accounts metadata for direct mapping support
-        trace_log: Vec::new(),
-    }).unwrap();
+    // TODO: support different versions
+    let sbpf_version = &SBPFVersion::V1;
 
     // Set up memory mapping
-    let syscall_inv = input.syscall_invocation.unwrap();
-
+    let vm_ctx = input.vm_ctx.unwrap();
     let rodata = vm_ctx.rodata;
-    let syscall_fn_name = syscall_inv.function_name.clone();
-    let mut stack = syscall_inv.stack_prefix;
-    stack.resize(STACK_SIZE, 0);
-    let mut heap = syscall_inv.heap_prefix;
-    heap.resize(vm_ctx.heap_max as usize, 0);
-
+    let mut stack = vec![0; STACK_SIZE];
+    let heap_max = vm_ctx.heap_max;
+    let mut heap = vec![0; heap_max as usize];
     let mut regions = vec![
         MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
@@ -197,11 +147,11 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     }
     let config = &Config {
         aligned_memory_mapping: true,
-        enable_sbpf_v2: false,
+        enable_sbpf_v2: true,
         ..Config::default()
     };
 
-    let memory_mapping = match MemoryMapping::new(regions, config, &SBPFVersion::V1) {
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
@@ -241,7 +191,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
         .get_function_registry()
-        .lookup_by_name(syscall_fn_name.as_slice())?;
+        .lookup_by_name(&input.syscall_invocation?.function_name)?;
     vm.invoke_function(syscall_func);
 
     // Unwrap and return the effects of the syscall
