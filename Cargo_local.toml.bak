@@ -8,6 +8,9 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+arrayref = "0.3.8" 
+blake3 = "1.5.1"
+serde = "1.0.204"
 bincode = "1.3.3"
 clap = { version = "4.5.2", features = ["derive"] }
 lazy_static = "1.4.0"
@@ -29,13 +32,13 @@ solana-stake-program = { path = "../agave/programs/stake" }
 solana-system-program = { path = "../agave/programs/system" }
 solana-svm = { path = "../agave/svm" }
 solana-sdk = { path = "../agave/sdk" }
+solana-timings = { path = "../agave/timings" }
 solana-vote-program = { path = "../agave/programs/vote" }
 solana-zk-sdk = { path = "../agave/zk-sdk" }
 solana-zk-elgamal-proof-program = { path = "../agave/programs/zk-elgamal-proof" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 log = "0.4.22" # without this, prost 0.11-0.13 complain
-mockall_double = "0.3.1"
 
 [build-dependencies]
 prost-build = "0.13.1"

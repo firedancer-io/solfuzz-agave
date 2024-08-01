@@ -163,18 +163,20 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
+    let mut offset = 0;
     for input_data_region in &mut input_data_regions {
         if input_data_region.is_writable {
             regions.push(MemoryRegion::new_writable(
                 input_data_region.content.as_mut_slice(),
-                MM_INPUT_START + input_data_region.offset,
+                MM_INPUT_START + offset,
             ));
         } else {
             regions.push(MemoryRegion::new_readonly(
                 input_data_region.content.as_slice(),
-                MM_INPUT_START + input_data_region.offset,
+                MM_INPUT_START + offset,
             ));
         }
+        offset += input_data_region.content.len() as u64;
     }
     let config = &Config {
         aligned_memory_mapping: true,
