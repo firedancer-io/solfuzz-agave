@@ -135,6 +135,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     zk_elgamal_proof_program_enabled,
     // These two were force-activated, but the gate remains on the BPF Loader.
     disable_bpf_loader_instructions,
+    move_stake_and_move_lamports_ixs,
 ];
 
 pub mod proto {
