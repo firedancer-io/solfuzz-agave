@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# We point deps to firedancer-io/agave fork's `solfuzz-agave-vX.X-patches` branch
+# This branch is based on the agave branch we are tracking and contains patches to make fuzzing easier
+# Refer to https://github.com/firedancer-io/agave/blob/solfuzz-agave-v2.0-patches/SOLFUZZ_README.md
+# for details on how to manage this branch
 [dependencies]
 arrayref = "0.3.8" 
 blake3 = "1.5.1"
@@ -48,4 +52,5 @@ solana-program = { git = "https://github.com/firedancer-io/agave", rev = "56fa95
 solana-zk-token-sdk = { git = "https://github.com/firedancer-io/agave", rev = "56fa955b38915cbde5427b5283860e7e859db050" }
 
 [features]
+# This feature is used to stub out certain parts of the agave runtime for fuzzing
 stub-agave = ["solana-program-runtime/stub-proc-instr"]

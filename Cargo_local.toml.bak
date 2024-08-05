@@ -1,4 +1,10 @@
-# Use this manifest to build the solfuzz-agave crate with local agave fork
+# Useful for testing patches/changes to agave before pushing to 
+# https://github.com/firedancer-io/agave/tree/solfuzz-agave-v2.0-patches
+
+# To use this manifest, have agave cloned to `../agave` and rename this to Cargo.toml
+# Do NOT commit the renamed file to the repository. Revert original Cargo.toml before committing.
+# Save any changes to this file in `Cargo_local.toml.bak` for future reference.
+
 [package]
 name = "solfuzz-agave"
 version = "0.1.0"

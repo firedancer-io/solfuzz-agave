@@ -41,6 +41,7 @@ pub unsafe extern "C" fn sol_compat_vm_cpi_syscall_v1(
     1
 }
 
+// TODO: unify with other syscall harness after CPI fuzzing is stable
 fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
 
