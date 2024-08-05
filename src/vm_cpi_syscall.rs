@@ -252,5 +252,6 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 acc
             })
             .into_bytes(),
+        pc: 0,
     })
 }
