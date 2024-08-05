@@ -248,7 +248,10 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                         resulting_state,
                     )
                 }
-                TransactionExecutionResult::NotExecuted(_) => (false, 0, 0, vec![], None, 0, None),
+                TransactionExecutionResult::NotExecuted(err) => {
+                    println!("Error: {:?}", err);
+                    (false, 0, 0, vec![], None, 0, None)
+                },
             };
 
         TxnResult {
