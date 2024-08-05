@@ -1,9 +1,9 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    InstrContext,
     utils,
-    utils::vm::STACK_SIZE
+    utils::vm::STACK_SIZE,
+    InstrContext,
 };
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -25,7 +25,6 @@ use solana_program_runtime::{
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
-
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
@@ -197,11 +196,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
     Some(SyscallEffects {
-        
         error: match program_result {
             StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => 
+            StableResult::Err(ref ebpf_error) => {
                 utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
+            }
         },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.

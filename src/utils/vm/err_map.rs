@@ -12,13 +12,12 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
 
 fn truncate_error_str(s: String) -> String {
     s.split_whitespace()
-    .take(TRUNCATE_ERROR_WORDS)
-    .collect::<Vec<_>>()
-    .join(" ")
+        .take(TRUNCATE_ERROR_WORDS)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
-
-fn verifer_error_match(ver_err: &VerifierError) -> i32{
+fn verifer_error_match(ver_err: &VerifierError) -> i32 {
     // https://github.com/firedancer-io/firedancer/blob/f878e448e5511c3600e2dd6360a4f06ce793af6f/src/flamenco/vm/fd_vm_base.h#L67
     match ver_err {
         VerifierError::NoProgram => 6,
@@ -40,7 +39,7 @@ fn verifer_error_match(ver_err: &VerifierError) -> i32{
     }
 }
 
-fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32{
+fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32 {
     // Error matching.
     // Errors are `EbpfError`` and in particular we need to match EbpfError::Syscall == Box<dyn Error>.
     // In turn, the dynamic error can have multiple types, for example InstructionError or SyscallError.
@@ -50,7 +49,7 @@ fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32{
     // So, the current solutio truncates the error message to TRUNCATE_ERROR_WORDS words, where the constant
     // is chosen to be large enough to distinguish errors, and small enough to avoid variable strings.
     match truncate_error_str(sys_err.to_string()).as_str() {
-         // InstructionError
+        // InstructionError
         // https://github.com/anza-xyz/agave/blob/v1.18.12/sdk/program/src/instruction.rs#L33
         "Computational budget exceeded" => 16,
         // SyscallError

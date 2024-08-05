@@ -3,9 +3,9 @@
 pub mod elf_loader;
 pub mod txn_fuzzer;
 pub mod utils;
+mod vm_cpi_syscall;
 mod vm_syscalls;
 mod vm_validate;
-mod vm_cpi_syscall;
 
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -388,14 +388,16 @@ fn instr_err_to_num(error: &InstructionError) -> i32 {
     i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()) + 1
 }
 
-pub fn get_instr_accounts( txn_accounts: &Vec<TransactionAccount>, acct_metas: &StableVec<AccountMeta>) -> Vec<InstructionAccount> {
+pub fn get_instr_accounts(
+    txn_accounts: &Vec<TransactionAccount>,
+    acct_metas: &StableVec<AccountMeta>,
+) -> Vec<InstructionAccount> {
     let mut instruction_accounts: Vec<InstructionAccount> = Vec::with_capacity(acct_metas.len());
     for (instruction_account_index, account_meta) in acct_metas.iter().enumerate() {
         let index_in_transaction = txn_accounts
             .iter()
             .position(|(key, _account)| *key == account_meta.pubkey)
-            .unwrap_or(txn_accounts.len())
-            as IndexOfAccount;
+            .unwrap_or(txn_accounts.len()) as IndexOfAccount;
         let index_in_callee = instruction_accounts
             .get(0..instruction_account_index)
             .unwrap()
@@ -756,7 +758,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
 
     let mut timings = ExecuteTimings::default();
 
-    let instruction_accounts = get_instr_accounts(&transaction_accounts, &input.instruction.accounts);
+    let instruction_accounts =
+        get_instr_accounts(&transaction_accounts, &input.instruction.accounts);
 
     // Precompiles (ed25519, secp256k1)
     // Precompiles are programs that run without the VM and without loading any account.
@@ -884,7 +887,7 @@ pub struct SolCompatFeatures {
 
 #[repr(C)]
 pub struct SolCompatMetadata {
-    pub validator_type: u16
+    pub validator_type: u16,
 }
 
 unsafe impl Send for SolCompatFeatures {}
@@ -899,7 +902,7 @@ static FEATURES: SolCompatFeatures = SolCompatFeatures {
 };
 
 static METADATA: SolCompatMetadata = SolCompatMetadata {
-    validator_type: 2 // solfuzz-agave
+    validator_type: 2, // solfuzz-agave
 };
 
 #[no_mangle]
