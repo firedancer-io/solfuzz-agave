@@ -251,7 +251,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                 TransactionExecutionResult::NotExecuted(err) => {
                     println!("Error: {:?}", err);
                     (false, 0, 0, vec![], None, 0, None)
-                },
+                }
             };
 
         TxnResult {
