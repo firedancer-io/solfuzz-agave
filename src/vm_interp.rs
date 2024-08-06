@@ -31,6 +31,7 @@ declare_builtin_function!(
 );
 
 const STACK_SIZE: usize = 524288;
+const HEAP_MAX: usize = 256*1024;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_interp_v1(
@@ -61,9 +62,6 @@ pub unsafe extern "C" fn sol_compat_vm_interp_v1(
 }
 
 fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
-    // let instr_ctx:InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
-
-
     let feature_set = FeatureSet {
         active: HashMap::new(),
         inactive: HashSet::new(),
@@ -126,11 +124,15 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     // setup memory
     let vm_ctx = syscall_context.vm_ctx.unwrap();
     let function_registry = setup_internal_fn_registry(&vm_ctx);
+
+    let syscall_inv = syscall_context.syscall_invocation.unwrap();
     
     let rodata = &vm_ctx.rodata;
-    let mut stack = vec![0; STACK_SIZE];
-    let heap_max = vm_ctx.heap_max;
-    let mut heap = vec![0; heap_max as usize];
+    let mut stack = syscall_inv.stack_prefix;
+    stack.resize(STACK_SIZE, 0);
+    let mut heap = syscall_inv.heap_prefix;
+    heap.resize(HEAP_MAX as usize, 0);
+
     let mut regions = vec![
         MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
@@ -153,7 +155,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     }
     let config = &Config {
         aligned_memory_mapping: true,
-        enable_sbpf_v2: true,
+        enable_sbpf_v2: false,
         ..Config::default()
     };
     
@@ -208,7 +210,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     Some(SyscallEffects {
         error: match result {
             StableResult::Ok(_) => 0,
-            StableResult::Err(_) => -1, //TODO: map
+            StableResult::Err(_) => 1, //TODO: map
         },
         r0: match result {
             StableResult::Ok(n) => n,
