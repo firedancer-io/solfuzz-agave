@@ -8,7 +8,7 @@ use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{invoke_context::{EnvironmentConfig, InvokeContext}, loaded_programs::ProgramCacheForTxBatch, solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::StableResult, interpreter::Interpreter, memory_region::{MemoryMapping, MemoryRegion}, program::{self, BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, vm::{Config, ContextObject, EbpfVm}
+    declare_builtin_function, ebpf, elf::Executable, error::StableResult, interpreter::Interpreter, memory_region::{MemoryMapping, MemoryRegion}, program::{self, BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
 }, sysvar_cache::SysvarCache};
 use prost::Message;
 use solana_sdk::{feature_set::{add_compute_budget_program, FeatureSet}, hash::Hash, rent::Rent, transaction_context::TransactionContext};
@@ -183,11 +183,27 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     vm.registers[8] = vm_ctx.r8;
     vm.registers[9] = vm_ctx.r9;
     vm.registers[10] = vm_ctx.r10;
-    // vm.registers[11] = vm_ctx.r11; 
+    // vm.registers[11] = vm_ctx.r11; set by interpreter
 
-    let executable = Executable::from_text_bytes(&vm_ctx.rodata, loader, sbpf_version.clone(), function_registry).unwrap();
+    let executable = Executable::from_text_bytes(
+        &vm_ctx.rodata,
+        loader,
+        sbpf_version.clone(),
+        function_registry
+    ).unwrap();
 
-    let (_, result) = vm.execute_program(&executable, true /* Interpreted */);
+    match executable.verify::<RequisiteVerifier>(){
+        Err(_) => return Some( SyscallEffects{
+            error: -1,
+            ..Default::default()
+        }),
+        _ => {}
+    }
+
+    let (_, result) = vm.execute_program(
+        &executable,
+        true /* Interpreted */
+    );
     
     Some(SyscallEffects {
         error: match result {
