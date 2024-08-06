@@ -219,44 +219,54 @@ impl From<LoadedTransaction> for proto::ResultingState {
 impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     fn from(value: LoadAndExecuteTransactionsOutput) -> TxnResult {
         let execution_results = &value.execution_results[0];
-        let (is_ok, status, executed_units, return_data, fee_details, rent, resulting_state) =
-            match execution_results {
-                TransactionExecutionResult::Executed(executed_tx) => {
-                    let details = &executed_tx.execution_details;
-                    let is_ok = details.status.is_ok();
-                    let error = details
-                        .status
+        let (
+            is_ok,
+            sanitization_error,
+            status,
+            executed_units,
+            return_data,
+            fee_details,
+            rent,
+            resulting_state,
+        ) = match execution_results {
+            TransactionExecutionResult::Executed(executed_tx) => {
+                let details = &executed_tx.execution_details;
+                let is_ok = details.status.is_ok();
+                let error = details
+                    .status
+                    .as_ref()
+                    .err()
+                    .unwrap_or(&TransactionError::AccountInUse);
+                let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
+                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
+                let rent = executed_tx.loaded_transaction.rent;
+                let resulting_state: Option<ResultingState> =
+                    Some(executed_tx.loaded_transaction.clone().into());
+                (
+                    is_ok,
+                    false,
+                    error_no,
+                    details.executed_units,
+                    details
+                        .return_data
                         .as_ref()
-                        .err()
-                        .unwrap_or(&TransactionError::AccountInUse);
-                    let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
-                    let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
-                    let rent = executed_tx.loaded_transaction.rent;
-                    let resulting_state: Option<ResultingState> =
-                        Some(executed_tx.loaded_transaction.clone().into());
-                    (
-                        is_ok,
-                        error_no,
-                        details.executed_units,
-                        details
-                            .return_data
-                            .as_ref()
-                            .map(|info| info.data.clone())
-                            .unwrap_or_default(),
-                        Some(executed_tx.loaded_transaction.fee_details),
-                        rent,
-                        resulting_state,
-                    )
-                }
-                TransactionExecutionResult::NotExecuted(err) => {
-                    println!("Error: {:?}", err);
-                    (false, 0, 0, vec![], None, 0, None)
-                }
-            };
+                        .map(|info| info.data.clone())
+                        .unwrap_or_default(),
+                    Some(executed_tx.loaded_transaction.fee_details),
+                    rent,
+                    resulting_state,
+                )
+            }
+            TransactionExecutionResult::NotExecuted(error) => {
+                let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
+                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
+                (false, true, error_no, 0, vec![], None, 0, None)
+            }
+        };
 
         TxnResult {
             executed: execution_results.was_executed(),
-            sanitization_error: false,
+            sanitization_error,
             resulting_state,
             rent,
             is_ok,
