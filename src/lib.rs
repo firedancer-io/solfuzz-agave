@@ -26,7 +26,7 @@ use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::{CompiledInstruction, InstructionError};
-use solana_sdk::precompiles::{is_precompile, verify_if_precompile, PrecompileError};
+use solana_sdk::precompiles::{is_precompile, verify_if_precompile};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent::Rent;
 use solana_sdk::rent_collector::RentCollector;
@@ -793,23 +793,11 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         );
         return Some(InstrEffects {
             custom_err: None,
-            result: if let Err(e) = result {
+            result: if let Err(_) = result {
                 // Precompiles return PrecompileError instead of InstructionError, and
                 // there's no from/into conversion to InstructionError nor to u32.
                 // For simplicity, we remap first-first, second-second, etc.
-                match e {
-                    PrecompileError::InvalidPublicKey => Some(InstructionError::GenericError),
-                    PrecompileError::InvalidRecoveryId => Some(InstructionError::InvalidArgument),
-                    PrecompileError::InvalidSignature => {
-                        Some(InstructionError::InvalidInstructionData)
-                    }
-                    PrecompileError::InvalidDataOffsets => {
-                        Some(InstructionError::InvalidAccountData)
-                    }
-                    PrecompileError::InvalidInstructionDataSize => {
-                        Some(InstructionError::AccountDataTooSmall)
-                    }
-                }
+                Some(InstructionError::GenericError)
             } else {
                 None
             },
