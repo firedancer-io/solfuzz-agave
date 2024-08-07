@@ -140,18 +140,20 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     ];
 
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
+    let mut input_data_off: u64 = 0;
     for input_data_region in &mut input_data_regions {
         if input_data_region.is_writable {
             regions.push(MemoryRegion::new_writable(
                 input_data_region.content.as_mut_slice(),
-                ebpf::MM_INPUT_START + input_data_region.offset,
+                ebpf::MM_INPUT_START + input_data_off,
             ));
         } else {
             regions.push(MemoryRegion::new_readonly(
                 input_data_region.content.as_slice(),
-                ebpf::MM_INPUT_START + input_data_region.offset,
+                ebpf::MM_INPUT_START + input_data_off,
             ));
         }
+        input_data_off += input_data_region.content.len() as u64;
     }
     let config = &Config {
         aligned_memory_mapping: true,
