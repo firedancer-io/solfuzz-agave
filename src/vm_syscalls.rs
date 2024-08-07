@@ -252,6 +252,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             .iter()
             .flat_map(|region| region.content.clone())
             .collect(),
+        rodata,
         frame_count: vm.call_depth,
         log: invoke_context
             .get_log_collector()?
