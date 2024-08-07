@@ -300,6 +300,9 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let genesis_config = GenesisConfig::default();
 
     let blockhash_queue = context.blockhash_queue;
+    if blockhash_queue.is_empty() {
+        return None;
+    }
     let genesis_hash = Hash::new(blockhash_queue[0].as_slice());
 
     // Bank on slot 0
@@ -385,9 +388,11 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         if blockhashes_provided {
             if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
                 if index + recent_blockhashes.len() >= blockhash_queue.len() {
-                    if let Some(hash) = recent_blockhashes
-                        .get(recent_blockhashes.len() - 1 - recent_blockhashes_idx)
-                    {
+                    if let Some(hash) = recent_blockhashes.get(
+                        std::cmp::min(recent_blockhashes.len(), blockhash_queue.len())
+                            - 1
+                            - recent_blockhashes_idx,
+                    ) {
                         lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
                     }
                     recent_blockhashes_idx += 1;
