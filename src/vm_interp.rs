@@ -189,7 +189,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     vm.registers[10] = vm_ctx.r10;
     // vm.registers[11] = vm_ctx.r11; set by interpreter
 
-    let executable = Executable::from_text_bytes(
+    let mut executable = Executable::from_text_bytes(
         &vm_ctx.rodata,
         loader,
         sbpf_version.clone(),
@@ -204,9 +204,18 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         _ => {}
     }
 
+    match executable.jit_compile() {
+        Err(_) => return Some( SyscallEffects{
+            error: -1,
+            ..Default::default()
+        }),
+        _ => {}
+    }
+
     let (_, result) = vm.execute_program(
         &executable,
-        true /* Interpreted */
+        false, /* use JIT */
+        // true, /* use interpreter */
     );
     
     Some(SyscallEffects {
