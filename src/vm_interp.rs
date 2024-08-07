@@ -270,15 +270,3 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
 
     fn_reg
 }
-
-// fn stub_syscalls<'a>( runtime_env : &BuiltinProgram<InvokeContext>)
-//      -> BuiltinProgram<InvokeContext<'a>> {
-//     // let &syscall_reg = runtime_env.get_function_registry();
-//     // let mut new_syscall_reg = FunctionRegistry::<BuiltinFunction<InvokeContext>>::default();
-
-//     // for (key, (name, _)) in syscall_reg.iter() {
-//     //     new_syscall_reg.register_function(key, name, SyscallStub::vm).unwrap();
-//     // }
-
-//     // BuiltinProgram::new_loader(runtime_env.get_config().clone(), new_syscall_reg)
-// }
