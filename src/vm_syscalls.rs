@@ -63,6 +63,11 @@ fn truncate_error_str(s: String) -> String {
         .join(" ")
 }
 
+fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
+    let size = dst.len().min(src.len());
+    dst[..size].copy_from_slice(&src[..size]);
+}
+
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
     let feature_set = instr_ctx.feature_set;
@@ -182,8 +187,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.registers[11] = vm_ctx.r11;
 
     if let Some(syscall_invocation) = input.syscall_invocation.clone() {
-        let size = syscall_invocation.heap_prefix.len().min(heap_max as usize);
-        heap[..size].copy_from_slice(&syscall_invocation.heap_prefix[..size]);
+        copy_memory_prefix(&mut heap, &syscall_invocation.heap_prefix);
+        copy_memory_prefix(&mut stack, &syscall_invocation.stack_prefix);
     }
 
     // Actually invoke the syscall
