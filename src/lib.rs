@@ -793,7 +793,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         );
         return Some(InstrEffects {
             custom_err: None,
-            result: if let Err(_) = result {
+            result: if result.is_err() {
                 // Precompiles return PrecompileError instead of InstructionError, and
                 // there's no from/into conversion to InstructionError nor to u32.
                 // For simplicity, we remap first-first, second-second, etc.
