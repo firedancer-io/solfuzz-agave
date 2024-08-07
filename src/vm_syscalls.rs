@@ -63,7 +63,7 @@ fn truncate_error_str(s: String) -> String {
         .join(" ")
 }
 
-fn copy_memory_prefix(dst: &mut Vec<u8>, src: &Vec<u8>) {
+fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
     let size = dst.len().min(src.len());
     dst[..size].copy_from_slice(&src[..size]);
 }
