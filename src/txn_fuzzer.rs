@@ -238,7 +238,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     .err()
                     .unwrap_or(&TransactionError::AccountInUse);
                 let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
-                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
+                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
                 let rent = executed_tx.loaded_transaction.rent;
                 let resulting_state: Option<ResultingState> =
                     Some(executed_tx.loaded_transaction.clone().into());
@@ -258,8 +258,9 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                 )
             }
             TransactionExecutionResult::NotExecuted(error) => {
+                println!("Error: {:?}", error);
                 let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
-                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap());
+                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
                 (false, true, error_no, 0, vec![], None, 0, None)
             }
         };
