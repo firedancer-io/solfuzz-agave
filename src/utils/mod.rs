@@ -1,3 +1,4 @@
+pub mod vm;
 use crate::proto;
 use crate::proto::AcctState;
 use lazy_static::lazy_static;

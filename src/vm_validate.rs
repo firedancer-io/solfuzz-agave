@@ -3,14 +3,16 @@ use crate::proto::{FullVmContext, ValidateVmEffects};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_program_runtime::solana_rbpf::elf::Executable;
 use solana_program_runtime::solana_rbpf::error::EbpfError;
 use solana_program_runtime::solana_rbpf::program::FunctionRegistry;
-use solana_program_runtime::solana_rbpf::verifier::RequisiteVerifier;
-use solana_program_runtime::solana_rbpf::{elf::Executable, verifier::VerifierError};
+use solana_program_runtime::solana_rbpf::verifier::{RequisiteVerifier, VerifierError};
 use solana_sdk::feature_set::*;
 use std::collections::{HashMap, HashSet};
 use std::ffi::c_int;
 
+// FIXME: VM Validator fuzzer needs to be tweaked to use +ve error codes
+//        so that we can use utils::vm::err_map::get_fd_vm_err_code instead.
 fn get_fd_err_code(ebpf_err: EbpfError) -> i32 {
     let ver_err = match ebpf_err {
         EbpfError::VerifierError(err) => err,
