@@ -31,8 +31,8 @@ jobs:
 
       - name: Test
         run: |
-          cargo check
-          cargo test
+          cargo check --release
+          cargo test --release
 
       - name: Run build
         run: make -j shared_obj test_exec_instr
