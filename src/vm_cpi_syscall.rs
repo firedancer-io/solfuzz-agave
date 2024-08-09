@@ -26,6 +26,13 @@ use solana_sdk::{
 };
 use std::sync::Arc;
 
+#[cfg(feature = "stub-agave")]
+use {
+    std::ffi::c_int,
+    prost::Message,
+};
+
+
 // Requires "stub-agave" feature to be enabled
 // Similar to src/vm_syscalls.rs
 #[no_mangle]
@@ -36,6 +43,7 @@ pub unsafe extern "C" fn sol_compat_vm_cpi_syscall_v1(
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
+
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
     let syscall_ctx = match SyscallContext::decode(in_slice) {
         Ok(context) => context,
