@@ -35,7 +35,7 @@ jobs:
           cargo test
 
       - name: Run build
-        run: make -j build binaries
+        run: make -j shared_obj test_exec_instr
 
       - name: Run test-vectors
         run: |

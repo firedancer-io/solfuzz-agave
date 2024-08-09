@@ -18,7 +18,7 @@ CC:=clang
 
 CARGO?=cargo
 
-.PHONY: build clean binaries shared_obj fetch_proto
+.PHONY: build clean binaries test_exec_instr shared_obj fetch_proto
 
 all: | fetch_proto shared_obj binaries
 
@@ -29,6 +29,9 @@ conformance: | fetch_proto shared_obj_debug
 
 fetch_proto:
 	./scripts/fetch_proto.sh
+
+test_exec_instr:
+	$(CARGO) build --bin test_exec_instr
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
