@@ -12,9 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.76.0
-      - uses: Swatinem/rust-cache@v2
-        with: 
-          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
 
       - name: Install protobuf
         run: sudo apt-get install protobuf-compiler
@@ -31,11 +28,11 @@ jobs:
 
       - name: Test
         run: |
-          cargo check
-          cargo test
+          cargo check --release
+          cargo test --release
 
       - name: Run build
-        run: make -j build binaries
+        run: make -j shared_obj test_exec_instr
 
       - name: Run test-vectors
         run: |

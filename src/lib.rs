@@ -389,7 +389,7 @@ fn instr_err_to_num(error: &InstructionError) -> i32 {
 }
 
 pub fn get_instr_accounts(
-    txn_accounts: &Vec<TransactionAccount>,
+    txn_accounts: &[TransactionAccount],
     acct_metas: &StableVec<AccountMeta>,
 ) -> Vec<InstructionAccount> {
     let mut instruction_accounts: Vec<InstructionAccount> = Vec::with_capacity(acct_metas.len());
@@ -1005,7 +1005,6 @@ mod tests {
             cu_avail: 10000u64,
             epoch_context: None,
             slot_context: None,
-            heap_size: 32 << 10,
         };
         let output = execute_instr_proto(input);
         assert_eq!(

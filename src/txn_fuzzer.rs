@@ -252,8 +252,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     Some(transaction_error) => {
                         let serialized =
                             bincode::serialize(transaction_error).unwrap_or(vec![0, 0, 0, 0]);
-                        let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
-                        error_no
+                        u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
                     }
                     None => 0,
                 };
@@ -261,8 +260,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     Some(instruction_error) => {
                         let serialized =
                             bincode::serialize(&instruction_error).unwrap_or(vec![0, 0, 0, 0]);
-                        let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
-                        error_no
+                        u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
                     }
                     None => 0,
                 };

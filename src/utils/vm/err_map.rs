@@ -5,7 +5,7 @@ const TRUNCATE_ERROR_WORDS: usize = 7;
 pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
     match ebpf_err {
         EbpfError::VerifierError(err) => verifer_error_match(err), // See FIXME below
-        EbpfError::SyscallError(err) => syscall_error_match(err),
+        EbpfError::SyscallError(err) => syscall_error_match(err.as_ref()),
         _ => -1,
     }
 }
@@ -39,7 +39,7 @@ fn verifer_error_match(ver_err: &VerifierError) -> i32 {
     }
 }
 
-fn syscall_error_match(sys_err: &Box<dyn std::error::Error>) -> i32 {
+fn syscall_error_match(sys_err: &dyn std::error::Error) -> i32 {
     // Error matching.
     // Errors are `EbpfError`` and in particular we need to match EbpfError::Syscall == Box<dyn Error>.
     // In turn, the dynamic error can have multiple types, for example InstructionError or SyscallError.

@@ -4,7 +4,6 @@ use crate::{
     utils::{self, vm::STACK_SIZE},
     InstrContext,
 };
-use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
@@ -25,7 +24,10 @@ use solana_sdk::{
     rent::Rent,
     transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext},
 };
-use std::{ffi::c_int, sync::Arc};
+use std::sync::Arc;
+
+#[cfg(feature = "stub-agave")]
+use {prost::Message, std::ffi::c_int};
 
 // Requires "stub-agave" feature to be enabled
 // Similar to src/vm_syscalls.rs
@@ -59,6 +61,7 @@ pub unsafe extern "C" fn sol_compat_vm_cpi_syscall_v1(
 }
 
 // TODO: unify with other syscall harness after CPI fuzzing is stable
+#[allow(dead_code)]
 fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
 
@@ -155,7 +158,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     invoke_context
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
-            allocator: BpfAllocator::new(vm_ctx.heap_max as u64),
+            allocator: BpfAllocator::new(vm_ctx.heap_max),
             accounts_metadata: vec![
                 SerializedAccountMetadata {
                     original_data_len: 0,
