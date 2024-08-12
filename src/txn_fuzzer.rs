@@ -393,43 +393,26 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     /* Load accounts + sysvars
     NOTE: For fuzzing, the clock sysvar is MANDATORY. Recent blockhashes are optional. These two sysvars MUST be fixed up (aka no error when loading them in). */
-    let mut blockhashes_provided = false;
     bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         let account_data = AccountSharedData::from(account);
-
-        // THIS ASSUMES THE RECENT BLOCKHASHES SYSVAR ACCOUNT DATA IS VALID. THINGS WILL BREAK OTHERWISE!!!
-        if pubkey == sysvar::recent_blockhashes::id() {
-            blockhashes_provided = true;
-        }
-
         bank.store_account(&pubkey, &account_data);
     }
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
-    let mut recent_blockhashes_idx = 0;
+    let mut lamports_per_signature: Option<u64> = None;
+    if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
+        if let Some(hash) = recent_blockhashes.first() {
+            lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
+        }
+    }
 
     // Register blockhashes in bank
-    for (index, blockhash) in blockhash_queue.iter().enumerate() {
+    for blockhash in blockhash_queue.iter() {
         let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
-        let mut lamports_per_signature: Option<u64> = None;
-        if blockhashes_provided {
-            if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
-                if index + recent_blockhashes.len() >= blockhash_queue.len() {
-                    if let Some(hash) = recent_blockhashes.get(
-                        std::cmp::min(recent_blockhashes.len(), blockhash_queue.len())
-                            - 1
-                            - recent_blockhashes_idx,
-                    ) {
-                        lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
-                    }
-                    recent_blockhashes_idx += 1;
-                }
-            }
-        }
         bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
 
