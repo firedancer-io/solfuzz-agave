@@ -119,13 +119,27 @@ impl From<&proto::LoadedAddresses> for LoadedAddresses {
 }
 
 fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessage> {
-    let header = MessageHeader::from(value.header.as_ref()?);
+    let header = if let Some(value_header) = value.header {
+        MessageHeader::from(&value_header)
+    } else {
+        // Default: valid txn header with 1 signature (this keeps tests simpler)
+        MessageHeader {
+            num_required_signatures: 1,
+            num_readonly_signed_accounts: 0,
+            num_readonly_unsigned_accounts: 0,
+        }
+    };
     let account_keys = value
         .account_keys
         .iter()
         .map(|key| Pubkey::new_from_array(key.clone().try_into().unwrap()))
         .collect::<Vec<Pubkey>>();
-    let recent_blockhash = Hash::new_from_array(value.recent_blockhash.clone().try_into().unwrap());
+    let recent_blockhash = if value.recent_blockhash.is_empty() {
+        // Default: empty blockchash (this keeps tests simpler)
+        Hash::new_from_array([0u8; 32])
+    } else {
+        Hash::new(&value.recent_blockhash)
+    };
     let instructions = value
         .instructions
         .iter()
@@ -322,17 +336,14 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let feature_set = Arc::new(FeatureSet::from(&fd_features));
     let fee_collector = Pubkey::new_unique();
-    let slot = context
-        .slot_ctx
-        .as_ref()
-        .map(|ctx| ctx.slot)
-        .unwrap_or_default();
+    let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
     let genesis_config = GenesisConfig::default();
 
-    let blockhash_queue = context.blockhash_queue;
+    let mut blockhash_queue = context.blockhash_queue;
     if blockhash_queue.is_empty() {
-        return None;
+        // Default: queue with 1 empty blockhash (this keeps tests simpler)
+        blockhash_queue.push(vec![0u8; 32]);
     }
     let genesis_hash = Hash::new(blockhash_queue[0].as_slice());
 
@@ -402,13 +413,11 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
-    let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
-    let mut lamports_per_signature: Option<u64> = None;
-    if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
-        if let Some(hash) = recent_blockhashes.first() {
-            lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
-        }
-    }
+    // Note: Agave has a weird way to switch into "test mode" and not evaluate fees
+    // if lamports_per_signature is None, so we hardocode it to 5k
+    // This is getting removed in recent commits, so we'll have to change this logic
+    // anyway when we upgrade Agave soon.
+    let lamports_per_signature: Option<u64> = Some(5_000);
 
     // Register blockhashes in bank
     for blockhash in blockhash_queue.iter() {
@@ -418,7 +427,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
 
-    let signatures = context
+    let mut signatures = context
         .tx
         .as_ref()?
         .signatures
@@ -427,6 +436,10 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             Signature::from(<Vec<u8> as TryInto<[u8; 64]>>::try_into(item.clone()).unwrap())
         })
         .collect::<Vec<Signature>>();
+    if signatures.is_empty() {
+        // Default: valid txn with 1 empty signature (this keeps tests simpler)
+        signatures.push(Signature::default());
+    }
 
     let versioned_transaction = VersionedTransaction {
         message,
@@ -436,7 +449,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let sanitized_versioned_transaction =
         match SanitizedVersionedTransaction::try_new(versioned_transaction) {
             Ok(v) => v,
-            Err(_) => {
+            Err(_err) => {
                 return Some(TxnResult {
                     executed: false,
                     sanitization_error: true,
@@ -466,17 +479,17 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .unwrap_or_default(),
     };
 
+    let message_hash = &context.tx.as_ref()?.message_hash;
+    let message_hash = if message_hash.is_empty() {
+        // Default: empty message hash (this keeps tests simpler)
+        // Note: firedancer doesn't use message hash
+        Hash::new_from_array([0u8; 32])
+    } else {
+        Hash::new(message_hash)
+    };
     let sanitized_transaction = match SanitizedTransaction::try_new(
         sanitized_versioned_transaction,
-        Hash::new_from_array(
-            context
-                .tx
-                .as_ref()?
-                .message_hash
-                .clone()
-                .try_into()
-                .unwrap(),
-        ),
+        message_hash,
         context.tx?.is_simple_vote_tx,
         mock_loader,
         bank.get_reserved_account_keys(),
@@ -501,6 +514,29 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             });
         }
     };
+
+    // Verify precompiles
+    let pre_result = sanitized_transaction.verify_precompiles(&feature_set);
+    if let Err(pre_error) = pre_result {
+        let serialized = bincode::serialize(&pre_error).unwrap_or(vec![0, 0, 0, 0]);
+        let status = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
+        // Some of the values are sort of arbitrary, they're set to match Firedancer behavior
+        // For example, sanitization_error: true.
+        return Some(TxnResult {
+            executed: false,
+            sanitization_error: true,
+            resulting_state: None,
+            rent: 0,
+            is_ok: false,
+            status,
+            instruction_error: 0,
+            instruction_error_index: 0,
+            custom_error: 0,
+            return_data: vec![],
+            executed_units: 0,
+            fee_details: None,
+        });
+    }
 
     let transactions = [sanitized_transaction];
 
