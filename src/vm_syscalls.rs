@@ -216,5 +216,6 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             })
             .into_bytes(),
         pc: 0,
+        inputdata_regions: vec![], // TODO: implement
     })
 }

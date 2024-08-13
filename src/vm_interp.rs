@@ -231,13 +231,10 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         frame_count: vm.call_depth,
         heap,
         stack,
-        // inputdata: input_data_regions
-        //     .iter()
-        //     .flat_map(|region| region.content.clone())
-        //     .collect(),
-        inputdata: vec![],
+        inputdata_regions: input_data_regions,
         log: vec![],
         pc: vm.registers[11] as u64, // FIXME: is this correct?
+        ..Default::default() // FIXME: implement rodata
     })
 }
 
