@@ -3,6 +3,7 @@ use crate::{
     proto::{SyscallContext, SyscallEffects},
     utils,
     utils::vm::STACK_SIZE,
+    utils::vm::mem_regions,
     InstrContext,
 };
 use prost::Message;
@@ -131,19 +132,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    for input_data_region in &mut input_data_regions {
-        if input_data_region.is_writable {
-            regions.push(MemoryRegion::new_writable(
-                input_data_region.content.as_mut_slice(),
-                MM_INPUT_START + input_data_region.offset,
-            ));
-        } else {
-            regions.push(MemoryRegion::new_readonly(
-                input_data_region.content.as_slice(),
-                MM_INPUT_START + input_data_region.offset,
-            ));
-        }
-    }
+    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
+    
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: true,
