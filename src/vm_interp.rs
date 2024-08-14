@@ -61,6 +61,7 @@ pub unsafe extern "C" fn sol_compat_vm_interp_v1(
     1
 }
 
+// We are actually executing the JIT-compiled program here
 fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let feature_set = FeatureSet {
         active: HashMap::new(),
@@ -72,6 +73,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         ..ComputeBudget::default()
     };
 
+    // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
         &feature_set,
         &compute_budget,
@@ -187,7 +189,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     vm.registers[8] = vm_ctx.r8;
     vm.registers[9] = vm_ctx.r9;
     vm.registers[10] = vm_ctx.r10;
-    // vm.registers[11] = vm_ctx.r11; set by interpreter
+    // vm.registers[11] = vm_ctx.r11; set by JIT
 
     let mut executable = Executable::from_text_bytes(
         &vm_ctx.rodata,
@@ -215,7 +217,6 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let (_, result) = vm.execute_program(
         &executable,
         false, /* use JIT */
-        // true, /* use interpreter */
     );
     
     Some(SyscallEffects {
