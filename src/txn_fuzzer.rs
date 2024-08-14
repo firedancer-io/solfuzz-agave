@@ -26,12 +26,12 @@ use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
-use solana_svm::transaction_results::TransactionExecutionResult;
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use solana_svm::transaction_execution_result::TransactionExecutionResult;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_txn_execute_v1(
