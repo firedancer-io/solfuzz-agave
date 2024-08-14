@@ -1,7 +1,5 @@
 use crate::{
-    load_builtins,
-    proto::{SyscallContext, SyscallEffects, VmContext},
-    InstrContext,
+    load_builtins, proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::mem_regions, InstrContext
 };
 use bincode::Error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -142,21 +140,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     ];
 
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    let mut input_data_off: u64 = 0;
-    for input_data_region in &mut input_data_regions {
-        if input_data_region.is_writable {
-            regions.push(MemoryRegion::new_writable(
-                input_data_region.content.as_mut_slice(),
-                ebpf::MM_INPUT_START + input_data_off,
-            ));
-        } else {
-            regions.push(MemoryRegion::new_readonly(
-                input_data_region.content.as_slice(),
-                ebpf::MM_INPUT_START + input_data_off,
-            ));
-        }
-        input_data_off += input_data_region.content.len() as u64;
-    }
+    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: false,
@@ -232,7 +216,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         frame_count: vm.call_depth,
         heap,
         stack,
-        inputdata_regions: input_data_regions,
+        inputdata_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
         pc: vm.registers[11] as u64, // FIXME: is this correct?
         ..Default::default() // FIXME: implement rodata
