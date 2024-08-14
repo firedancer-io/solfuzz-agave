@@ -53,4 +53,4 @@ solana-zk-token-sdk = { git = "https://github.com/firedancer-io/agave", rev = "a
 
 [features]
 # This feature is used to stub out certain parts of the agave runtime for fuzzing
-# stub-agave = ["solana-program-runtime/stub-proc-instr"]
+stub-agave = ["solana-program-runtime/stub-proc-instr"]
