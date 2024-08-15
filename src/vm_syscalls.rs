@@ -2,8 +2,8 @@ use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
     utils,
-    utils::vm::STACK_SIZE,
     utils::vm::mem_regions,
+    utils::vm::STACK_SIZE,
     InstrContext,
 };
 use prost::Message;
@@ -133,7 +133,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     ];
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
-    
+
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: true,

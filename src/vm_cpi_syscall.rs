@@ -1,7 +1,7 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils::{self, vm::STACK_SIZE, vm::mem_regions},
+    utils::{self, vm::mem_regions, vm::STACK_SIZE},
     InstrContext,
 };
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -190,7 +190,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     ];
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
-    
+
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: false,
