@@ -14,7 +14,7 @@ pub fn setup_input_regions(
 ) {
     let mut input_data_off: u64 = 0;
     for input_data_region in input_data_regions {
-        if input_data_region.content.len() == 0 {
+        if input_data_region.content.is_empty() {
             continue; // follow Agave, skip empty regions
         }
         if input_data_region.is_writable {
@@ -50,7 +50,7 @@ pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<Inp
                     .to_vec()
             },
             offset: region.vm_addr - ebpf::MM_INPUT_START,
-            is_writable: region.state.get() == MemoryState::Writable.into(),
+            is_writable: region.state.get() == MemoryState::Writable,
         })
         .collect()
 }

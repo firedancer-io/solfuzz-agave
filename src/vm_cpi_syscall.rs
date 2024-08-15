@@ -11,7 +11,7 @@ use solana_program_runtime::{
     invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata},
     loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
-        ebpf::{self, MM_INPUT_START},
+        ebpf,
         error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
