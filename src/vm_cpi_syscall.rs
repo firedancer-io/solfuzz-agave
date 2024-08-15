@@ -1,7 +1,7 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils::{self, vm::STACK_SIZE},
+    utils::{self, vm::mem_regions, vm::STACK_SIZE},
     InstrContext,
 };
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -11,7 +11,7 @@ use solana_program_runtime::{
     invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata},
     loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
-        ebpf::{self, MM_INPUT_START},
+        ebpf,
         error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
@@ -189,21 +189,8 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    let mut offset = 0;
-    for input_data_region in &mut input_data_regions {
-        if input_data_region.is_writable {
-            regions.push(MemoryRegion::new_writable(
-                input_data_region.content.as_mut_slice(),
-                MM_INPUT_START + offset,
-            ));
-        } else {
-            regions.push(MemoryRegion::new_readonly(
-                input_data_region.content.as_slice(),
-                MM_INPUT_START + offset,
-            ));
-        }
-        offset += input_data_region.content.len() as u64;
-    }
+    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
+
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: false,
@@ -261,10 +248,8 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
-        inputdata: input_data_regions
-            .iter()
-            .flat_map(|region| region.content.clone())
-            .collect(),
+        rodata,
+        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         frame_count: vm.call_depth,
         log: invoke_context
             .get_log_collector()?
