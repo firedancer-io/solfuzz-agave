@@ -10,6 +10,7 @@ use solana_program::message::{
     legacy, v0, AddressLoader, AddressLoaderError, MessageHeader, VersionedMessage,
 };
 use solana_program::pubkey::Pubkey;
+use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::transaction_batch::TransactionBatch;
@@ -17,6 +18,7 @@ use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
+use solana_sdk::native_loader::create_loadable_account_for_test;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar;
 use solana_sdk::transaction::{
@@ -30,6 +32,7 @@ use solana_svm::transaction_processing_result::TransactionProcessingResultExtens
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -215,12 +218,7 @@ impl From<LoadedTransaction> for proto::ResultingState {
 
         let mut acct_states: Vec<AcctState> = Vec::with_capacity(value.accounts.len());
 
-        // Take out duplicate account keys
-        let mut seen = std::collections::HashSet::<Pubkey>::new();
         for item in value.accounts {
-            if !seen.insert(item.0) {
-                continue;
-            }
             acct_states.push(item.into());
         }
 
@@ -403,11 +401,29 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|addresses| addresses.readonly.clone())
         .unwrap_or_default();
 
+    /* Load builtins */
+    let mut stored_accounts = HashSet::<Pubkey>::default();
+    for builtin in BUILTINS.iter() {
+        if let Some(enable_feature_id) = builtin.enable_feature_id {
+            if !bank.feature_set.is_active(&enable_feature_id) {
+                continue;
+            }
+        }
+        let builtin_account: AccountSharedData = create_loadable_account_for_test(builtin.name);
+        let pubkey = builtin.program_id;
+        stored_accounts.insert(pubkey);
+        bank.store_account(&pubkey, &builtin_account);
+    }
+
     /* Load accounts + sysvars
-    NOTE: For fuzzing, the clock sysvar is MANDATORY. Recent blockhashes are optional. These two sysvars MUST be fixed up (aka no error when loading them in). */
+    NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
+    pubkeys are ignored. */
     bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
+        if !stored_accounts.insert(pubkey) {
+            continue;
+        }
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
     }
