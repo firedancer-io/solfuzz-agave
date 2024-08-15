@@ -25,8 +25,9 @@ use solana_sdk::transaction::{
 use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
+use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
+use solana_svm::transaction_processing_result::TransactionProcessingResultExtensions;
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
-use solana_svm::transaction_results::TransactionExecutionResult;
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::ffi::c_int;
@@ -233,7 +234,7 @@ impl From<LoadedTransaction> for proto::ResultingState {
 
 impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     fn from(value: LoadAndExecuteTransactionsOutput) -> TxnResult {
-        let execution_results = &value.execution_results[0];
+        let execution_results = &value.processing_results[0];
         let (
             is_ok,
             sanitization_error,
@@ -247,7 +248,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             rent,
             resulting_state,
         ) = match execution_results {
-            TransactionExecutionResult::Executed(executed_tx) => {
+            Ok(executed_tx) => {
                 let details = &executed_tx.execution_details;
                 let is_ok = details.status.is_ok();
                 let transaction_error = details.status.as_ref().err();
@@ -299,7 +300,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     resulting_state,
                 )
             }
-            TransactionExecutionResult::NotExecuted(error) => {
+            Err(error) => {
                 let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
                 let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
                 (false, true, error_no, 0, 0, 0, 0, vec![], None, 0, None)
@@ -307,7 +308,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
         };
 
         TxnResult {
-            executed: execution_results.was_executed(),
+            executed: execution_results.was_processed(),
             sanitization_error,
             resulting_state,
             rent,
@@ -566,8 +567,14 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         check_program_modification_slot: false,
     };
 
-    let result =
-        bank.load_and_execute_transactions(&batch, context.max_age as usize, &mut timings, configs);
+    let mut metrics = TransactionErrorMetrics::default();
+    let result = bank.load_and_execute_transactions(
+        &batch,
+        context.max_age as usize,
+        &mut timings,
+        &mut metrics,
+        configs,
+    );
 
     // Only keep accounts that were passed in as account_keys
     let mut txn_result: TxnResult = result.into();
