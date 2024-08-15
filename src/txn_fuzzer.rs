@@ -413,11 +413,15 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
-    // Note: Agave has a weird way to switch into "test mode" and not evaluate fees
-    // if lamports_per_signature is None, so we hardocode it to 5k
-    // This is getting removed in recent commits, so we'll have to change this logic
-    // anyway when we upgrade Agave soon.
-    let lamports_per_signature: Option<u64> = Some(5_000);
+    let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
+    let mut lamports_per_signature: Option<u64> = None;
+    if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
+        if let Some(hash) = recent_blockhashes.first() {
+            if hash.fee_calculator.lamports_per_signature != 0 {
+                lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
+            }
+        }
+    }
 
     // Register blockhashes in bank
     for blockhash in blockhash_queue.iter() {
