@@ -216,7 +216,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         frame_count: vm.call_depth,
         heap,
         stack,
-        inputdata_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
+        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
         pc: vm.registers[11] as u64, // FIXME: is this correct?
         ..Default::default() // FIXME: implement rodata
