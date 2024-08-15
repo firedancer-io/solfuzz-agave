@@ -201,10 +201,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
-        inputdata: input_data_regions
-            .iter()
-            .flat_map(|region| region.content.clone())
-            .collect(),
+        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
+        inputdata:vec![], // deprecated
         rodata,
         frame_count: vm.call_depth,
         log: invoke_context

@@ -248,10 +248,8 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
-        inputdata: input_data_regions
-            .iter()
-            .flat_map(|region| region.content.clone())
-            .collect(),
+        rodata,
+        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         frame_count: vm.call_depth,
         log: invoke_context
             .get_log_collector()?
