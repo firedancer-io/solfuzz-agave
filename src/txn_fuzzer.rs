@@ -18,7 +18,6 @@ use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
-use solana_sdk::native_loader::create_loadable_account_for_test;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar;
 use solana_sdk::transaction::{
@@ -401,7 +400,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|addresses| addresses.readonly.clone())
         .unwrap_or_default();
 
-    /* Load builtins */
+    /* Save loaded builtins so we don't load them twice */
     let mut stored_accounts = HashSet::<Pubkey>::default();
     for builtin in BUILTINS.iter() {
         if let Some(enable_feature_id) = builtin.enable_feature_id {
@@ -409,10 +408,8 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                 continue;
             }
         }
-        let builtin_account: AccountSharedData = create_loadable_account_for_test(builtin.name);
         let pubkey = builtin.program_id;
         stored_accounts.insert(pubkey);
-        bank.store_account(&pubkey, &builtin_account);
     }
 
     /* Load accounts + sysvars
