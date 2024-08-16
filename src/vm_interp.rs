@@ -1,16 +1,16 @@
 use crate::{
-    load_builtins, proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::mem_regions, InstrContext
+    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::mem_regions
 };
 use bincode::Error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{invoke_context::{EnvironmentConfig, InvokeContext}, loaded_programs::ProgramCacheForTxBatch, solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::StableResult, interpreter::Interpreter, memory_region::{MemoryMapping, MemoryRegion}, program::{self, BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
+    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{self, BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
 }, sysvar_cache::SysvarCache};
 use prost::Message;
-use solana_sdk::{feature_set::{add_compute_budget_program, FeatureSet}, hash::Hash, rent::Rent, transaction_context::TransactionContext};
-use std::{collections::{HashMap, HashSet}, ffi::c_int, sync::Arc};
+use solana_sdk::{feature_set::FeatureSet, hash::Hash, rent::Rent, transaction_context::TransactionContext};
+use std::{borrow::Borrow, collections::{HashMap, HashSet}, ffi::c_int, sync::Arc};
 
 declare_builtin_function!(
     SyscallStub,
@@ -202,6 +202,14 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         &executable,
         false, /* use JIT */
     );
+
+    let pc = match result.borrow() {
+        StableResult::Err(err) => match err {
+            EbpfError::ExceededMaxInstructions => 0, // CU error messes up the PC
+            _ => vm.registers[11] as u64, 
+        },
+        _ => vm.registers[11] as u64,
+    };
     
     Some(SyscallEffects {
         error: match result {
@@ -218,7 +226,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         stack,
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
-        pc: vm.registers[11] as u64, // FIXME: is this correct?
+        pc,
         ..Default::default() // FIXME: implement rodata
     })
 }
