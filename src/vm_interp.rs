@@ -248,7 +248,7 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
             if (byte & (1 << bit_idx)) != 0 {
                 let pc = byte_idx * 8 + bit_idx;
                 let _ = fn_reg.register_function(
-                    ebpf::hash_symbol_name(&u64::to_be_bytes(pc as u64)), // FIXME: is this correct?
+                    ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64)), // FIXME: is this correct?
                     b"fn",
                     pc,
                 );
