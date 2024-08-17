@@ -10,7 +10,6 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
         /* VM Execution Errors */
         /* FIXME: In call{reg,imm} insns, FD throws FD_VM_ERR_SIGCALL when target pc/vm_addr is OOB */
         EbpfError::CallOutsideTextSegment => 8, /* FD_VM_ERR_SIGTEXT  */
-        /* FIXME: FD throws FD_VM_ERR_SIGSPLIT for LDQ overruns */
         EbpfError::ExecutionOverrun => 8, /* FD_VM_ERR_SIGTEXT */
         /* FIXME: In callimm, Agave throws this iff target is not in function registry.
                   FD throws FD_VM_ERR_SIGCALL for the same condition AND 

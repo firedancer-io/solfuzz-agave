@@ -1,5 +1,5 @@
 use crate::{
-    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::mem_regions
+    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::{err_map, mem_regions}
 };
 use bincode::Error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -200,7 +200,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
 
     let (_, result) = vm.execute_program(
         &executable,
-        false, /* use JIT */
+        false, /* use JIT for fuzzing, interpreter for debugging */
     );
 
     let pc = match result.borrow() {
@@ -214,7 +214,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     Some(SyscallEffects {
         error: match result {
             StableResult::Ok(_) => 0,
-            StableResult::Err(_) => 1, //TODO: map
+            StableResult::Err(ref ebpf_err) => err_map::get_fd_vm_err_code(ebpf_err).into(),
         },
         r0: match result {
             StableResult::Ok(n) => n,
