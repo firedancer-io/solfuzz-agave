@@ -6,7 +6,7 @@ use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{invoke_context::{EnvironmentConfig, InvokeContext}, loaded_programs::ProgramCacheForTxBatch, solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{self, BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
+    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
 }, sysvar_cache::SysvarCache};
 use prost::Message;
 use solana_sdk::{feature_set::FeatureSet, hash::Hash, rent::Rent, transaction_context::TransactionContext};
@@ -203,12 +203,19 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         false, /* use JIT for fuzzing, interpreter for debugging */
     );
 
-    let pc = match result.borrow() {
+    match result.borrow() {
         StableResult::Err(err) => match err {
-            EbpfError::ExceededMaxInstructions => 0, // CU error messes up the PC
-            _ => vm.registers[11] as u64, 
+            EbpfError::ExceededMaxInstructions => { // CU errors mess up everything
+                return Some(SyscallEffects {
+                    error: err_map::get_fd_vm_err_code(err).into(),
+                    cu_avail: 0,
+                    frame_count: vm.context_object_pointer.get_remaining(),
+                    ..Default::default()
+                });
+            }, 
+            _ => {}
         },
-        _ => vm.registers[11] as u64,
+        _ => {}
     };
     
     Some(SyscallEffects {
@@ -226,7 +233,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         stack,
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
-        pc,
+        pc: vm.registers[11],
         ..Default::default() // FIXME: implement rodata
     })
 }
