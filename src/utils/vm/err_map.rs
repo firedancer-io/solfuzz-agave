@@ -15,7 +15,7 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
                   FD throws FD_VM_ERR_SIGCALL for the same condition AND 
                   if pc > textcnt (Agave throws CallOutsideTextSegment instead)
            FIXME: For unknown instructions, Agave throws this. FD throws FD_VM_ERR_SIGILL */
-        EbpfError::UnsupportedInstruction => 10, /* FD_VM_ERR_SIGCALL */
+        EbpfError::UnsupportedInstruction => 12, /* FD_VM_ERR_SIGILL */
         EbpfError::CallDepthExceeded => 11, /* FD_VM_ERR_SIGSTACK */
         EbpfError::InvalidInstruction => 12, /* FD_VM_ERR_SIGILL */
         EbpfError::AccessViolation(_, _, _, _) => 13, /* FD_VM_ERR_SIGSEGV */
