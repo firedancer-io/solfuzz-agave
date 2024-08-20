@@ -18,6 +18,7 @@ use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
+use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar;
 use solana_sdk::transaction::{
@@ -336,7 +337,22 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
-    let genesis_config = GenesisConfig::default();
+    let mut genesis_config = GenesisConfig::default();
+
+    /* HACK: Set the genesis config rent from the "to-be" sysvar rent, if present */
+    let mut sysvar_cache_rent: Option<Rent> = None;
+    for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
+        let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
+        if pubkey == sysvar::rent::id() {
+            let data = account.data.clone();
+            sysvar_cache_rent = bincode::deserialize(&data).ok();
+            break;
+        }
+    }
+
+    if let Some(rent) = sysvar_cache_rent {
+        genesis_config.rent = rent;
+    }
 
     let mut blockhash_queue = context.blockhash_queue;
     if blockhash_queue.is_empty() {
