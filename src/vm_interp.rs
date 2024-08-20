@@ -1,12 +1,13 @@
 use crate::{
-    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::{err_map, mem_regions}
+    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::{err_map, mem_regions},
+    utils::pchash_inverse
 };
 use bincode::Error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{invoke_context::{EnvironmentConfig, InvokeContext}, loaded_programs::ProgramCacheForTxBatch, solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
+    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm, TestContextObject}
 }, sysvar_cache::SysvarCache};
 use prost::Message;
 use solana_sdk::{feature_set::FeatureSet, hash::Hash, rent::Rent, transaction_context::TransactionContext};
@@ -203,13 +204,18 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         false, /* use JIT for fuzzing, interpreter for debugging */
     );
 
+    let result = match result {
+        StableResult::Err(err) => StableResult::Err(process_result(&mut vm, &executable, err)),
+        StableResult::Ok(n) => StableResult::Ok(n),
+    };
+
     match result.borrow() {
         StableResult::Err(err) => match err {
             EbpfError::ExceededMaxInstructions => { // CU errors mess up everything
                 return Some(SyscallEffects {
                     error: err_map::get_fd_vm_err_code(err).into(),
                     cu_avail: 0,
-                    frame_count: vm.context_object_pointer.get_remaining(),
+                    frame_count: vm.call_depth,
                     ..Default::default()
                 });
             }, 
@@ -266,4 +272,39 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
     
 
     fn_reg
+}
+
+/* Look through errors, and map to something else if necessary */
+
+fn process_result<C: ContextObject> (vm: &mut EbpfVm<C>, executable: &Executable<C>, err: EbpfError) -> EbpfError {
+    match err{
+        EbpfError::UnsupportedInstruction => {
+            /* CALL_IMM throws UnsupportedInstruction iff the immediate
+               is not in executable's Function Registry. We want
+               to consider the case that the hash inverse is a PC(*) that is 
+               OOB, since Firedancer reports the equivalent to 
+               EbpfError::CallOutsideTextSegment.
+               
+               (*) NOTE: this assumes a text section loaded by the FD sbpf loader,
+               which hashes the PC of the target function into the instruction immediate.
+               The interpreter fuzzer uses this. */
+
+            let pc = vm.registers[11];
+            let insn = ebpf::get_insn_unchecked(executable.get_text_bytes().1, pc as usize);
+            if insn.opc == ebpf::CALL_IMM {
+                let pchash = insn.imm as u32;
+                if pchash_inverse(pchash) > (executable.get_text_bytes().1.len() / ebpf::INSN_SIZE) as u32 {
+                    // need to simulate pushing a stack frame
+                    vm.call_depth += 1;
+                    EbpfError::CallOutsideTextSegment
+                } else {
+                     EbpfError::UnsupportedInstruction
+                }
+            } else {
+                EbpfError::UnsupportedInstruction
+            }
+        }
+        _ => err
+    }    
+
 }
