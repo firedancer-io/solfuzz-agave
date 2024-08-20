@@ -5,18 +5,17 @@ use crate::{
 use bincode::Error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_log_collector::LogCollector;
-use solana_program_runtime::{invoke_context::{EnvironmentConfig, InvokeContext}, loaded_programs::ProgramCacheForTxBatch, solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
-}, sysvar_cache::SysvarCache};
+use solana_program_runtime::solana_rbpf::{
+    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm, TestContextObject}
+};
 use prost::Message;
-use solana_sdk::{feature_set::FeatureSet, hash::Hash, rent::Rent, transaction_context::TransactionContext};
-use std::{borrow::Borrow, collections::{HashMap, HashSet}, ffi::c_int, sync::Arc};
+use solana_sdk::feature_set::FeatureSet;
+use std::{borrow::Borrow, collections::{HashMap, HashSet}, ffi::c_int};
 
 declare_builtin_function!(
     SyscallStub,
     fn rust(
-        _invoke_context: &mut InvokeContext,
+        _invoke_context: &mut TestContextObject,
         _hash_addr: u64,
         _recovery_id_val: u64,
         _signature_addr: u64,
@@ -34,9 +33,15 @@ declare_builtin_function!(
    WARNING: CU validation works differently in the 
    interpreter vs. JIT. You may get CU mismatches you
    otherwise wouldn't see when fuzzing against the JIT.
+   Also, the interpreter doesn't save PC on execution success 
+   while the JIT does.
 
    FD targets conformance with the JIT, not interprerter. */
 const USE_INTERPRETER: bool = false;
+
+/* Set to true to dump registers[0..12] of every instruction
+   execution (dumped after execution). */
+const ENABLE_TRACING: bool = false;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_interp_v1(
@@ -75,24 +80,19 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         active: HashMap::new(),
         inactive: HashSet::new(),
     };
-    
-    let compute_budget = ComputeBudget {
-        compute_unit_limit: syscall_context.instr_ctx?.cu_avail,
-        ..ComputeBudget::default()
-    };
 
     // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
         &feature_set,
-        &compute_budget,
+        &ComputeBudget::default(),
         false,
-        false,
+        ENABLE_TRACING,
     )
     .unwrap();
 
     // stub syscalls
     let syscall_reg = unstubbed_runtime.get_function_registry();
-    let mut stubbed_syscall_reg = FunctionRegistry::<BuiltinFunction<InvokeContext>>::default();
+    let mut stubbed_syscall_reg = FunctionRegistry::<BuiltinFunction<TestContextObject>>::default();
 
     for (key, (name, _)) in syscall_reg.iter() {
         stubbed_syscall_reg.register_function(key, name, SyscallStub::vm).unwrap();
@@ -102,34 +102,8 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let sbpf_version: SBPFVersion = SBPFVersion::V1;
     let loader = std::sync::Arc::new(program_runtime_environment_v1);
 
-    
-    // Setup InvokeContext
-    let mut txn_ctx = TransactionContext::new(
-        vec![],
-        Rent::default(),
-        compute_budget.max_instruction_stack_depth,
-        compute_budget.max_instruction_trace_length
-    );
-    
-    let sysvar = SysvarCache::default();
-    let environment_config = EnvironmentConfig::new(
-        Hash::default(),
-        None,
-        None,
-        Arc::new(FeatureSet::all_enabled()),
-        0,
-        &sysvar,
-    );
-    
-    let mut prog_cache = ProgramCacheForTxBatch::default();
-    let mut invoke_context = InvokeContext::new(
-        &mut txn_ctx,
-        &mut prog_cache,
-        environment_config, 
-        Some(LogCollector::new_ref()), 
-        compute_budget
-    );
-    
+    // Setup TestContextObject
+    let mut context_obj = TestContextObject::new(syscall_context.instr_ctx?.cu_avail);    
     
     // setup memory
     let vm_ctx = syscall_context.vm_ctx.unwrap();
@@ -166,7 +140,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let mut vm = EbpfVm::new(
         loader.clone(),
         &sbpf_version,
-        &mut invoke_context,
+        &mut context_obj,
         memory_mapping,
         STACK_SIZE
     );
@@ -212,6 +186,10 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         &executable,
         USE_INTERPRETER, /* use JIT for fuzzing, interpreter for debugging */
     );
+
+    if ENABLE_TRACING {
+        eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
+    }
 
     let result = match result {
         StableResult::Err(err) => StableResult::Err(process_result(&mut vm, &executable, err)),
@@ -270,7 +248,7 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
             if (byte & (1 << bit_idx)) != 0 {
                 let pc = byte_idx * 8 + bit_idx;
                 let _ = fn_reg.register_function(
-                    ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64)), // FIXME: is this correct?
+                    ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64)),
                     b"fn",
                     pc,
                 );
@@ -284,7 +262,6 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
 }
 
 /* Look through errors, and map to something else if necessary */
-
 fn process_result<C: ContextObject> (vm: &mut EbpfVm<C>, executable: &Executable<C>, err: EbpfError) -> EbpfError {
     match err{
         EbpfError::UnsupportedInstruction => {
