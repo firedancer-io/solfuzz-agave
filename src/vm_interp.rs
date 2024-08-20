@@ -33,15 +33,13 @@ declare_builtin_function!(
    WARNING: CU validation works differently in the 
    interpreter vs. JIT. You may get CU mismatches you
    otherwise wouldn't see when fuzzing against the JIT.
-   Also, the interpreter doesn't save PC on execution success 
-   while the JIT does.
 
    FD targets conformance with the JIT, not interprerter. */
 const USE_INTERPRETER: bool = false;
 
 /* Set to true to dump registers[0..12] of every instruction
    execution (dumped after execution). */
-const ENABLE_TRACING: bool = false;
+const ENABLE_TRACE_DUMP: bool = false;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_interp_v1(
@@ -86,7 +84,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         &feature_set,
         &ComputeBudget::default(),
         false,
-        ENABLE_TRACING,
+        true, /* capture register state to obtain pc on success */
     )
     .unwrap();
 
@@ -187,7 +185,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         USE_INTERPRETER, /* use JIT for fuzzing, interpreter for debugging */
     );
 
-    if ENABLE_TRACING {
+    if ENABLE_TRACE_DUMP {
         eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
     }
 
@@ -226,7 +224,13 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         stack,
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
-        pc: vm.registers[11],
+        pc: match result {
+            StableResult::Ok(_) => match vm.context_object_pointer.trace_log.last(){
+                Some(regs) => regs[11],
+                None => vm.registers[11]
+            },
+            StableResult::Err(_) => vm.registers[11],
+        },
         ..Default::default() // FIXME: implement rodata
     })
 }
