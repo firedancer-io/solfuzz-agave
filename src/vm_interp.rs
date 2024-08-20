@@ -1,5 +1,5 @@
 use crate::{
-    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::{err_map, mem_regions},
+    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::{err_map, mem_regions, STACK_SIZE, HEAP_MAX},
     utils::pchash_inverse
 };
 use bincode::Error;
@@ -7,7 +7,7 @@ use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{invoke_context::{EnvironmentConfig, InvokeContext}, loaded_programs::ProgramCacheForTxBatch, solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm, TestContextObject}
+    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm}
 }, sysvar_cache::SysvarCache};
 use prost::Message;
 use solana_sdk::{feature_set::FeatureSet, hash::Hash, rent::Rent, transaction_context::TransactionContext};
@@ -29,8 +29,14 @@ declare_builtin_function!(
     }
 );
 
-const STACK_SIZE: usize = 524288;
-const HEAP_MAX: usize = 256*1024;
+/* Set to true to make debugging easier
+
+   WARNING: CU validation works differently in the 
+   interpreter vs. JIT. You may get CU mismatches you
+   otherwise wouldn't see when fuzzing against the JIT.
+
+   FD targets conformance with the JIT, not interprerter. */
+const USE_INTERPRETER: bool = false;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_interp_v1(
@@ -39,6 +45,9 @@ pub unsafe extern "C" fn sol_compat_vm_interp_v1(
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
+    if USE_INTERPRETER {
+        eprintln!("WARNING: Using interpreter. This is not the fuzz default.");
+    }
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
     let syscall_context = match SyscallContext::decode(in_slice) {
         Ok(context) => context,
@@ -201,7 +210,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
 
     let (_, result) = vm.execute_program(
         &executable,
-        false, /* use JIT for fuzzing, interpreter for debugging */
+        USE_INTERPRETER, /* use JIT for fuzzing, interpreter for debugging */
     );
 
     let result = match result {
