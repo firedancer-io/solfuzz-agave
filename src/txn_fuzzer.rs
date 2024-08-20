@@ -337,7 +337,10 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
-    let mut genesis_config = GenesisConfig::default();
+    let mut genesis_config = GenesisConfig {
+        creation_time: 0,
+        ..GenesisConfig::default()
+    };
 
     /* HACK: Set the genesis config rent from the "to-be" sysvar rent, if present */
     let mut sysvar_cache_rent: Option<Rent> = None;
