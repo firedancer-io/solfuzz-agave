@@ -1,16 +1,27 @@
 use crate::{
-    proto::{SyscallContext, SyscallEffects, VmContext}, utils::vm::{err_map, mem_regions, STACK_SIZE, HEAP_MAX},
-    utils::pchash_inverse
+    proto::{SyscallContext, SyscallEffects, VmContext},
+    utils::pchash_inverse,
+    utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
 };
 use bincode::Error;
+use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_program_runtime::solana_rbpf::{
-    declare_builtin_function, ebpf, elf::Executable, error::{EbpfError, StableResult}, memory_region::{MemoryMapping, MemoryRegion}, program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion}, verifier::RequisiteVerifier, vm::{Config, ContextObject, EbpfVm, TestContextObject}
+    declare_builtin_function, ebpf,
+    elf::Executable,
+    error::{EbpfError, StableResult},
+    memory_region::{MemoryMapping, MemoryRegion},
+    program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion},
+    verifier::RequisiteVerifier,
+    vm::{Config, ContextObject, EbpfVm, TestContextObject},
 };
-use prost::Message;
 use solana_sdk::feature_set::FeatureSet;
-use std::{borrow::Borrow, collections::{HashMap, HashSet}, ffi::c_int};
+use std::{
+    borrow::Borrow,
+    collections::{HashMap, HashSet},
+    ffi::c_int,
+};
 
 declare_builtin_function!(
     SyscallStub,
@@ -22,7 +33,7 @@ declare_builtin_function!(
         _result_addr: u64,
         _arg5: u64,
         _memory_mapping: &mut MemoryMapping,
-    ) -> Result<u64, Error>{
+    ) -> Result<u64, Error> {
         // TODO: deduct CUs?
         Ok(0)
     }
@@ -30,16 +41,16 @@ declare_builtin_function!(
 
 /* Set to true to make debugging easier
 
-   WARNING: CU validation works differently in the 
-   interpreter vs. JIT. You may get CU mismatches you
-   otherwise wouldn't see when fuzzing against the JIT.
+WARNING: CU validation works differently in the
+interpreter vs. JIT. You may get CU mismatches you
+otherwise wouldn't see when fuzzing against the JIT.
 
-   FD targets conformance with the JIT, not interprerter. */
+FD targets conformance with the JIT, not interprerter. */
 const USE_INTERPRETER: bool = false;
 
 /* Set to true to dump registers[0..12] of every instruction
-   execution (dumped after execution). */
-const ENABLE_TRACE_DUMP: bool = false;
+execution (dumped after execution). */
+const ENABLE_TRACE_DUMP: bool = true;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_interp_v1(
@@ -93,22 +104,25 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let mut stubbed_syscall_reg = FunctionRegistry::<BuiltinFunction<TestContextObject>>::default();
 
     for (key, (name, _)) in syscall_reg.iter() {
-        stubbed_syscall_reg.register_function(key, name, SyscallStub::vm).unwrap();
+        stubbed_syscall_reg
+            .register_function(key, name, SyscallStub::vm)
+            .unwrap();
     }
-    let program_runtime_environment_v1 = BuiltinProgram::new_loader(unstubbed_runtime.get_config().clone(), stubbed_syscall_reg);
+    let program_runtime_environment_v1 =
+        BuiltinProgram::new_loader(unstubbed_runtime.get_config().clone(), stubbed_syscall_reg);
 
     let sbpf_version: SBPFVersion = SBPFVersion::V1;
     let loader = std::sync::Arc::new(program_runtime_environment_v1);
 
     // Setup TestContextObject
-    let mut context_obj = TestContextObject::new(syscall_context.instr_ctx?.cu_avail);    
-    
+    let mut context_obj = TestContextObject::new(syscall_context.instr_ctx?.cu_avail);
+
     // setup memory
     let vm_ctx = syscall_context.vm_ctx.unwrap();
     let function_registry = setup_internal_fn_registry(&vm_ctx);
 
     let syscall_inv = syscall_context.syscall_invocation.unwrap();
-    
+
     let rodata = &vm_ctx.rodata;
     let mut stack = syscall_inv.stack_prefix;
     stack.resize(STACK_SIZE, 0);
@@ -128,21 +142,20 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         enable_sbpf_v2: false,
         ..Config::default()
     };
-    
+
     let memory_mapping = match MemoryMapping::new(regions, config, &sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
 
-    
     let mut vm = EbpfVm::new(
         loader.clone(),
         &sbpf_version,
         &mut context_obj,
         memory_mapping,
-        STACK_SIZE
+        STACK_SIZE,
     );
-    
+
     // setup registers
     vm.registers[0] = vm_ctx.r0;
     vm.registers[1] = vm_ctx.r1;
@@ -161,22 +174,27 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         &vm_ctx.rodata,
         loader,
         sbpf_version.clone(),
-        function_registry
-    ).unwrap();
+        function_registry,
+    )
+    .unwrap();
 
-    match executable.verify::<RequisiteVerifier>(){
-        Err(_) => return Some( SyscallEffects{
-            error: -1,
-            ..Default::default()
-        }),
+    match executable.verify::<RequisiteVerifier>() {
+        Err(_) => {
+            return Some(SyscallEffects {
+                error: -1,
+                ..Default::default()
+            })
+        }
         _ => {}
     }
 
     match executable.jit_compile() {
-        Err(_) => return Some( SyscallEffects{
-            error: -1,
-            ..Default::default()
-        }),
+        Err(_) => {
+            return Some(SyscallEffects {
+                error: -1,
+                ..Default::default()
+            })
+        }
         _ => {}
     }
 
@@ -196,19 +214,20 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
 
     match result.borrow() {
         StableResult::Err(err) => match err {
-            EbpfError::ExceededMaxInstructions => { // CU errors mess up everything
+            EbpfError::ExceededMaxInstructions => {
+                // CU errors mess up everything
                 return Some(SyscallEffects {
                     error: err_map::get_fd_vm_err_code(err).into(),
                     cu_avail: 0,
                     frame_count: vm.call_depth,
                     ..Default::default()
                 });
-            }, 
+            }
             _ => {}
         },
         _ => {}
     };
-    
+
     Some(SyscallEffects {
         error: match result {
             StableResult::Ok(_) => 0,
@@ -225,9 +244,9 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
         pc: match result {
-            StableResult::Ok(_) => match vm.context_object_pointer.trace_log.last(){
+            StableResult::Ok(_) => match vm.context_object_pointer.trace_log.last() {
                 Some(regs) => regs[11],
-                None => vm.registers[11]
+                None => vm.registers[11],
             },
             StableResult::Err(_) => vm.registers[11],
         },
@@ -235,11 +254,25 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     })
 }
 
+/* This sets up a function registry based on a Firedancer-loaded SBPF program.
+The key difference is call immediates are hashed based on their target pc,
+not the function symbol. Firedancer maintains a bit vector of all valid call
+destinations[1], which the interpreter uses during the CALL_IMM instruction.
+
+To mimic that behavior here, we iterate through the valid call destinations
+in vm_ctx.call_whitelist, and register the pc hash as an entry in the registry.
+
+This effectively behaves the same as the FD bit vector, but with some technical
+differences that may cause issues. Most notably, FunctionRegistry operates as
+a hashmap, while FD's bit vector is a simple array. Out of bounds queries are
+non-issue here, but require explicit handling in FD. This causes a slight
+difference in error checks in CALL_IMM, which we handle in process_result.
+
+[1](https://github.com/firedancer-io/firedancer/blob/93cea434dfe2f728f2ab4746590972644c06b863/src/ballet/sbpf/fd_sbpf_loader.h#L27). */
 fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
     let mut fn_reg = FunctionRegistry::default();
-    
+
     // register entry point
-    
     let _ = fn_reg.register_function(
         ebpf::hash_symbol_name(b"entrypoint"),
         b"entrypoint",
@@ -259,42 +292,45 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
             }
         }
     }
-    
-    
 
     fn_reg
 }
 
 /* Look through errors, and map to something else if necessary */
-fn process_result<C: ContextObject> (vm: &mut EbpfVm<C>, executable: &Executable<C>, err: EbpfError) -> EbpfError {
-    match err{
+fn process_result<C: ContextObject>(
+    vm: &mut EbpfVm<C>,
+    executable: &Executable<C>,
+    err: EbpfError,
+) -> EbpfError {
+    match err {
         EbpfError::UnsupportedInstruction => {
             /* CALL_IMM throws UnsupportedInstruction iff the immediate
-               is not in executable's Function Registry. We want
-               to consider the case that the hash inverse is a PC(*) that is 
-               OOB, since Firedancer reports the equivalent to 
-               EbpfError::CallOutsideTextSegment.
-               
-               (*) NOTE: this assumes a text section loaded by the FD sbpf loader,
-               which hashes the PC of the target function into the instruction immediate.
-               The interpreter fuzzer uses this. */
+            is not in executable's Function Registry. We want
+            to consider the case that the hash inverse is a PC(*) that is
+            OOB, since Firedancer reports the equivalent to
+            EbpfError::CallOutsideTextSegment.
+
+            (*) NOTE: this assumes a text section loaded by the FD sbpf loader,
+            which hashes the PC of the target function into the instruction immediate.
+            The interpreter fuzzer uses this. */
 
             let pc = vm.registers[11];
             let insn = ebpf::get_insn_unchecked(executable.get_text_bytes().1, pc as usize);
             if insn.opc == ebpf::CALL_IMM {
                 let pchash = insn.imm as u32;
-                if pchash_inverse(pchash) > (executable.get_text_bytes().1.len() / ebpf::INSN_SIZE) as u32 {
+                if pchash_inverse(pchash)
+                    > (executable.get_text_bytes().1.len() / ebpf::INSN_SIZE) as u32
+                {
                     // need to simulate pushing a stack frame
                     vm.call_depth += 1;
                     EbpfError::CallOutsideTextSegment
                 } else {
-                     EbpfError::UnsupportedInstruction
+                    EbpfError::UnsupportedInstruction
                 }
             } else {
                 EbpfError::UnsupportedInstruction
             }
         }
-        _ => err
-    }    
-
+        _ => err,
+    }
 }

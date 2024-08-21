@@ -8,24 +8,17 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
         EbpfError::SyscallError(err) => syscall_error_match(err.as_ref()),
 
         /* VM Execution Errors */
-        /* FIXME: In call{reg,imm} insns, FD throws FD_VM_ERR_SIGCALL when target pc/vm_addr is OOB */
         EbpfError::CallOutsideTextSegment => 8, /* FD_VM_ERR_SIGTEXT  */
-        EbpfError::ExecutionOverrun => 8, /* FD_VM_ERR_SIGTEXT */
-        /* FIXME: In callimm, Agave throws this iff target is not in function registry.
-                  FD throws FD_VM_ERR_SIGCALL for the same condition AND 
-                  if pc > textcnt (Agave throws CallOutsideTextSegment instead)
-           FIXME: For unknown instructions, Agave throws this. FD throws FD_VM_ERR_SIGILL */
+        EbpfError::ExecutionOverrun => 8,       /* FD_VM_ERR_SIGTEXT */
         EbpfError::UnsupportedInstruction => 12, /* FD_VM_ERR_SIGILL */
-        EbpfError::CallDepthExceeded => 11, /* FD_VM_ERR_SIGSTACK */
-        EbpfError::InvalidInstruction => 12, /* FD_VM_ERR_SIGILL */
+        EbpfError::CallDepthExceeded => 11,     /* FD_VM_ERR_SIGSTACK */
+        EbpfError::InvalidInstruction => 12,    /* FD_VM_ERR_SIGILL */
         EbpfError::AccessViolation(_, _, _, _) => 13, /* FD_VM_ERR_SIGSEGV */
         /* FD_VM_ERR_SIGBUS (14) and FD_VM_ERR_SIGRDONLY (15) not used */
         EbpfError::ExceededMaxInstructions => 16, /* FD_VM_ERR_SIGCOST*/
-        EbpfError::DivideByZero => 17, /* FD_VM_ERR_SIGFPE */
-        /* EbpfError::DivideOverflow isn't possible in SBPFv1 bytecode, 
-           so we don't have a mapping.  */
-
-        
+        EbpfError::DivideByZero => 17,            /* FD_VM_ERR_SIGFPE */
+        /* EbpfError::DivideOverflow isn't possible in SBPFv1 bytecode,
+        so we don't have a mapping.  */
         _ => -1,
     }
 }
