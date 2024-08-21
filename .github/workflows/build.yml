@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.76.0
+      - uses: Swatinem/rust-cache@v2
+        with: 
+          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
 
       - name: Install protobuf
         run: sudo apt-get install protobuf-compiler
