@@ -337,32 +337,30 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
-    let mut genesis_config = GenesisConfig {
+    /* HACK: Set the genesis config rent from the "to-be" sysvar rent, if present */
+    let rent: Rent = context
+        .tx
+        .as_ref()?
+        .message
+        .as_ref()?
+        .account_shared_data
+        .iter()
+        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref())
+        .map(|account| bincode::deserialize(&account.data).unwrap())
+        .unwrap_or_default();
+
+    let genesis_config = GenesisConfig {
         creation_time: 0,
+        rent,
         ..GenesisConfig::default()
     };
 
-    /* HACK: Set the genesis config rent from the "to-be" sysvar rent, if present */
-    let mut sysvar_cache_rent: Option<Rent> = None;
-    for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
-        let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
-        if pubkey == sysvar::rent::id() {
-            let data = account.data.clone();
-            sysvar_cache_rent = bincode::deserialize(&data).ok();
-            break;
-        }
-    }
-
-    if let Some(rent) = sysvar_cache_rent {
-        genesis_config.rent = rent;
-    }
-
     let mut blockhash_queue = context.blockhash_queue;
-    if blockhash_queue.is_empty() {
-        // Default: queue with 1 empty blockhash (this keeps tests simpler)
-        blockhash_queue.push(vec![0u8; 32]);
-    }
-    let genesis_hash = Hash::new(blockhash_queue[0].as_slice());
+    let genesis_hash = if blockhash_queue.is_empty() {
+        None
+    } else {
+        Some(Hash::new(blockhash_queue[0].as_slice()))
+    };
 
     // Bank on slot 0
     let mut bank = Bank::new_with_paths(
@@ -378,7 +376,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         None,
         Some(fee_collector),
         Arc::new(AtomicBool::new(false)),
-        Some(genesis_hash),
+        genesis_hash,
     );
     bank.feature_set = feature_set.clone();
     let bank_forks = BankForks::new_rw_arc(bank);
@@ -457,8 +455,8 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     }
 
     // Register blockhashes in bank
-    for blockhash in blockhash_queue.iter() {
-        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
+    for blockhash in blockhash_queue.iter_mut() {
+        let blockhash_hash = Hash::new_from_array(std::mem::take(blockhash).try_into().unwrap());
         bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
 
