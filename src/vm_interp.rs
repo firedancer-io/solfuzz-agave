@@ -245,6 +245,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         frame_count: vm.call_depth,
         heap,
         stack,
+        rodata: rodata.to_vec(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
         pc: match result {
