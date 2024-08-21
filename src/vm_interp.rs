@@ -49,8 +49,9 @@ FD targets conformance with the JIT, not interprerter. */
 const USE_INTERPRETER: bool = false;
 
 /* Set to true to dump registers[0..12] of every instruction
-execution (dumped after execution). */
-const ENABLE_TRACE_DUMP: bool = true;
+execution (dumped after execution). Please leave disabled
+for fuzzing. */
+const ENABLE_TRACE_DUMP: bool = false;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_interp_v1(
