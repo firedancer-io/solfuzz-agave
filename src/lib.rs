@@ -11,18 +11,15 @@ mod vm_validate;
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
-use solana_program::clock::Slot;
 use solana_program::hash::Hash;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
-use solana_program_runtime::loaded_programs::BlockRelation;
-use solana_program_runtime::loaded_programs::ForkGraph;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
-use solana_sdk::clock::{Clock, Epoch};
+use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
@@ -563,14 +560,6 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
     builtins
 }
 
-struct DummyForkGraph {
-    relation: BlockRelation,
-}
-impl ForkGraph for DummyForkGraph {
-    fn relationship(&self, _a: Slot, _b: Slot) -> BlockRelation {
-        self.relation
-    }
-}
 
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
