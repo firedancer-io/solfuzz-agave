@@ -110,7 +110,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
             .unwrap();
     }
     let program_runtime_environment_v1 =
-        BuiltinProgram::new_loader(unstubbed_runtime.get_config().clone(), stubbed_syscall_reg);
+        BuiltinProgram::new_loader(*unstubbed_runtime.get_config(), stubbed_syscall_reg);
 
     let sbpf_version: SBPFVersion = SBPFVersion::V1;
     let loader = std::sync::Arc::new(program_runtime_environment_v1);
@@ -128,10 +128,10 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let mut stack = syscall_inv.stack_prefix;
     stack.resize(STACK_SIZE, 0);
     let mut heap = syscall_inv.heap_prefix;
-    heap.resize(HEAP_MAX as usize, 0);
+    heap.resize(HEAP_MAX, 0);
 
     let mut regions = vec![
-        MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
+        MemoryRegion::new_readonly(rodata, ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
@@ -179,24 +179,18 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     )
     .unwrap();
 
-    match executable.verify::<RequisiteVerifier>() {
-        Err(_) => {
-            return Some(SyscallEffects {
-                error: -1,
-                ..Default::default()
-            })
-        }
-        _ => {}
+    if executable.verify::<RequisiteVerifier>().is_err() {
+        return Some(SyscallEffects {
+            error: -1,
+            ..Default::default()
+        });
     }
 
-    match executable.jit_compile() {
-        Err(_) => {
-            return Some(SyscallEffects {
-                error: -1,
-                ..Default::default()
-            })
-        }
-        _ => {}
+    if executable.jit_compile().is_err() {
+        return Some(SyscallEffects {
+            error: -1,
+            ..Default::default()
+        });
     }
 
     let (_, result) = vm.execute_program(
@@ -213,24 +207,20 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         StableResult::Ok(n) => StableResult::Ok(n),
     };
 
-    match result.borrow() {
-        StableResult::Err(err) => match err {
-            EbpfError::ExceededMaxInstructions => {
-                /* CU error is difficult to properly compare as there may have been
-                valid writes to the memory regions prior to capturing the error. And
-                the pc might be well past (by an arbitrary amount) the instruction
-                where the CU error occurred. */
-                return Some(SyscallEffects {
-                    error: err_map::get_fd_vm_err_code(err).into(),
-                    cu_avail: 0,
-                    frame_count: vm.call_depth,
-                    ..Default::default()
-                });
-            }
-            _ => {}
-        },
-        _ => {}
-    };
+    if let StableResult::Err(err) = result.borrow() {
+        if let EbpfError::ExceededMaxInstructions = err {
+            /* CU error is difficult to properly compare as there may have been
+            valid writes to the memory regions prior to capturing the error. And
+            the pc might be well past (by an arbitrary amount) the instruction
+            where the CU error occurred. */
+            return Some(SyscallEffects {
+                error: err_map::get_fd_vm_err_code(err).into(),
+                cu_avail: 0,
+                frame_count: vm.call_depth,
+                ..Default::default()
+            });
+        }
+    }
 
     Some(SyscallEffects {
         error: match result {
