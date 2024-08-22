@@ -17,7 +17,6 @@ use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::BlockRelation;
 use solana_program_runtime::loaded_programs::ForkGraph;
-use solana_program_runtime::loaded_programs::ProgramCache;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
@@ -658,7 +657,6 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         return None;
     }
 
-    let mut program_cache = ProgramCache::<DummyForkGraph>::new(Slot::default(), Epoch::default());
     let program_runtime_environment_v1 =
         solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
             &input.feature_set,
@@ -671,17 +669,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         program_runtime_v1: Arc::new(program_runtime_environment_v1),
         ..ProgramRuntimeEnvironments::default()
     };
-    program_cache.environments = environments.clone();
-    program_cache.upcoming_environments = Some(environments.clone());
-
-    // let tx_batch_processor = TransactionBatchProcessor::<DummyForkGraph>::new(
-    //     clock.slot,
-    //     clock.epoch,
-    //     epoch_schedule,
-    //     Arc::<RuntimeConfig>::default(),
-    //     Arc::new(RwLock::new(program_cache)),
-    //     loaded_builtins,
-    // );
+    program_cache_for_tx_batch.environments = environments.clone();
+    program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache
