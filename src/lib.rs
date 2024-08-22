@@ -560,7 +560,6 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
     builtins
 }
 
-
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     // TODO this shouldn't be default
     let compute_budget = ComputeBudget {
