@@ -1,6 +1,9 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
-    utils::{pchash_inverse, vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE}},
+    utils::{
+        pchash_inverse,
+        vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
+    },
     InstrContext,
 };
 use bincode::Error;
@@ -16,12 +19,7 @@ use solana_program_runtime::solana_rbpf::{
     verifier::RequisiteVerifier,
     vm::{Config, ContextObject, EbpfVm, TestContextObject},
 };
-use solana_sdk::feature_set::FeatureSet;
-use std::{
-    borrow::Borrow,
-    collections::{HashMap, HashSet},
-    ffi::c_int,
-};
+use std::{borrow::Borrow, ffi::c_int};
 
 declare_builtin_function!(
     SyscallStub,
@@ -88,7 +86,6 @@ pub unsafe extern "C" fn sol_compat_vm_interp_v1(
 fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
     let feature_set = instr_ctx.feature_set;
-
 
     // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
