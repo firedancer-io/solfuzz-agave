@@ -159,7 +159,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
 
     // setup registers
     vm.registers[0] = vm_ctx.r0;
-    vm.registers[1] = vm_ctx.r1;  // set in vm.execute_program  
+    vm.registers[1] = vm_ctx.r1; // set in vm.execute_program
     vm.registers[2] = vm_ctx.r2;
     vm.registers[3] = vm_ctx.r3;
     vm.registers[4] = vm_ctx.r4;
@@ -216,10 +216,10 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     match result.borrow() {
         StableResult::Err(err) => match err {
             EbpfError::ExceededMaxInstructions => {
-                  /* CU error is difficult to properly compare as there may have been
-                    valid writes to the memory regions prior to capturing the error. And
-                    the pc might be well past (by an arbitrary amount) the instruction 
-                    where the CU error occurred. */
+                /* CU error is difficult to properly compare as there may have been
+                valid writes to the memory regions prior to capturing the error. And
+                the pc might be well past (by an arbitrary amount) the instruction
+                where the CU error occurred. */
                 return Some(SyscallEffects {
                     error: err_map::get_fd_vm_err_code(err).into(),
                     cu_avail: 0,
