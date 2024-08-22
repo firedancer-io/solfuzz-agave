@@ -4,6 +4,7 @@ pub mod elf_loader;
 pub mod txn_fuzzer;
 pub mod utils;
 mod vm_cpi_syscall;
+mod vm_interp;
 mod vm_syscalls;
 mod vm_validate;
 

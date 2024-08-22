@@ -55,3 +55,24 @@ impl From<&AcctState> for AccountSharedData {
         account_data
     }
 }
+
+/* Adapted from  https://github.com/firedancer-io/firedancer/blob/38c85a069effb2186524ad9bd76a639183fd712a/src/ballet/murmur3/fd_murmur3.h#L52 */
+pub const fn pchash_inverse(hash: u32) -> u32 {
+    let mut x = hash;
+    x ^= x >> 16;
+    x = x.wrapping_mul(0x7ed1b41d);
+    x ^= (x >> 13) ^ (x >> 26);
+    x = x.wrapping_mul(0xa5cb9243);
+    x ^= x >> 16;
+    x ^= 8;
+    x = x.wrapping_sub(0xe6546b64);
+    x = x.wrapping_mul(0xcccccccd);
+    x = x.rotate_right(13);
+    x = x.wrapping_sub(0xe6546b64);
+    x = x.wrapping_mul(0xcccccccd);
+    x = x.rotate_right(13);
+    x = x.wrapping_mul(0x56ed309b);
+    x = x.rotate_right(15);
+    x = x.wrapping_mul(0xdee13bb1);
+    x
+}
