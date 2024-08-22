@@ -1,7 +1,10 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
-    utils::pchash_inverse,
-    utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
+    utils::{
+        pchash_inverse,
+        vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
+    },
+    InstrContext,
 };
 use bincode::Error;
 use prost::Message;
@@ -16,12 +19,7 @@ use solana_program_runtime::solana_rbpf::{
     verifier::RequisiteVerifier,
     vm::{Config, ContextObject, EbpfVm, TestContextObject},
 };
-use solana_sdk::feature_set::FeatureSet;
-use std::{
-    borrow::Borrow,
-    collections::{HashMap, HashSet},
-    ffi::c_int,
-};
+use std::{borrow::Borrow, ffi::c_int};
 
 declare_builtin_function!(
     SyscallStub,
@@ -86,10 +84,8 @@ pub unsafe extern "C" fn sol_compat_vm_interp_v1(
 
 // We are actually executing the JIT-compiled program here
 fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
-    let feature_set = FeatureSet {
-        active: HashMap::new(),
-        inactive: HashSet::new(),
-    };
+    let instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
+    let feature_set = instr_ctx.feature_set;
 
     // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
@@ -116,7 +112,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let loader = std::sync::Arc::new(program_runtime_environment_v1);
 
     // Setup TestContextObject
-    let mut context_obj = TestContextObject::new(syscall_context.instr_ctx?.cu_avail);
+    let mut context_obj = TestContextObject::new(instr_ctx.cu_avail);
 
     // setup memory
     let vm_ctx = syscall_context.vm_ctx.unwrap();
