@@ -346,7 +346,8 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .account_shared_data
         .iter()
         .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref())
-        .map(|account| bincode::deserialize(&account.data).unwrap())
+        .map(|account| bincode::deserialize(&account.data).ok())
+        .unwrap_or_default()
         .unwrap_or_default();
 
     let genesis_config = GenesisConfig {
