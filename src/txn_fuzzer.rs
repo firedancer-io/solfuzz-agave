@@ -384,7 +384,12 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let mut bank = bank_forks.read().unwrap().root_bank();
 
     if slot > 0 {
-        let new_bank = Bank::new_from_parent(bank.clone(), &fee_collector, slot);
+        let new_bank = Bank::warp_from_parent(
+            bank.clone(),
+            &fee_collector,
+            slot - 1,
+            solana_accounts_db::accounts_db::CalcAccountsHashDataSource::IndexForTests
+        );
         bank = bank_forks
             .write()
             .unwrap()
@@ -395,6 +400,13 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .write()
             .unwrap()
             .prune(slot, bank.epoch());
+
+        let warp_bank = Bank::new_from_parent(bank, &Pubkey::default(), slot);
+        bank = bank_forks
+            .write()
+            .unwrap()
+            .insert(warp_bank)
+            .clone_without_scheduler();
     }
 
     let account_keys = context
