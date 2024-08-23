@@ -158,6 +158,13 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Setup syscall context in the invoke context
     let vm_ctx = input.vm_ctx.unwrap();
+    let instr_accounts_len = instr_accounts.len();
+
+    invoke_context.proc_instr_callback = Some(Box::new(move |txn_ctx: &mut TransactionContext| {
+        eprintln!("HELLO FROM CALLBACK, printing instr_accounts len: {}", instr_accounts_len);
+        eprintln!("Printing txn accounts len: {}", txn_ctx.get_number_of_accounts());
+        Ok(())
+    }));
 
     invoke_context
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
@@ -170,7 +177,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                     vm_owner_addr: 0,
                     vm_lamports_addr: 0,
                 };
-                instr_accounts.len()
+                instr_accounts_len
             ], // TODO: accounts metadata for direct mapping support
             trace_log: Vec::new(),
         })
