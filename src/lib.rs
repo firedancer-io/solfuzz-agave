@@ -41,6 +41,7 @@ use crate::utils::feature_u64;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
 use std::collections::HashSet;
+use std::env;
 use std::ffi::c_int;
 use std::sync::Arc;
 use thiserror::Error;
@@ -852,7 +853,10 @@ impl TryFrom<proto::AcctState> for (Pubkey, Account) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn sol_compat_init() {}
+pub unsafe extern "C" fn sol_compat_init() {
+    env::set_var("SOLANA_RAYON_THREADS", "1");
+    env::set_var("RAYON_NUM_THREADS", "1");
+}
 
 #[repr(C)]
 pub struct SolCompatFeatures {
