@@ -62,35 +62,35 @@ use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 
-#[no_mangle]
-pub unsafe extern "C" fn sol_compat_txn_execute_v1(
-    out_ptr: *mut u8,
-    out_psz: *mut u64,
-    in_ptr: *mut u8,
-    in_sz: u64,
-) -> c_int {
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let txn_context = match TxnContext::decode(&in_slice[..in_sz as usize]) {
-        Ok(context) => context,
-        Err(_) => return 0, // Decode error
-    };
+// #[no_mangle]
+// pub unsafe extern "C" fn sol_compat_txn_execute_v1(
+//     out_ptr: *mut u8,
+//     out_psz: *mut u64,
+//     in_ptr: *mut u8,
+//     in_sz: u64,
+// ) -> c_int {
+//     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
+//     let txn_context = match TxnContext::decode(&in_slice[..in_sz as usize]) {
+//         Ok(context) => context,
+//         Err(_) => return 0, // Decode error
+//     };
 
-    let txn_result = match execute_transaction_new(txn_context) {
-        Some(value) => value,
-        None => return 0, // Data format error
-    };
+//     let txn_result = match execute_transaction_new(txn_context) {
+//         Some(value) => value,
+//         None => return 0, // Data format error
+//     };
 
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
-    let out_vec = txn_result.encode_to_vec();
-    if out_vec.len() > out_slice.len() {
-        return 0;
-    }
+//     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+//     let out_vec = txn_result.encode_to_vec();
+//     if out_vec.len() > out_slice.len() {
+//         return 0;
+//     }
 
-    out_slice[..out_vec.len()].copy_from_slice(&out_vec);
-    *out_psz = out_vec.len() as u64;
+//     out_slice[..out_vec.len()].copy_from_slice(&out_vec);
+//     *out_psz = out_vec.len() as u64;
 
-    1
-}
+//     1
+// }
 
 fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessage> {
     let header = if let Some(value_header) = value.header {
