@@ -1,8 +1,11 @@
 use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TransactionMessage, TxnContext, TxnResult};
 use prost::Message;
-use solana_accounts_db::accounts_db::AccountShrinkThreshold;
-use solana_accounts_db::accounts_index::AccountSecondaryIndexes;
+use solana_accounts_db::accounts_db::{AccountShrinkThreshold, AccountsDbConfig};
+use solana_accounts_db::accounts_file::StorageAccess;
+use solana_accounts_db::accounts_index::{
+    AccountSecondaryIndexes, AccountsIndexConfig, IndexLimitMb,
+};
 use solana_program::hash::Hash;
 use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::{LoadedAddresses, MessageAddressTableLookup};
@@ -46,6 +49,9 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
+    if in_ptr.is_null() || in_sz == 0 {
+        return 0;
+    }
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
     let txn_context = match TxnContext::decode(&in_slice[..in_sz as usize]) {
         Ok(context) => context,
@@ -390,6 +396,18 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     };
 
     // Bank on slot 0
+    let index = Some(AccountsIndexConfig {
+        bins: Some(2),
+        flush_threads: Some(1),
+        index_limit_mb: IndexLimitMb::InMemOnly,
+        ..AccountsIndexConfig::default()
+    });
+    let accounts_db_config = Some(AccountsDbConfig {
+        index,
+        storage_access: StorageAccess::File,
+        skip_initial_hash_calc: true,
+        ..AccountsDbConfig::default()
+    });
     let bank = Bank::new_with_paths(
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
@@ -399,7 +417,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         AccountSecondaryIndexes::default(),
         AccountShrinkThreshold::default(),
         false,
-        None,
+        accounts_db_config,
         None,
         Some(fee_collector),
         Arc::new(AtomicBool::new(false)),
@@ -408,6 +426,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     );
     let bank_forks = BankForks::new_rw_arc(bank);
     let mut bank = bank_forks.read().unwrap().root_bank();
+    bank.rehash();
 
     if slot > 0 {
         let new_bank = Bank::new_from_parent(bank.clone(), &fee_collector, slot);
