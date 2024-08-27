@@ -9,9 +9,7 @@ use solana_accounts_db::accounts_index::{
 use solana_program::hash::Hash;
 use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::{LoadedAddresses, MessageAddressTableLookup};
-use solana_program::message::{
-    legacy, v0, AddressLoader, AddressLoaderError, MessageHeader, VersionedMessage,
-};
+use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_program::pubkey::Pubkey;
 use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
@@ -25,7 +23,7 @@ use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar;
 use solana_sdk::transaction::{
-    SanitizedTransaction, SanitizedVersionedTransaction, TransactionError, VersionedTransaction,
+    TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
@@ -182,20 +180,6 @@ fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessag
         };
 
         Some(VersionedMessage::V0(message))
-    }
-}
-
-#[derive(Clone)]
-struct MockAddressLoader {
-    loaded_addresses: LoadedAddresses,
-}
-
-impl AddressLoader for MockAddressLoader {
-    fn load_addresses(
-        mut self,
-        _lookups: &[MessageAddressTableLookup],
-    ) -> Result<LoadedAddresses, AddressLoaderError> {
-        Ok(std::mem::take(&mut self.loaded_addresses))
     }
 }
 
@@ -528,53 +512,9 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         signatures,
     };
 
-    let sanitized_versioned_transaction =
-        match SanitizedVersionedTransaction::try_new(versioned_transaction) {
-            Ok(v) => v,
-            Err(_err) => {
-                return Some(TxnResult {
-                    executed: false,
-                    sanitization_error: true,
-                    resulting_state: None,
-                    rent: 0,
-                    is_ok: false,
-                    status: 0,
-                    instruction_error: 0,
-                    instruction_error_index: 0,
-                    custom_error: 0,
-                    return_data: vec![],
-                    executed_units: 0,
-                    fee_details: None,
-                })
-            }
-        };
-
-    let mock_loader = MockAddressLoader {
-        loaded_addresses: context
-            .tx
-            .as_ref()?
-            .message
-            .as_ref()?
-            .loaded_addresses
-            .as_ref()
-            .map(LoadedAddresses::from)
-            .unwrap_or_default(),
-    };
-
-    let message_hash = &context.tx.as_ref()?.message_hash;
-    let message_hash = if message_hash.is_empty() {
-        // Default: empty message hash (this keeps tests simpler)
-        // Note: firedancer doesn't use message hash
-        Hash::new_from_array([0u8; 32])
-    } else {
-        Hash::new(message_hash)
-    };
-    let sanitized_transaction = match SanitizedTransaction::try_new(
-        sanitized_versioned_transaction,
-        message_hash,
-        context.tx?.is_simple_vote_tx,
-        mock_loader,
-        bank.get_reserved_account_keys(),
+    let sanitized_transaction = match bank.verify_transaction(
+        versioned_transaction,
+        TransactionVerificationMode::HashAndVerifyPrecompiles,
     ) {
         Ok(v) => v,
         Err(e) => {
@@ -582,7 +522,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             let status = u32::from_le_bytes(err.try_into().unwrap()) + 1;
             return Some(TxnResult {
                 executed: false,
-                sanitization_error: false,
+                sanitization_error: true,
                 resulting_state: None,
                 rent: 0,
                 is_ok: false,
@@ -596,29 +536,6 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             });
         }
     };
-
-    // Verify precompiles
-    let pre_result = sanitized_transaction.verify_precompiles(&feature_set);
-    if let Err(pre_error) = pre_result {
-        let serialized = bincode::serialize(&pre_error).unwrap_or(vec![0, 0, 0, 0]);
-        let status = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
-        // Some of the values are sort of arbitrary, they're set to match Firedancer behavior
-        // For example, sanitization_error: true.
-        return Some(TxnResult {
-            executed: false,
-            sanitization_error: true,
-            resulting_state: None,
-            rent: 0,
-            is_ok: false,
-            status,
-            instruction_error: 0,
-            instruction_error_index: 0,
-            custom_error: 0,
-            return_data: vec![],
-            executed_units: 0,
-            fee_details: None,
-        });
-    }
 
     let transactions = [sanitized_transaction];
 
