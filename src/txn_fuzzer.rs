@@ -28,7 +28,9 @@ use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
-use solana_svm::transaction_processing_result::TransactionProcessingResultExtensions;
+use solana_svm::transaction_processing_result::{
+    ProcessedTransaction, TransactionProcessingResultExtensions,
+};
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
@@ -246,12 +248,16 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             rent,
             resulting_state,
         ) = match execution_results {
-            Ok(executed_tx) => {
-                let details = &executed_tx.execution_details;
-                let is_ok = details.status.is_ok();
-                let transaction_error = details.status.as_ref().err();
-                let (instr_err_idx, instruction_error) = match transaction_error {
-                    Some(TransactionError::InstructionError(instr_err_idx, instr_err)) => {
+            Ok(txn) => {
+                let is_ok = match txn {
+                    ProcessedTransaction::Executed(executed_tx) => {
+                        executed_tx.execution_details.status.is_ok()
+                    }
+                    ProcessedTransaction::FeesOnly(_) => false,
+                };
+                let transaction_error = txn.status();
+                let (instr_err_idx, instruction_error) = match transaction_error.as_ref() {
+                    Err(TransactionError::InstructionError(instr_err_idx, instr_err)) => {
                         (*instr_err_idx, Some(instr_err.clone()))
                     }
                     _ => (0, None),
@@ -262,12 +268,12 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                 };
 
                 let status = match transaction_error {
-                    Some(transaction_error) => {
+                    Ok(_) => 0,
+                    Err(transaction_error) => {
                         let serialized =
-                            bincode::serialize(transaction_error).unwrap_or(vec![0, 0, 0, 0]);
+                            bincode::serialize(&transaction_error).unwrap_or(vec![0, 0, 0, 0]);
                         u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
                     }
-                    None => 0,
                 };
                 let instr_err_no = match instruction_error {
                     Some(instruction_error) => {
@@ -277,9 +283,33 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     }
                     None => 0,
                 };
-                let rent = executed_tx.loaded_transaction.rent;
-                let resulting_state: Option<ResultingState> =
-                    Some(executed_tx.loaded_transaction.clone().into());
+                let rent = match txn {
+                    ProcessedTransaction::Executed(executed_tx) => {
+                        executed_tx.loaded_transaction.rent
+                    }
+                    ProcessedTransaction::FeesOnly(_) => 0,
+                };
+                let resulting_state: Option<ResultingState> = match txn {
+                    ProcessedTransaction::Executed(executed_tx) => {
+                        Some(executed_tx.loaded_transaction.clone().into())
+                    }
+                    ProcessedTransaction::FeesOnly(_) => None,
+                };
+                let executed_units = match txn {
+                    ProcessedTransaction::Executed(executed_tx) => {
+                        executed_tx.execution_details.executed_units
+                    }
+                    ProcessedTransaction::FeesOnly(_) => 0,
+                };
+                let return_data = match txn {
+                    ProcessedTransaction::Executed(executed_tx) => executed_tx
+                        .execution_details
+                        .return_data
+                        .as_ref()
+                        .map(|info| info.clone().data)
+                        .unwrap_or_default(),
+                    ProcessedTransaction::FeesOnly(_) => vec![],
+                };
                 (
                     is_ok,
                     false,
@@ -287,13 +317,9 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     instr_err_no,
                     instr_err_idx,
                     custom_error,
-                    details.executed_units,
-                    details
-                        .return_data
-                        .as_ref()
-                        .map(|info| info.data.clone())
-                        .unwrap_or_default(),
-                    Some(executed_tx.loaded_transaction.fee_details),
+                    executed_units,
+                    return_data,
+                    Some(txn.fee_details()),
                     rent,
                     resulting_state,
                 )
@@ -333,7 +359,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|ctx| ctx.features.clone().unwrap_or_default())
         .unwrap_or_default();
 
-    let feature_set = Arc::new(FeatureSet::from(&fd_features));
+    let feature_set = FeatureSet::from(&fd_features);
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
@@ -364,7 +390,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     };
 
     // Bank on slot 0
-    let mut bank = Bank::new_with_paths(
+    let bank = Bank::new_with_paths(
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
         vec![],
@@ -378,8 +404,8 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         Some(fee_collector),
         Arc::new(AtomicBool::new(false)),
         genesis_hash,
+        Some(feature_set.clone()),
     );
-    bank.feature_set = feature_set.clone();
     let bank_forks = BankForks::new_rw_arc(bank);
     let mut bank = bank_forks.read().unwrap().root_bank();
 
@@ -460,6 +486,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         let blockhash_hash = Hash::new_from_array(std::mem::take(blockhash).try_into().unwrap());
         bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
+    bank.update_recent_blockhashes();
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
 
