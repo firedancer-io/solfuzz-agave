@@ -5,10 +5,10 @@ use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::feature_set::*;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar::SysvarId;
+use solana_sdk::{address_lookup_table, feature_set::*};
 use solfuzz_agave::proto::{
     AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
     SlotContext, TransactionMessage, TxnContext, TxnResult,
@@ -499,7 +499,7 @@ fn test_lookup_table() {
         data: alut_data,
         executable: false,
         rent_epoch: 0,
-        owner: fee_payer.to_bytes().to_vec(),
+        owner: address_lookup_table::program::id().to_bytes().to_vec(),
         seed_addr: None,
     };
 
