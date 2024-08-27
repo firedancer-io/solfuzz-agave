@@ -397,7 +397,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     // Bank on slot 0
     let index = Some(AccountsIndexConfig {
-        bins: Some(4),
+        bins: Some(2),
         flush_threads: Some(1),
         index_limit_mb: IndexLimitMb::InMemOnly,
         ..AccountsIndexConfig::default()
@@ -408,7 +408,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         skip_initial_hash_calc: true,
         ..AccountsDbConfig::default()
     });
-    let mut bank = Bank::new_with_paths(
+    let bank = Bank::new_with_paths(
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
         vec![],
