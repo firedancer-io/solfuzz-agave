@@ -19,6 +19,7 @@ use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
+use solana_sdk::message::SanitizedMessage;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar;
@@ -432,20 +433,6 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .and_then(|tx| tx.message.as_ref())
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
-    let loaded_account_keys_writable = context
-        .tx
-        .as_ref()
-        .and_then(|tx| tx.message.as_ref())
-        .and_then(|message| message.loaded_addresses.as_ref())
-        .map(|addresses| addresses.writable.clone())
-        .unwrap_or_default();
-    let loaded_account_keys_readonly = context
-        .tx
-        .as_ref()
-        .and_then(|tx| tx.message.as_ref())
-        .and_then(|message| message.loaded_addresses.as_ref())
-        .map(|addresses| addresses.readonly.clone())
-        .unwrap_or_default();
 
     /* Save loaded builtins so we don't load them twice */
     let mut stored_accounts = HashSet::<Pubkey>::default();
@@ -537,7 +524,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         }
     };
 
-    let transactions = [sanitized_transaction];
+    let transactions = [sanitized_transaction.clone()];
 
     let lock_results = bank.rc.accounts.lock_accounts(transactions.iter(), 64);
 
@@ -570,15 +557,26 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         configs,
     );
 
-    // Only keep accounts that were passed in as account_keys
     let mut txn_result: TxnResult = result.into();
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
+        let mut loaded_account_keys = HashSet::<Pubkey>::new();
+        loaded_account_keys.extend(
+            account_keys
+                .iter()
+                .map(|key| Pubkey::new_from_array(key.clone().try_into().ok().unwrap())),
+        );
+        match sanitized_transaction.message() {
+            SanitizedMessage::Legacy(_) => {}
+            SanitizedMessage::V0(message) => {
+                loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
+                loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
+            }
+        }
+
+        // Only keep accounts that were passed in as account_keys or as ALUT accounts
         relevant_accounts.acct_states.retain(|account| {
-            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok().unwrap());
-            (account_keys.contains(&account.address)
-                || loaded_account_keys_writable.contains(&account.address)
-                || loaded_account_keys_readonly.contains(&account.address))
-                && pubkey != sysvar::instructions::id()
+            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
+            loaded_account_keys.contains(&pubkey) && pubkey != sysvar::instructions::id()
         });
 
         // Fill values for executable accounts with no lamports reported in output (this metadata was omitted by Agave for performance reasons)
