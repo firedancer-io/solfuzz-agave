@@ -221,7 +221,6 @@ fn test_txn_execute_clock() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![],
-        loaded_addresses: None,
     };
 
     let tx = SanitizedTransaction {
@@ -352,7 +351,6 @@ fn test_simple_transfer() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![],
-        loaded_addresses: None,
         recent_blockhash: blockhash_queue[1].clone(),
     };
 
@@ -503,11 +501,6 @@ fn test_lookup_table() {
         seed_addr: None,
     };
 
-    let loaded_addresses = proto::LoadedAddresses {
-        writable: vec![recipient.to_bytes().to_vec()],
-        readonly: vec![extra_account.to_bytes().to_vec()],
-    };
-
     let blockhash_queue = vec![
         Hash::new_unique().to_bytes().to_vec(),
         Hash::new_unique().to_bytes().to_vec(),
@@ -536,7 +529,6 @@ fn test_lookup_table() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
-        loaded_addresses: Some(loaded_addresses),
         recent_blockhash: blockhash_queue[1].clone(),
     };
 
