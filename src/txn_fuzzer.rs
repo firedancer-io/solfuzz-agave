@@ -374,7 +374,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let mut blockhash_queue = context.blockhash_queue;
     let genesis_hash = if blockhash_queue.is_empty() {
-        None
+        Some(Hash::new(vec![0u8; 32].as_slice()))
     } else {
         Some(Hash::new(blockhash_queue[0].as_slice()))
     };
