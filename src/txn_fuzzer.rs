@@ -8,7 +8,7 @@ use solana_accounts_db::accounts_index::{
 };
 use solana_program::hash::Hash;
 use solana_program::instruction::CompiledInstruction;
-use solana_program::message::v0::{LoadedAddresses, MessageAddressTableLookup};
+use solana_program::message::v0::MessageAddressTableLookup;
 use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_program::pubkey::Pubkey;
 use solana_runtime::bank::builtins::BUILTINS;
@@ -107,23 +107,6 @@ impl From<&proto::MessageAddressTableLookup> for MessageAddressTableLookup {
                 .readonly_indexes
                 .iter()
                 .map(|idx| *idx as u8)
-                .collect(),
-        }
-    }
-}
-
-impl From<&proto::LoadedAddresses> for LoadedAddresses {
-    fn from(value: &proto::LoadedAddresses) -> Self {
-        LoadedAddresses {
-            writable: value
-                .writable
-                .iter()
-                .map(|item| Pubkey::new_from_array(item.clone().try_into().unwrap()))
-                .collect(),
-            readonly: value
-                .readonly
-                .iter()
-                .map(|item| Pubkey::new_from_array(item.clone().try_into().unwrap()))
                 .collect(),
         }
     }
