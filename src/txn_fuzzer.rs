@@ -357,12 +357,12 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         ..GenesisConfig::default()
     };
 
-    let mut blockhash_queue = context.blockhash_queue;
-    let genesis_hash = if blockhash_queue.is_empty() {
-        Some(Hash::new(vec![0u8; 32].as_slice()))
+    let mut blockhash_queue = if context.blockhash_queue.is_empty() {
+        vec![vec![0u8; 32]]
     } else {
-        Some(Hash::new(blockhash_queue[0].as_slice()))
+        context.blockhash_queue
     };
+    let genesis_hash = Some(Hash::new(blockhash_queue[0].as_slice()));
 
     // Bank on slot 0
     let index = Some(AccountsIndexConfig {
