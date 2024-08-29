@@ -298,7 +298,6 @@ fn process_instruction_cpi_callback(
     txn_ctx
         .get_next_instruction_context()?
         .configure(prog_indices, instr_accts, instr_data);
-    txn_ctx.push()?;
 
     // Iterate through instruction accounts
     for instr_acct in instr_accts.iter() {
