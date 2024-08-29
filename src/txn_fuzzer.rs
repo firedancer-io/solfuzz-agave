@@ -36,6 +36,7 @@ use solana_svm::transaction_processing_result::{
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
+use std::cmp::max;
 use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
@@ -77,7 +78,7 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
 impl From<&proto::MessageHeader> for MessageHeader {
     fn from(value: &proto::MessageHeader) -> Self {
         MessageHeader {
-            num_required_signatures: value.num_required_signatures as u8,
+            num_required_signatures: max(1, value.num_required_signatures as u8),
             num_readonly_signed_accounts: value.num_readonly_signed_accounts as u8,
             num_readonly_unsigned_accounts: value.num_readonly_unsigned_accounts as u8,
         }
