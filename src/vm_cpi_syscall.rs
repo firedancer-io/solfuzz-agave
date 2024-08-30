@@ -310,7 +310,12 @@ fn process_instruction_cpi_callback(
             .iter()
             .find(|modified| modified.address == acct_pubkey.to_bytes())
         {
-            let mut acct = txn_ctx.get_account_at_index(idx_in_txn)?.borrow_mut();
+            let Ok(acct_ref) = txn_ctx.get_account_at_index(idx_in_txn) else {
+                break;
+            };
+            let Ok(mut acct) = acct_ref.try_borrow_mut() else {
+                break;
+            };
 
             // Update the account state
             acct.set_lamports(acct_state.lamports);
