@@ -1,0 +1,9 @@
+name: "Build, check, test"
+on:
+  pull_request:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-common.yml
+    with:
+      upload_artifacts: false
