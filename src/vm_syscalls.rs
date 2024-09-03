@@ -1,15 +1,19 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils,
+    utils::err_map::{
+        ebpf_err_to_num, ebpf_err_to_str, instr_err_to_num, instr_err_to_str, syscall_err_to_num,
+        syscall_err_to_str,
+    },
     utils::vm::mem_regions,
     utils::vm::STACK_SIZE,
     InstrContext,
 };
 use prost::Message;
-use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_bpf_loader_program::syscalls::{create_program_runtime_environment_v1, SyscallError};
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
+use solana_program_runtime::solana_rbpf::error::EbpfError;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
 use solana_program_runtime::{
@@ -22,7 +26,9 @@ use solana_program_runtime::{
         program::{BuiltinProgram, SBPFVersion},
         vm::{Config, EbpfVm},
     },
+    stable_log,
 };
+use solana_sdk::instruction::InstructionError;
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{account::AccountSharedData, rent::Rent};
 use std::{ffi::c_int, sync::Arc};
@@ -186,12 +192,6 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
     Some(SyscallEffects {
-        error: match program_result {
-            StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => {
-                utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
-            }
-        },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0: match program_result {
@@ -205,15 +205,62 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         inputdata: vec![], // deprecated
         rodata,
         frame_count: vm.call_depth,
+        error: match program_result {
+            StableResult::Ok(_) => 0,
+            StableResult::Err(ref err) => {
+                // Agave/rust propagates errors with additional data, and eventually BPF Loader
+                // logs an error message that depends on the type of error and contains data:
+                // https://github.com/anza-xyz/agave/blob/v2.0.6/program-runtime/src/invoke_context.rs#L535-L549
+                //
+                // Firedancer has a different behavior, it immediately creates the log
+                // when the syscall fails (to avoid propagating data).
+                // Therefore, to match the results, we need to simulate the extra log.
+                //
+                // In the following code we parse error msg and error num in the same way
+                // as Agave does (and logs with stable_log::program_failure()), i.e. by
+                // distinguishing InstructionError, SyscallError or EbpfError.
+                let logger = invoke_context.get_log_collector();
+                let program_id = instr_ctx.instruction.program_id;
+                let err_no = if let EbpfError::SyscallError(syscall_error) = err {
+                    if let Some(instruction_err) = syscall_error.downcast_ref::<InstructionError>()
+                    {
+                        stable_log::program_failure(
+                            &logger,
+                            &program_id,
+                            &instr_err_to_str(instruction_err),
+                        );
+                        instr_err_to_num(instruction_err)
+                    } else if let Some(syscall_error) = syscall_error.downcast_ref::<SyscallError>()
+                    {
+                        stable_log::program_failure(
+                            &logger,
+                            &program_id,
+                            &syscall_err_to_str(syscall_error),
+                        );
+                        syscall_err_to_num(syscall_error)
+                    } else if let Some(syscall_error) = syscall_error.downcast_ref::<EbpfError>() {
+                        stable_log::program_failure(
+                            &logger,
+                            &program_id,
+                            &ebpf_err_to_str(syscall_error),
+                        );
+                        ebpf_err_to_num(syscall_error)
+                    } else {
+                        stable_log::program_failure(&logger, &program_id, &ebpf_err_to_str(err));
+                        -1
+                    }
+                } else {
+                    stable_log::program_failure(&logger, &program_id, &ebpf_err_to_str(err));
+                    ebpf_err_to_num(err)
+                };
+                err_no as i64
+            }
+        },
         log: invoke_context
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
-            .iter()
-            .fold(String::new(), |mut acc, s| {
-                acc.push_str(s);
-                acc
-            })
+            .join("\n")
             .into_bytes(),
         pc: 0,
     })

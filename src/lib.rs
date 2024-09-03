@@ -37,6 +37,7 @@ use solana_sdk::transaction_context::{
 use solana_svm::program_loader;
 use solana_timings::ExecuteTimings;
 
+use crate::utils::err_map::instr_err_to_num;
 use crate::utils::feature_u64;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::load_core_bpf_program;
@@ -379,11 +380,6 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             lamports_per_signature: 0,
         })
     }
-}
-
-fn instr_err_to_num(error: &InstructionError) -> i32 {
-    let serialized_err = bincode::serialize(error).unwrap();
-    i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()) + 1
 }
 
 pub fn get_instr_accounts(
