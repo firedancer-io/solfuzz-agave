@@ -1,0 +1,12 @@
+name: "Build, check, test, release"
+on:
+  push:
+    branches:
+      - 'agave-v2.0'
+  pull_request:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-common.yml
+    with:
+      upload_artifacts: true
