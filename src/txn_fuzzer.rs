@@ -461,6 +461,9 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
     bank.update_recent_blockhashes();
+    bank.get_transaction_processor().reset_sysvar_cache();
+    bank.get_transaction_processor()
+        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
 
