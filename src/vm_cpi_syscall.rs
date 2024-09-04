@@ -191,8 +191,11 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
 
-
-    let memory_mapping = match MemoryMapping::new(regions, program_runtime_environment_v1.get_config(), &SBPFVersion::V1) {
+    let memory_mapping = match MemoryMapping::new(
+        regions,
+        program_runtime_environment_v1.get_config(),
+        &SBPFVersion::V1,
+    ) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };

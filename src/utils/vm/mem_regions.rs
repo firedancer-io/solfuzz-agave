@@ -36,17 +36,16 @@ pub fn setup_input_regions(
 them into InputDataRegions. The regions themselves are not copied,
 so be mindful of lifetimes. */
 pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<InputDataRegion> {
-
     match mapping {
         MemoryMapping::Aligned(mapping) => {
             // regions in AlignedMemoryMapping are sorted by vm_addr
             mapping
-            .get_regions()
-            .iter()
-            .skip_while(|region| region.vm_addr < ebpf::MM_INPUT_START)
-            .map(mem_region_to_input_data_region)
-            .collect()
-        },
+                .get_regions()
+                .iter()
+                .skip_while(|region| region.vm_addr < ebpf::MM_INPUT_START)
+                .map(mem_region_to_input_data_region)
+                .collect()
+        }
         MemoryMapping::Unaligned(mapping) => {
             // regions are in eytzinger order, so we need to collect and sort them
             let mut input_regions: Vec<InputDataRegion> = mapping
@@ -60,7 +59,7 @@ pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<Inp
             input_regions.sort_by_key(|region| region.offset);
             input_regions
         }
-        _ => vec![]
+        _ => vec![],
     }
 }
 
