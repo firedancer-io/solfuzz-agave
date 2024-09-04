@@ -471,6 +471,10 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
+    /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
+    bank.update_epoch_schedule();
+    bank.update_rent();
+
     let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
     let mut lamports_per_signature: Option<u64> = None;
     if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
