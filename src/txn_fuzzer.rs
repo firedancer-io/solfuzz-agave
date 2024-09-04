@@ -299,10 +299,36 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     resulting_state,
                 )
             }
-            Err(error) => {
-                let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
-                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
-                (false, true, error_no, 0, 0, 0, 0, vec![], None, 0, None)
+            Err(transaction_error) => {
+                let (instr_err_idx, instruction_error) = match transaction_error {
+                    TransactionError::InstructionError(instr_err_idx, instr_err) => {
+                        (*instr_err_idx, Some(instr_err.clone()))
+                    }
+                    _ => (0, None),
+                };
+                let instr_err_no = match instruction_error {
+                    Some(instruction_error) => {
+                        let serialized =
+                            bincode::serialize(&instruction_error).unwrap_or(vec![0, 0, 0, 0]);
+                        u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
+                    }
+                    None => 0,
+                };
+                let serialized = bincode::serialize(transaction_error).unwrap_or(vec![0, 0, 0, 0]);
+                let status = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
+                (
+                    false,
+                    true,
+                    status,
+                    instr_err_no,
+                    instr_err_idx,
+                    0,
+                    0,
+                    vec![],
+                    None,
+                    0,
+                    None,
+                )
             }
         };
 
