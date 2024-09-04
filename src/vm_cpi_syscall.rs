@@ -311,10 +311,10 @@ fn process_instruction_cpi_callback(
             .find(|modified| modified.address == acct_pubkey.to_bytes())
         {
             let Ok(acct_ref) = txn_ctx.get_account_at_index(idx_in_txn) else {
-                break;
+                continue;
             };
             let Ok(mut acct) = acct_ref.try_borrow_mut() else {
-                break;
+                continue;
             };
 
             // Update the account state
