@@ -1,3 +1,4 @@
+pub mod err_map;
 pub mod vm;
 use crate::proto;
 use crate::proto::AcctState;

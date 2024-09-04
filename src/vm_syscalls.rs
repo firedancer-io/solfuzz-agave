@@ -1,7 +1,7 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils,
+    utils::err_map::stable_result_to_err_no,
     utils::vm::mem_regions,
     utils::vm::STACK_SIZE,
     InstrContext,
@@ -184,14 +184,9 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.invoke_function(syscall_func);
 
     // Unwrap and return the effects of the syscall
+    let program_id = instr_ctx.instruction.program_id;
     let program_result = vm.program_result;
     Some(SyscallEffects {
-        error: match program_result {
-            StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => {
-                utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
-            }
-        },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0: match program_result {
@@ -205,15 +200,12 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         inputdata: vec![], // deprecated
         rodata,
         frame_count: vm.call_depth,
+        error: stable_result_to_err_no(program_result, &invoke_context, &program_id),
         log: invoke_context
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
-            .iter()
-            .fold(String::new(), |mut acc, s| {
-                acc.push_str(s);
-                acc
-            })
+            .join("\n")
             .into_bytes(),
         pc: 0,
     })
