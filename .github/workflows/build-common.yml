@@ -39,11 +39,10 @@ jobs:
           cargo test --release
 
       - name: Run build
-        run: make -j shared_obj test_exec_instr
+        run: make -j shared_obj binaries
 
       - name: Run test-vectors
-        run: |
-          ./scripts/run_test_vectors.sh
+        run: ./scripts/run_test_vectors.sh
 
       - uses: actions/upload-artifact@v4
         if: ${{ inputs.upload_artifacts }}

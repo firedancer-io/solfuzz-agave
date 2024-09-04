@@ -353,7 +353,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
 }
 
 #[allow(deprecated)]
-fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
+pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fd_features = context
         .epoch_ctx
         .as_ref()

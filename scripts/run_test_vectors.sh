@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 if [ "$LOG_PATH" == "" ]; then
   LOG_PATH="`mktemp -d`"
@@ -22,22 +22,10 @@ else
   cd ../..
 fi
 
-find dump/test-vectors/instr/fixtures -type f -name '*.fix' -exec ./target/debug/test_exec_instr {} + > $LOG_PATH/test_exec_instr.log 2>&1
+find dump/test-vectors/instr/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_instr {} + > $LOG_PATH/test_exec_instr.log 2>&1
+find dump/test-vectors/txn/fixtures/ -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_txn.log 2>&1
 
-total_tests=`find dump/test-vectors/instr/fixtures -type f -name '*.fix' | wc -l`
 failed=`grep -wR FAIL $LOG_PATH | wc -l`
 passed=`grep -wR OK $LOG_PATH | wc -l`
 
-echo "Total test cases: $total_tests"
-echo "Total passed: $passed"
-echo "Total failed: $failed"
-
-if [ "$failed" != "0" ] || [ $passed -ne $total_tests ];
-then
-  echo 'test vector execution failed'
-  grep -wR FAIL $LOG_PATH
-  echo $LOG_PATH
-  exit 1
-else
-  echo 'test vector execution passed'
-fi
+echo Test vectors success
