@@ -36,21 +36,40 @@ pub fn setup_input_regions(
 them into InputDataRegions. The regions themselves are not copied,
 so be mindful of lifetimes. */
 pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<InputDataRegion> {
-    // Find first region(*) starting at MM_INPUT_START
-    // Then iterate over the regions and collect the input data regions
-    // until the end of the regions list.
-    // * Regions are sorted by vm address.
-    mapping
-        .get_regions()
-        .iter()
-        .skip_while(|region| region.vm_addr < ebpf::MM_INPUT_START)
-        .map(|region| InputDataRegion {
-            content: unsafe {
-                std::slice::from_raw_parts(region.host_addr.get() as *const u8, region.len as usize)
-                    .to_vec()
-            },
-            offset: region.vm_addr - ebpf::MM_INPUT_START,
-            is_writable: region.state.get() == MemoryState::Writable,
-        })
-        .collect()
+    match mapping {
+        MemoryMapping::Aligned(mapping) => {
+            // regions in AlignedMemoryMapping are sorted by vm_addr
+            mapping
+                .get_regions()
+                .iter()
+                .skip_while(|region| region.vm_addr < ebpf::MM_INPUT_START)
+                .map(mem_region_to_input_data_region)
+                .collect()
+        }
+        MemoryMapping::Unaligned(mapping) => {
+            // regions are in eytzinger order, so we need to collect and sort them
+            let mut input_regions: Vec<InputDataRegion> = mapping
+                .get_regions()
+                .iter()
+                .filter(|region| region.vm_addr >= ebpf::MM_INPUT_START)
+                .map(mem_region_to_input_data_region)
+                .collect();
+
+            // Sort the vector by `vm_addr`
+            input_regions.sort_by_key(|region| region.offset);
+            input_regions
+        }
+        _ => vec![],
+    }
+}
+
+fn mem_region_to_input_data_region(region: &MemoryRegion) -> InputDataRegion {
+    InputDataRegion {
+        content: unsafe {
+            std::slice::from_raw_parts(region.host_addr.get() as *const u8, region.len as usize)
+                .to_vec()
+        },
+        offset: region.vm_addr - ebpf::MM_INPUT_START,
+        is_writable: region.state.get() == MemoryState::Writable,
+    }
 }

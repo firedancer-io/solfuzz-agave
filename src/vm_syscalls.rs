@@ -20,7 +20,7 @@ use solana_program_runtime::{
         error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
-        vm::{Config, EbpfVm},
+        vm::EbpfVm,
     },
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
@@ -63,6 +63,10 @@ fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
     let feature_set = instr_ctx.feature_set;
+
+    let program_runtime_environment_v1 =
+        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
+            .unwrap();
 
     // Create invoke context
     // TODO: factor this into common code with lib.rs
@@ -134,13 +138,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
 
-    let config = &Config {
-        aligned_memory_mapping: true,
-        enable_sbpf_v2: true,
-        ..Config::default()
-    };
-
-    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
+    let memory_mapping = match MemoryMapping::new(
+        regions,
+        program_runtime_environment_v1.get_config(),
+        sbpf_version,
+    ) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
@@ -173,9 +175,6 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     }
 
     // Actually invoke the syscall
-    let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
-            .unwrap();
 
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1

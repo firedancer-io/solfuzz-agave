@@ -15,7 +15,7 @@ use solana_program_runtime::{
         error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
-        vm::{Config, ContextObject, EbpfVm},
+        vm::{ContextObject, EbpfVm},
     },
     sysvar_cache::SysvarCache,
 };
@@ -191,13 +191,11 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
 
-    let config = &Config {
-        aligned_memory_mapping: true,
-        enable_sbpf_v2: false,
-        ..Config::default()
-    };
-
-    let memory_mapping = match MemoryMapping::new(regions, config, &SBPFVersion::V1) {
+    let memory_mapping = match MemoryMapping::new(
+        regions,
+        program_runtime_environment_v1.get_config(),
+        &SBPFVersion::V1,
+    ) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
