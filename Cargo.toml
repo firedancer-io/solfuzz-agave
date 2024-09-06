@@ -21,19 +21,20 @@ lazy_static = "1.4.0"
 prost = "0.13.1"
 prost-types = "0.13.1"
 libc = "0.2.155"
-solana-address-lookup-table-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-accounts-db = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-bpf-loader-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-compute-budget-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-config-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-loader-v4-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-program-runtime = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-runtime = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3", features = ["dev-context-only-utils"] }
-solana-stake-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-system-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-sdk = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-vote-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
+solana-address-lookup-table-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-accounts-db = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-bpf-loader-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-compute-budget-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-config-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-loader-v4-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-program-runtime = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-runtime = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82", features = ["dev-context-only-utils"] }
+solana-stake-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-system-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-sdk = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-vote-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-svm = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 log = "0.4.22" # without this, prost 0.11-0.13 complain
@@ -43,5 +44,5 @@ prost-build = "0.13.1"
 
 
 [patch.crates-io]
-solana-program = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
-solana-zk-token-sdk = { git = "https://github.com/LucasSte/agave.git", rev = "aa79ccddac6da918fc50f797839979e52e2c62f3" }
+solana-program = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
+solana-zk-token-sdk = { git = "https://github.com/LucasSte/agave.git", rev = "dac738818d93a3fe224540b9dcbb4fa72649af82" }
