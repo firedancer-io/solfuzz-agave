@@ -1,7 +1,10 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils::{self, vm::mem_regions, vm::STACK_SIZE},
+    utils::{
+        err_map::stable_result_to_err_no,
+        vm::{mem_regions, STACK_SIZE},
+    },
     InstrContext,
 };
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -230,19 +233,15 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
+    let program_id = instr_ctx.instruction.program_id;
     Some(SyscallEffects {
-        error: match program_result {
-            StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => {
-                utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
-            }
-        },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0: match program_result {
             StableResult::Ok(n) => n,
             StableResult::Err(_) => 0,
         },
+        error: stable_result_to_err_no(program_result, vm.context_object_pointer, &program_id),
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
@@ -253,11 +252,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
-            .iter()
-            .fold(String::new(), |mut acc, s| {
-                acc.push_str(s);
-                acc
-            })
+            .join("\n")
             .into_bytes(),
         ..Default::default()
     })
