@@ -2,7 +2,6 @@ use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TransactionMessage, TxnContext, TxnResult};
 use prost::Message;
 use solana_accounts_db::accounts_db::{AccountShrinkThreshold, AccountsDbConfig};
-use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{
     AccountSecondaryIndexes, AccountsIndexConfig, IndexLimitMb,
 };
@@ -11,7 +10,6 @@ use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::MessageAddressTableLookup;
 use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_program::pubkey::Pubkey;
-use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::transaction_batch::TransactionBatch;
@@ -27,20 +25,17 @@ use solana_sdk::transaction::{
     TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
-use solana_svm::account_loader::LoadedTransaction;
-use solana_svm::runtime_config::RuntimeConfig;
-use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
-use solana_svm::transaction_processing_result::{
-    ProcessedTransaction, TransactionProcessingResultExtensions,
-};
-use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
-use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use solana_accounts_db::accounts::LoadedTransaction;
+use solana_accounts_db::transaction_results::TransactionExecutionResult;
+use solana_program_runtime::timings::ExecuteTimings;
+use solana_runtime::builtins::BUILTINS;
+use solana_runtime::runtime_config::RuntimeConfig;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_txn_execute_v1(
@@ -209,7 +204,7 @@ impl From<LoadedTransaction> for proto::ResultingState {
 
 impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     fn from(value: LoadAndExecuteTransactionsOutput) -> TxnResult {
-        let execution_results = &value.processing_results[0];
+        let execution_results = &value.execution_results[0];
         let (
             is_ok,
             sanitization_error,
@@ -223,14 +218,9 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             rent,
             resulting_state,
         ) = match execution_results {
-            Ok(txn) => {
-                let is_ok = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        executed_tx.execution_details.status.is_ok()
-                    }
-                    ProcessedTransaction::FeesOnly(_) => false,
-                };
-                let transaction_error = txn.status();
+            TransactionExecutionResult::Executed{details, ..} => {
+                let is_ok = details.status.is_ok();
+                let transaction_error = &details.status;
                 let (instr_err_idx, instruction_error) = match transaction_error.as_ref() {
                     Err(TransactionError::InstructionError(instr_err_idx, instr_err)) => {
                         (*instr_err_idx, Some(instr_err.clone()))
@@ -258,33 +248,12 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     }
                     None => 0,
                 };
-                let rent = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        executed_tx.loaded_transaction.rent
-                    }
-                    ProcessedTransaction::FeesOnly(_) => 0,
-                };
-                let resulting_state: Option<ResultingState> = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        Some(executed_tx.loaded_transaction.clone().into())
-                    }
-                    ProcessedTransaction::FeesOnly(_) => None,
-                };
-                let executed_units = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        executed_tx.execution_details.executed_units
-                    }
-                    ProcessedTransaction::FeesOnly(_) => 0,
-                };
-                let return_data = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => executed_tx
-                        .execution_details
-                        .return_data
-                        .as_ref()
-                        .map(|info| info.clone().data)
-                        .unwrap_or_default(),
-                    ProcessedTransaction::FeesOnly(_) => vec![],
-                };
+                let resulting_state : Option<ResultingState> = Some(value.loaded_transactions[0].0.clone().unwrap().into());
+
+                let rent = 0;
+                let executed_units = details.executed_units;
+                let return_data = details.return_data.as_ref().map(|info| info.clone().data).unwrap_or_default();
+
                 (
                     is_ok,
                     false,
@@ -294,12 +263,12 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     custom_error,
                     executed_units,
                     return_data,
-                    Some(txn.fee_details()),
+                    None,
                     rent,
                     resulting_state,
                 )
             }
-            Err(transaction_error) => {
+            TransactionExecutionResult::NotExecuted(transaction_error) => {
                 let (instr_err_idx, instruction_error) = match transaction_error {
                     TransactionError::InstructionError(instr_err_idx, instr_err) => {
                         (*instr_err_idx, Some(instr_err.clone()))
@@ -333,7 +302,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
         };
 
         TxnResult {
-            executed: execution_results.was_processed(),
+            executed: execution_results.was_executed(),
             sanitization_error,
             resulting_state,
             rent,
@@ -344,10 +313,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             custom_error,
             return_data,
             executed_units,
-            fee_details: fee_details.map(|fees| proto::FeeDetails {
-                transaction_fee: fees.transaction_fee(),
-                prioritization_fee: fees.prioritization_fee(),
-            }),
+            fee_details,
         }
     }
 }
@@ -399,7 +365,6 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     });
     let accounts_db_config = Some(AccountsDbConfig {
         index,
-        storage_access: StorageAccess::File,
         skip_initial_hash_calc: true,
         ..AccountsDbConfig::default()
     });
@@ -430,8 +395,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .unwrap()
             .insert(new_bank)
             .clone_without_scheduler();
-        bank.get_transaction_processor()
-            .program_cache
+        bank.loaded_programs_cache
             .write()
             .unwrap()
             .prune(slot, bank.epoch());
@@ -447,7 +411,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     /* Save loaded builtins so we don't load them twice */
     let mut stored_accounts = HashSet::<Pubkey>::default();
     for builtin in BUILTINS.iter() {
-        if let Some(enable_feature_id) = builtin.enable_feature_id {
+        if let Some(enable_feature_id) = builtin.feature_id {
             if !bank.feature_set.is_active(&enable_feature_id) {
                 continue;
             }
@@ -459,7 +423,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     /* Load accounts + sysvars
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
     pubkeys are ignored. */
-    bank.get_transaction_processor().reset_sysvar_cache();
+    bank.reset_sysvar_cache();
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         if !stored_accounts.insert(pubkey) {
@@ -468,8 +432,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
     }
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
+    bank.fill_missing_sysvar_cache_entries();
 
     /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
     bank.update_epoch_schedule();
@@ -491,9 +454,8 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
     bank.update_recent_blockhashes();
-    bank.get_transaction_processor().reset_sysvar_cache();
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
+    bank.reset_sysvar_cache();
+    bank.fill_missing_sysvar_cache_entries();
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
 
@@ -547,31 +509,18 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let batch = TransactionBatch::new(lock_results, &bank, Cow::Borrowed(&transactions));
 
-    let recording_config = ExecutionRecordingConfig {
-        enable_cpi_recording: false,
-        enable_log_recording: true,
-        enable_return_data_recording: true,
-    };
 
     let mut timings = ExecuteTimings::default();
-
-    let configs = TransactionProcessingConfig {
-        account_overrides: None,
-        compute_budget: bank.compute_budget(),
-        log_messages_bytes_limit: None,
-        limit_to_load_programs: true,
-        recording_config,
-        transaction_account_lock_limit: None,
-        check_program_modification_slot: false,
-    };
-
-    let mut metrics = TransactionErrorMetrics::default();
     let result = bank.load_and_execute_transactions(
         &batch,
         context.max_age as usize,
+        false,
+        false,
+        true,
         &mut timings,
-        &mut metrics,
-        configs,
+        None,
+        None,
+        true,
     );
 
     let mut txn_result: TxnResult = result.into();
