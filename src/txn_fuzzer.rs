@@ -16,6 +16,7 @@ use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::transaction_batch::TransactionBatch;
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
+use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
@@ -364,7 +365,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
-    /* HACK: Set the genesis config rent from the "to-be" sysvar rent, if present */
+    /* HACK: Set the genesis config rent and epoch schedule from the "to-be" sysvars, if present */
     let rent: Rent = context
         .tx
         .as_ref()?
@@ -372,7 +373,20 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .as_ref()?
         .account_shared_data
         .iter()
-        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref())
+        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref() && item.lamports > 0)
+        .map(|account| bincode::deserialize(&account.data).ok())
+        .unwrap_or_default()
+        .unwrap_or_default();
+    let epoch_schedule: EpochSchedule = context
+        .tx
+        .as_ref()?
+        .message
+        .as_ref()?
+        .account_shared_data
+        .iter()
+        .find(|item| {
+            item.address.as_slice() == sysvar::epoch_schedule::id().as_ref() && item.lamports > 0
+        })
         .map(|account| bincode::deserialize(&account.data).ok())
         .unwrap_or_default()
         .unwrap_or_default();
@@ -380,6 +394,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let genesis_config = GenesisConfig {
         creation_time: 0,
         rent,
+        epoch_schedule,
         ..GenesisConfig::default()
     };
 
