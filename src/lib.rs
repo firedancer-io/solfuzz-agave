@@ -10,14 +10,15 @@ mod vm_validate;
 
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_log_collector::LogCollector;
 use solana_program::hash::Hash;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
+use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
+use solana_program_runtime::timings::ExecuteTimings;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
 use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
@@ -35,7 +36,6 @@ use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
 use solana_svm::program_loader;
-use solana_timings::ExecuteTimings;
 
 use crate::utils::err_map::instr_err_to_num;
 use crate::utils::feature_u64;
