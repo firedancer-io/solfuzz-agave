@@ -3,6 +3,7 @@
 pub mod txn_fuzzer;
 pub mod utils;
 
+use std::env;
 use solana_sdk::feature_set::*;
 
 use crate::utils::feature_u64;
@@ -205,4 +206,10 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn sol_compat_init() {
+    env::set_var("SOLANA_RAYON_THREADS", "1");
+    env::set_var("RAYON_NUM_THREADS", "1");
 }
