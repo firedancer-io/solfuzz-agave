@@ -56,6 +56,8 @@ macro_rules! feature_list {
 }
 
 pub static HARDCODED_FEATURES: &[u64] = feature_list![
+    libsecp256k1_fail_on_bad_count,
+    libsecp256k1_fail_on_bad_count2,
     secp256k1_program_enabled,
     spl_token_v2_multisig_fix,
     no_overflow_rent_distribution,
