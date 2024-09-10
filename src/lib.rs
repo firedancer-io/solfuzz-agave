@@ -208,8 +208,36 @@ pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
 }
 
+#[repr(C)]
+pub struct SolCompatFeatures {
+    pub struct_size: u64,
+    pub hardcoded_features: *const u64,
+    pub hardcoded_features_len: u64,
+    pub supported_features: *const u64,
+    pub supported_features_len: u64,
+}
+
+unsafe impl Send for SolCompatFeatures {}
+unsafe impl Sync for SolCompatFeatures {}
+
+static FEATURES: SolCompatFeatures = SolCompatFeatures {
+    struct_size: std::mem::size_of::<SolCompatFeatures>() as u64,
+    hardcoded_features: HARDCODED_FEATURES.as_ptr(),
+    hardcoded_features_len: HARDCODED_FEATURES.len() as u64,
+    supported_features: SUPPORTED_FEATURES.as_ptr(),
+    supported_features_len: SUPPORTED_FEATURES.len() as u64,
+};
+
+#[no_mangle]
+pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeatures {
+    &FEATURES
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_init() {
     env::set_var("SOLANA_RAYON_THREADS", "1");
     env::set_var("RAYON_NUM_THREADS", "1");
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn sol_compat_fini() {}
