@@ -1,5 +1,5 @@
 pub mod err_map;
-pub mod vm;
+// pub mod vm;
 use crate::proto;
 use crate::proto::AcctState;
 use lazy_static::lazy_static;
@@ -27,18 +27,6 @@ lazy_static! {
             .map(|(pubkey, _)| (feature_u64(pubkey), *pubkey))
             .collect()
     };
-}
-
-impl From<&proto::FeatureSet> for FeatureSet {
-    fn from(input: &proto::FeatureSet) -> Self {
-        let mut feature_set = FeatureSet::default();
-        for id in &input.features {
-            if let Some(pubkey) = INDEXED_FEATURES.get(id) {
-                feature_set.activate(pubkey, 0);
-            }
-        }
-        feature_set
-    }
 }
 
 impl From<&AcctState> for AccountSharedData {

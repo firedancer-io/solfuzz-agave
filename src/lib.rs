@@ -1,13 +1,13 @@
 #![allow(clippy::missing_safety_doc)]
 
-pub mod elf_loader;
-mod shred_parse;
-pub mod txn_fuzzer;
+// pub mod elf_loader;
+// mod shred_parse;
+// pub mod txn_fuzzer;
 pub mod utils;
-mod vm_cpi_syscall;
-mod vm_interp;
-mod vm_syscalls;
-mod vm_validate;
+// mod vm_cpi_syscall;
+// mod vm_interp;
+// mod vm_syscalls;
+// mod vm_validate;
 
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -253,7 +253,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
 ];
 
 pub mod proto {
-    include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
+    include!(concat!(env!("OUT_DIR"), "/fd.v2.rs"));
 }
 
 #[derive(Debug, Error, PartialEq)]
@@ -282,7 +282,8 @@ pub enum Error {
 
 pub struct InstrContext {
     pub feature_set: FeatureSet,
-    pub accounts: Vec<(Pubkey, Account)>,
+    pub account_states: Vec<(Pubkey, Account)>,
+    pub account_keys: Vec<Pubkey>,
     pub instruction: StableInstruction,
     pub cu_avail: u64,
     pub rent_collector: RentCollector,
@@ -293,7 +294,7 @@ pub struct InstrContext {
 impl TransactionProcessingCallback for InstrContext {
     fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
         let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
-            .accounts
+            .account_states
             .iter()
             .map(|(_pubkey, _account)| (*_pubkey, AccountSharedData::from(_account.clone())))
             .collect();
@@ -314,7 +315,7 @@ impl TransactionProcessingCallback for InstrContext {
 
     fn get_account_shared_data(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
         let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
-            .accounts
+            .account_states
             .iter()
             .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
             .collect();
@@ -326,56 +327,78 @@ impl TransactionProcessingCallback for InstrContext {
     }
 }
 
-impl TryFrom<proto::InstrContext> for InstrContext {
+impl TryFrom<proto::ExecEnv> for InstrContext {
     type Error = Error;
 
-    fn try_from(input: proto::InstrContext) -> Result<Self, Self::Error> {
+    fn try_from(input: proto::ExecEnv) -> Result<Self, Self::Error> {
+        let slot_env = input.slots[0].clone();
+        let txn_env = slot_env.txns[0].clone();
+        let instr_env = txn_env.instrs[0].clone();
+        let program_id_idx = instr_env.program_id_idx;
         let program_id = Pubkey::new_from_array(
-            input
-                .program_id
+            txn_env
+                .account_keys
+                .get(program_id_idx as usize)
+                .unwrap()
+                .clone()
                 .try_into()
-                .map_err(|_| Error::InvalidPubkeyBytes)?,
+                .ok()
+                .unwrap(),
         );
 
-        let feature_set: FeatureSet = input
-            .epoch_context
-            .as_ref()
-            .and_then(|epoch_ctx| epoch_ctx.features.as_ref())
-            .map(|fs| fs.into())
-            .unwrap_or_default();
+        let mut feature_set = FeatureSet::default();
+        for feature in input.features.iter() {
+            let feature_id = Pubkey::new_from_array(feature.feature_id.clone().try_into().unwrap());
+            let feature_slot = feature.slot;
+            feature_set.activate(&feature_id, feature_slot)
+        }
 
-        let accounts: Vec<(Pubkey, Account)> = input
-            .accounts
+        let account_states: Vec<(Pubkey, Account)> = input
+            .acct_states
             .into_iter()
             .map(|acct_state| acct_state.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let instruction_accounts = input
-            .instr_accounts
+        let account_keys: Vec<Pubkey> = txn_env
+            .account_keys
             .into_iter()
-            .map(|acct| {
-                if acct.index as usize >= accounts.len() {
+            .map(|key| Pubkey::new_from_array(key.try_into().unwrap()))
+            .collect();
+
+        let header = txn_env.header.unwrap();
+        let instruction_accounts = instr_env
+            .accounts
+            .into_iter()
+            .map(|acct_idx| {
+                let acct_idx_u32 = acct_idx as u32;
+                if acct_idx_u32 as usize >= account_keys.len() {
                     return Err(Error::AccountMissing);
                 }
                 Ok(AccountMeta {
-                    pubkey: accounts[acct.index as usize].0,
-                    is_signer: acct.is_signer,
-                    is_writable: acct.is_writable,
+                    pubkey: account_keys[acct_idx_u32 as usize],
+                    is_signer: acct_idx_u32 < header.num_required_signatures,
+                    is_writable: (acct_idx_u32
+                        < header.num_required_signatures - header.num_readonly_signed_accounts)
+                        || (acct_idx_u32 >= header.num_required_signatures
+                            && acct_idx_u32
+                                < (account_keys.len() as u32)
+                                    - header.num_readonly_unsigned_accounts),
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
 
         let instruction = StableInstruction {
             accounts: instruction_accounts.into(),
-            data: input.data.into(),
+            data: instr_env.data.into(),
             program_id,
         };
 
         Ok(Self {
             feature_set,
-            accounts,
+            account_states,
+            account_keys,
             instruction,
-            cu_avail: input.cu_avail,
+            cu_avail: txn_env.cu_avail,
             rent_collector: RentCollector::default(),
             last_blockhash: Hash::default(),
             lamports_per_signature: 0,
@@ -420,16 +443,27 @@ pub struct InstrEffects {
     pub return_data: Vec<u8>,
 }
 
-impl From<InstrEffects> for proto::InstrEffects {
+impl From<InstrEffects> for proto::ExecEffects {
     fn from(val: InstrEffects) -> Self {
-        proto::InstrEffects {
-            result: val
-                .result
-                .as_ref()
-                .map(instr_err_to_num)
-                .unwrap_or_default(),
-            custom_err: val.custom_err.unwrap_or_default(),
-            modified_accounts: val
+        proto::ExecEffects {
+            harness_type: proto::HarnessType::Instr as i32,
+            slot_effects: vec![proto::SlotEffects {
+                txn_effects: vec![proto::TxnEffects {
+                    instr_effects: vec![proto::InstrEffects {
+                        result: val
+                            .result
+                            .as_ref()
+                            .map(instr_err_to_num)
+                            .unwrap_or_default(),
+                        custom_err: val.custom_err.unwrap_or_default(),
+                    }],
+                    return_data: val.return_data,
+                    cus_remain: val.cu_avail,
+                    ..proto::TxnEffects::default()
+                }],
+                ..proto::SlotEffects::default()
+            }],
+            acct_states: val
                 .modified_accounts
                 .into_iter()
                 .map(|(pubkey, account)| proto::AcctState {
@@ -442,13 +476,11 @@ impl From<InstrEffects> for proto::InstrEffects {
                     seed_addr: None,
                 })
                 .collect(),
-            cu_avail: val.cu_avail,
-            return_data: val.return_data,
         }
     }
 }
 
-pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEffects> {
+pub fn execute_instr_proto(input: proto::ExecEnv) -> Option<proto::ExecEffects> {
     let instr_context = match InstrContext::try_from(input) {
         Ok(context) => context,
         Err(_) => return None,
@@ -569,30 +601,10 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
 
     // First try populating sysvars from accounts list
     sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
-        if let Some(account) = input.accounts.iter().find(|(key, _)| key == pubkey) {
+        if let Some(account) = input.account_states.iter().find(|(key, _)| key == pubkey) {
             if account.1.lamports > 0 {
                 callbackback(&account.1.data);
             }
-        }
-    });
-
-    // Any default values for missing sysvar values should be set here
-    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
-        if *pubkey == Clock::id() {
-            // Set the default clock slot to something arbitrary beyond 0
-            // This prevents DelayedVisibility errors when executing BPF programs
-            let default_clock = Clock {
-                slot: 10,
-                ..Default::default()
-            };
-            let clock_data = bincode::serialize(&default_clock).unwrap();
-            callbackback(&clock_data);
-        }
-        if *pubkey == EpochSchedule::id() {
-            callbackback(&bincode::serialize(&EpochSchedule::default()).unwrap());
-        }
-        if *pubkey == Rent::id() {
-            callbackback(&bincode::serialize(&Rent::default()).unwrap());
         }
     });
 
@@ -611,13 +623,17 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     };
 
     let mut transaction_accounts =
-        Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
+        Vec::<TransactionAccount>::with_capacity(input.account_keys.len() + 1);
     #[allow(deprecated)]
     input
-        .accounts
+        .account_keys
         .iter()
-        .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
-        .for_each(|x| transaction_accounts.push(x));
+        .map(|pubkey| (*pubkey, input.get_account_shared_data(pubkey)))
+        .for_each(|x| {
+            if let Some(account) = x.1 {
+                transaction_accounts.push((x.0, account))
+            }
+        });
 
     let program_idx = transaction_accounts
         .iter()
@@ -674,10 +690,10 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
 
     let mut newly_loaded_programs = HashSet::<Pubkey>::new();
 
-    for acc in &input.accounts {
-        // FD rejects duplicate account loads
+    for acc in &input.account_states {
+        // Skip already-loaded accounts
         if !newly_loaded_programs.insert(acc.0) {
-            return None;
+            continue;
         }
 
         if acc.1.executable && program_cache_for_tx_batch.find(&acc.0).is_none() {
@@ -905,7 +921,7 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let instr_context = match proto::InstrContext::decode(in_slice) {
+    let instr_context = match proto::ExecEnv::decode(in_slice) {
         Ok(context) => context,
         Err(_) => return 0,
     };
@@ -931,11 +947,14 @@ mod tests {
     #[test]
     fn test_system_program_exec() {
         let native_loader_id = solana_sdk::native_loader::id().to_bytes().to_vec();
+        let clock = solana_sdk::sysvar::clock::Clock::default();
+        let epoch_schedule = solana_sdk::sysvar::epoch_schedule::EpochSchedule::default();
+        let rent = solana_sdk::sysvar::rent::Rent::default();
 
         // Ensure that a basic account transfer works
-        let input = proto::InstrContext {
-            program_id: vec![0u8; 32],
-            accounts: vec![
+        let input = proto::ExecEnv {
+            harness_type: proto::HarnessType::Instr as i32,
+            acct_states: vec![
                 proto::AcctState {
                     address: vec![1u8; 32],
                     owner: vec![0u8; 32],
@@ -963,35 +982,75 @@ mod tests {
                     rent_epoch: 0,
                     seed_addr: None,
                 },
-            ],
-            instr_accounts: vec![
-                proto::InstrAcct {
-                    index: 0,
-                    is_signer: true,
-                    is_writable: true,
+                proto::AcctState {
+                    address: solana_sdk::sysvar::clock::id().to_bytes().to_vec(),
+                    owner: solana_sdk::sysvar::id().to_bytes().to_vec(),
+                    lamports: 1,
+                    data: bincode::serialize(&clock).unwrap(),
+                    executable: false,
+                    rent_epoch: 0,
+                    seed_addr: None,
                 },
-                proto::InstrAcct {
-                    index: 1,
-                    is_signer: false,
-                    is_writable: true,
+                proto::AcctState {
+                    address: solana_sdk::sysvar::epoch_schedule::id().to_bytes().to_vec(),
+                    owner: solana_sdk::sysvar::id().to_bytes().to_vec(),
+                    lamports: 1,
+                    data: bincode::serialize(&epoch_schedule).unwrap(),
+                    executable: false,
+                    rent_epoch: 0,
+                    seed_addr: None,
+                },
+                proto::AcctState {
+                    address: solana_sdk::sysvar::rent::id().to_bytes().to_vec(),
+                    owner: solana_sdk::sysvar::id().to_bytes().to_vec(),
+                    lamports: 1,
+                    data: bincode::serialize(&rent).unwrap(),
+                    executable: false,
+                    rent_epoch: 0,
+                    seed_addr: None,
                 },
             ],
-            data: vec![
-                // Transfer
-                0x02, 0x00, 0x00, 0x00, // Lamports
-                0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            ],
-            cu_avail: 10000u64,
-            epoch_context: None,
-            slot_context: None,
+            slots: vec![proto::SlotEnv {
+                txns: vec![proto::TxnEnv {
+                    header: Some(proto::TxnHeader {
+                        num_required_signatures: 1,
+                        num_readonly_signed_accounts: 0,
+                        num_readonly_unsigned_accounts: 1,
+                    }),
+                    account_keys: vec![vec![1u8; 32], vec![2u8; 32], vec![0u8; 32]],
+                    instrs: vec![proto::InstrEnv {
+                        program_id_idx: 2,
+                        accounts: vec![0, 1],
+                        data: vec![
+                            // Transfer
+                            0x02, 0x00, 0x00, 0x00, // Lamports
+                            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        ],
+                    }],
+                    cu_avail: 10000u64,
+                    ..proto::TxnEnv::default()
+                }],
+                ..proto::SlotEnv::default()
+            }],
+            ..proto::ExecEnv::default()
         };
         let output = execute_instr_proto(input);
         assert_eq!(
             output,
-            Some(proto::InstrEffects {
-                result: 0,
-                custom_err: 0,
-                modified_accounts: vec![
+            Some(proto::ExecEffects {
+                harness_type: proto::HarnessType::Instr as i32,
+                slot_effects: vec![proto::SlotEffects {
+                    txn_effects: vec![proto::TxnEffects {
+                        instr_effects: vec![proto::InstrEffects {
+                            result: 0,
+                            custom_err: 0,
+                        }],
+                        cus_remain: 9850u64,
+                        ..proto::TxnEffects::default()
+                    }],
+                    ..proto::SlotEffects::default()
+                }],
+                acct_states: vec![
                     proto::AcctState {
                         address: vec![1u8; 32],
                         owner: vec![0u8; 32],
@@ -1020,8 +1079,6 @@ mod tests {
                         seed_addr: None,
                     },
                 ],
-                cu_avail: 9850u64,
-                return_data: vec![],
             })
         );
     }

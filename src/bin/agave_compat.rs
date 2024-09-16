@@ -1,6 +1,6 @@
 use clap::Parser;
 use prost::Message;
-use solfuzz_agave::proto::InstrContext;
+use solfuzz_agave::proto::ExecEnv;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -11,7 +11,7 @@ struct Cli {
 
 fn exec(input: &PathBuf) {
     let blob = std::fs::read(input).unwrap();
-    let context = InstrContext::decode(&blob[..]).unwrap();
+    let context = ExecEnv::decode(&blob[..]).unwrap();
     let effects = match solfuzz_agave::execute_instr_proto(context) {
         Some(e) => e,
         None => {
