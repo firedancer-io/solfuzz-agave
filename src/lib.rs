@@ -901,12 +901,12 @@ static METADATA: SolCompatMetadata = SolCompatMetadata {
 };
 
 #[no_mangle]
-pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeatures {
+pub unsafe extern "C" fn sol_compat_get_features_v2() -> *const SolCompatFeatures {
     &FEATURES
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn sol_compat_get_metadata_v1() -> *const SolCompatMetadata {
+pub unsafe extern "C" fn sol_compat_get_metadata_v2() -> *const SolCompatMetadata {
     &METADATA
 }
 
@@ -914,7 +914,7 @@ pub unsafe extern "C" fn sol_compat_get_metadata_v1() -> *const SolCompatMetadat
 pub unsafe extern "C" fn sol_compat_fini() {}
 
 #[no_mangle]
-pub unsafe extern "C" fn sol_compat_instr_execute_v1(
+pub unsafe extern "C" fn sol_compat_instr_execute_v2(
     out_ptr: *mut u8,
     out_psz: *mut u64,
     in_ptr: *mut u8,
