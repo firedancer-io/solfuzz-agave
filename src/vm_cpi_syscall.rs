@@ -1,6 +1,6 @@
 use crate::{
     load_builtins,
-    proto::{SyscallContext, SyscallEffects},
+    proto::{InstrEffects, SyscallContext, SyscallEffects},
     utils::{
         err_map::stable_result_to_err_no,
         vm::{mem_regions, HEAP_MAX, STACK_SIZE},
@@ -292,7 +292,7 @@ fn process_instruction_cpi_callback(
     instr_data: &[u8],
     instr_accts: &[InstructionAccount],
     prog_indices: &[IndexOfAccount],
-    cpi_exec_effects: &proto::InstrEffects,
+    cpi_exec_effects: &InstrEffects,
 ) -> Result<(), InstructionError> {
     // Push the instruction context. Copied verbatim from InvokeContext::process_instruction
     txn_ctx
