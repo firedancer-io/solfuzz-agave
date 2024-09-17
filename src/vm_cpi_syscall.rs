@@ -165,6 +165,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_accounts_len = instr_accounts.len();
 
     // Setup the CPI callback if there are exec effects
+    #[cfg(feature = "stub-agave")]
     if let Some(exec_effects) = input.exec_effects {
         invoke_context.proc_instr_callback = Some(Box::new(
             move |txn_ctx: &mut TransactionContext,
@@ -286,7 +287,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     })
 }
 
-/*  */
+#[allow(dead_code)]
 fn process_instruction_cpi_callback(
     txn_ctx: &mut TransactionContext,
     instr_data: &[u8],
