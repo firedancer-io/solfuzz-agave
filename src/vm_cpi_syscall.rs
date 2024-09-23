@@ -3,7 +3,7 @@ use crate::{
     proto::{SyscallContext, SyscallEffects},
     utils::{
         err_map::stable_result_to_err_no,
-        vm::{mem_regions, STACK_SIZE},
+        vm::{mem_regions, HEAP_MAX, STACK_SIZE},
     },
     InstrContext,
 };
@@ -178,12 +178,17 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Set up memory mapping
     let syscall_inv = input.syscall_invocation.unwrap();
+    // Follow FD harness behavior for heap_max
+    if vm_ctx.heap_max as usize > HEAP_MAX {
+        return None;
+    }
 
     let rodata = vm_ctx.rodata;
     let syscall_fn_name = syscall_inv.function_name.clone();
     let mut stack = syscall_inv.stack_prefix;
     stack.resize(STACK_SIZE, 0);
     let mut heap = syscall_inv.heap_prefix;
+
     heap.resize(vm_ctx.heap_max as usize, 0);
 
     let mut regions = vec![

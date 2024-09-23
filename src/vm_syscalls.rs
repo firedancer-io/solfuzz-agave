@@ -3,6 +3,7 @@ use crate::{
     proto::{SyscallContext, SyscallEffects},
     utils::err_map::stable_result_to_err_no,
     utils::vm::mem_regions,
+    utils::vm::HEAP_MAX,
     utils::vm::STACK_SIZE,
     InstrContext,
 };
@@ -126,10 +127,14 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Set up memory mapping
     let vm_ctx = input.vm_ctx.unwrap();
+    // Follow FD harness behavior
+    if vm_ctx.heap_max as usize > HEAP_MAX {
+        return None;
+    }
+
     let rodata = vm_ctx.rodata;
     let mut stack = vec![0; STACK_SIZE];
-    let heap_max = vm_ctx.heap_max;
-    let mut heap = vec![0; heap_max as usize];
+    let mut heap = vec![0; vm_ctx.heap_max as usize];
     let mut regions = vec![
         MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
