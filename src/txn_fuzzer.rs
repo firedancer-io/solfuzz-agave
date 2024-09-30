@@ -14,7 +14,7 @@ use solana_program::pubkey::Pubkey;
 use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
-use solana_runtime::transaction_batch::TransactionBatch;
+use solana_runtime::transaction_batch::{OwnedOrBorrowed, TransactionBatch};
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::FeatureSet;
@@ -36,7 +36,6 @@ use solana_svm::transaction_processing_result::{
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
-use std::borrow::Cow;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::ffi::c_int;
@@ -560,7 +559,11 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let lock_results = bank.rc.accounts.lock_accounts(transactions.iter(), 64);
 
-    let batch = TransactionBatch::new(lock_results, &bank, Cow::Borrowed(&transactions));
+    let batch = TransactionBatch::new(
+        lock_results,
+        &bank,
+        OwnedOrBorrowed::Borrowed(&transactions),
+    );
 
     let recording_config = ExecutionRecordingConfig {
         enable_cpi_recording: false,
