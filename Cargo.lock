@@ -1656,7 +1656,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -2004,7 +2004,6 @@ dependencies = [
 [[package]]
 name = "indexmap"
 version = "2.5.0"
-
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68b900aa2f7301e21c36462b170ee99994de34dff39a4a6a528e80e7376d07e5"
 dependencies = [
@@ -2767,7 +2766,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
 ]
 
 [[package]]
@@ -3712,7 +3711,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "index_list",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "itertools 0.12.1",
  "lazy_static",
  "log",
@@ -3941,7 +3940,7 @@ dependencies = [
 [[package]]
 name = "solana-entry"
 version = "2.1.0"
-source = "git+https://github.com/firedancer-io/agave?rev=b2c388d6cbff9b765d574bbb83a4378a1fc8af32#b2c388d6cbff9b765d574bbb83a4378a1fc8af32"
+source = "git+https://github.com/firedancer-io/agave?rev=f70ab5598ccd86b216c3928e4397bf4a5b58d723#f70ab5598ccd86b216c3928e4397bf4a5b58d723"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -4037,7 +4036,7 @@ dependencies = [
 [[package]]
 name = "solana-ledger"
 version = "2.1.0"
-source = "git+https://github.com/firedancer-io/agave?rev=b2c388d6cbff9b765d574bbb83a4378a1fc8af32#b2c388d6cbff9b765d574bbb83a4378a1fc8af32"
+source = "git+https://github.com/firedancer-io/agave?rev=f70ab5598ccd86b216c3928e4397bf4a5b58d723#f70ab5598ccd86b216c3928e4397bf4a5b58d723"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -4138,10 +4137,11 @@ dependencies = [
 [[package]]
 name = "solana-merkle-tree"
 version = "2.1.0"
-source = "git+https://github.com/firedancer-io/agave?rev=b2c388d6cbff9b765d574bbb83a4378a1fc8af32#b2c388d6cbff9b765d574bbb83a4378a1fc8af32"
+source = "git+https://github.com/firedancer-io/agave?rev=f70ab5598ccd86b216c3928e4397bf4a5b58d723#f70ab5598ccd86b216c3928e4397bf4a5b58d723"
 dependencies = [
  "fast-math",
- "solana-program 2.1.0",
+ "solana-hash",
+ "solana-sha256-hasher",
 ]
 
 [[package]]
@@ -4646,7 +4646,7 @@ dependencies = [
 [[package]]
 name = "solana-storage-bigtable"
 version = "2.1.0"
-source = "git+https://github.com/firedancer-io/agave?rev=b2c388d6cbff9b765d574bbb83a4378a1fc8af32#b2c388d6cbff9b765d574bbb83a4378a1fc8af32"
+source = "git+https://github.com/firedancer-io/agave?rev=f70ab5598ccd86b216c3928e4397bf4a5b58d723#f70ab5598ccd86b216c3928e4397bf4a5b58d723"
 dependencies = [
  "backoff",
  "bincode",
@@ -4679,7 +4679,7 @@ dependencies = [
 [[package]]
 name = "solana-storage-proto"
 version = "2.1.0"
-source = "git+https://github.com/firedancer-io/agave?rev=b2c388d6cbff9b765d574bbb83a4378a1fc8af32#b2c388d6cbff9b765d574bbb83a4378a1fc8af32"
+source = "git+https://github.com/firedancer-io/agave?rev=f70ab5598ccd86b216c3928e4397bf4a5b58d723#f70ab5598ccd86b216c3928e4397bf4a5b58d723"
 dependencies = [
  "bincode",
  "bs58 0.5.1",
@@ -5507,7 +5507,7 @@ version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8534fd7f78b5405e860340ad6575217ce99f38d4d5c8f2442cb5ecb50090e1"
 dependencies = [
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "toml_datetime",
  "winnow",
 ]
