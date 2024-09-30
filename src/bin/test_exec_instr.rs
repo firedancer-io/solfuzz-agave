@@ -85,8 +85,5 @@ fn main() {
             fail_cnt += 1;
         }
     }
-    if fail_cnt > 0 {
-        std::process::exit(1);
-    }
-    std::process::exit(0);
+    std::process::exit(fail_cnt);
 }

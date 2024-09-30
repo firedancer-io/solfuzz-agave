@@ -8,24 +8,24 @@ use solana_accounts_db::accounts_index::{
 };
 use solana_program::hash::Hash;
 use solana_program::instruction::CompiledInstruction;
-use solana_program::message::v0::{LoadedAddresses, MessageAddressTableLookup};
-use solana_program::message::{
-    legacy, v0, AddressLoader, AddressLoaderError, MessageHeader, VersionedMessage,
-};
+use solana_program::message::v0::MessageAddressTableLookup;
+use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_program::pubkey::Pubkey;
 use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::transaction_batch::TransactionBatch;
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
+use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
+use solana_sdk::message::SanitizedMessage;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar;
 use solana_sdk::transaction::{
-    SanitizedTransaction, SanitizedVersionedTransaction, TransactionError, VersionedTransaction,
+    TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
@@ -37,6 +37,7 @@ use solana_svm::transaction_processing_result::{
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
 use std::borrow::Cow;
+use std::cmp::max;
 use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
@@ -78,7 +79,7 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
 impl From<&proto::MessageHeader> for MessageHeader {
     fn from(value: &proto::MessageHeader) -> Self {
         MessageHeader {
-            num_required_signatures: value.num_required_signatures as u8,
+            num_required_signatures: max(1, value.num_required_signatures as u8),
             num_readonly_signed_accounts: value.num_readonly_signed_accounts as u8,
             num_readonly_unsigned_accounts: value.num_readonly_unsigned_accounts as u8,
         }
@@ -108,23 +109,6 @@ impl From<&proto::MessageAddressTableLookup> for MessageAddressTableLookup {
                 .readonly_indexes
                 .iter()
                 .map(|idx| *idx as u8)
-                .collect(),
-        }
-    }
-}
-
-impl From<&proto::LoadedAddresses> for LoadedAddresses {
-    fn from(value: &proto::LoadedAddresses) -> Self {
-        LoadedAddresses {
-            writable: value
-                .writable
-                .iter()
-                .map(|item| Pubkey::new_from_array(item.clone().try_into().unwrap()))
-                .collect(),
-            readonly: value
-                .readonly
-                .iter()
-                .map(|item| Pubkey::new_from_array(item.clone().try_into().unwrap()))
                 .collect(),
         }
     }
@@ -182,20 +166,6 @@ fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessag
         };
 
         Some(VersionedMessage::V0(message))
-    }
-}
-
-#[derive(Clone)]
-struct MockAddressLoader {
-    loaded_addresses: LoadedAddresses,
-}
-
-impl AddressLoader for MockAddressLoader {
-    fn load_addresses(
-        mut self,
-        _lookups: &[MessageAddressTableLookup],
-    ) -> Result<LoadedAddresses, AddressLoaderError> {
-        Ok(std::mem::take(&mut self.loaded_addresses))
     }
 }
 
@@ -330,10 +300,36 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     resulting_state,
                 )
             }
-            Err(error) => {
-                let serialized = bincode::serialize(error).unwrap_or(vec![0, 0, 0, 0]);
-                let error_no = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
-                (false, true, error_no, 0, 0, 0, 0, vec![], None, 0, None)
+            Err(transaction_error) => {
+                let (instr_err_idx, instruction_error) = match transaction_error {
+                    TransactionError::InstructionError(instr_err_idx, instr_err) => {
+                        (*instr_err_idx, Some(instr_err.clone()))
+                    }
+                    _ => (0, None),
+                };
+                let instr_err_no = match instruction_error {
+                    Some(instruction_error) => {
+                        let serialized =
+                            bincode::serialize(&instruction_error).unwrap_or(vec![0, 0, 0, 0]);
+                        u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
+                    }
+                    None => 0,
+                };
+                let serialized = bincode::serialize(transaction_error).unwrap_or(vec![0, 0, 0, 0]);
+                let status = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
+                (
+                    false,
+                    true,
+                    status,
+                    instr_err_no,
+                    instr_err_idx,
+                    0,
+                    0,
+                    vec![],
+                    None,
+                    0,
+                    None,
+                )
             }
         };
 
@@ -358,7 +354,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
 }
 
 #[allow(deprecated)]
-fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
+pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fd_features = context
         .epoch_ctx
         .as_ref()
@@ -369,7 +365,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 
-    /* HACK: Set the genesis config rent from the "to-be" sysvar rent, if present */
+    /* HACK: Set the genesis config rent and epoch schedule from the "to-be" sysvars, if present */
     let rent: Rent = context
         .tx
         .as_ref()?
@@ -377,7 +373,20 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .as_ref()?
         .account_shared_data
         .iter()
-        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref())
+        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref() && item.lamports > 0)
+        .map(|account| bincode::deserialize(&account.data).ok())
+        .unwrap_or_default()
+        .unwrap_or_default();
+    let epoch_schedule: EpochSchedule = context
+        .tx
+        .as_ref()?
+        .message
+        .as_ref()?
+        .account_shared_data
+        .iter()
+        .find(|item| {
+            item.address.as_slice() == sysvar::epoch_schedule::id().as_ref() && item.lamports > 0
+        })
         .map(|account| bincode::deserialize(&account.data).ok())
         .unwrap_or_default()
         .unwrap_or_default();
@@ -385,15 +394,16 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let genesis_config = GenesisConfig {
         creation_time: 0,
         rent,
+        epoch_schedule,
         ..GenesisConfig::default()
     };
 
-    let mut blockhash_queue = context.blockhash_queue;
-    let genesis_hash = if blockhash_queue.is_empty() {
-        None
+    let mut blockhash_queue = if context.blockhash_queue.is_empty() {
+        vec![vec![0u8; 32]]
     } else {
-        Some(Hash::new(blockhash_queue[0].as_slice()))
+        context.blockhash_queue
     };
+    let genesis_hash = Some(Hash::new(blockhash_queue[0].as_slice()));
 
     // Bank on slot 0
     let index = Some(AccountsIndexConfig {
@@ -448,20 +458,6 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .and_then(|tx| tx.message.as_ref())
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
-    let loaded_account_keys_writable = context
-        .tx
-        .as_ref()
-        .and_then(|tx| tx.message.as_ref())
-        .and_then(|message| message.loaded_addresses.as_ref())
-        .map(|addresses| addresses.writable.clone())
-        .unwrap_or_default();
-    let loaded_account_keys_readonly = context
-        .tx
-        .as_ref()
-        .and_then(|tx| tx.message.as_ref())
-        .and_then(|message| message.loaded_addresses.as_ref())
-        .map(|addresses| addresses.readonly.clone())
-        .unwrap_or_default();
 
     /* Save loaded builtins so we don't load them twice */
     let mut stored_accounts = HashSet::<Pubkey>::default();
@@ -490,6 +486,10 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
+    /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
+    bank.update_epoch_schedule();
+    bank.update_rent();
+
     let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
     let mut lamports_per_signature: Option<u64> = None;
     if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
@@ -506,6 +506,9 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
     }
     bank.update_recent_blockhashes();
+    bank.get_transaction_processor().reset_sysvar_cache();
+    bank.get_transaction_processor()
+        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
 
@@ -528,53 +531,9 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         signatures,
     };
 
-    let sanitized_versioned_transaction =
-        match SanitizedVersionedTransaction::try_new(versioned_transaction) {
-            Ok(v) => v,
-            Err(_err) => {
-                return Some(TxnResult {
-                    executed: false,
-                    sanitization_error: true,
-                    resulting_state: None,
-                    rent: 0,
-                    is_ok: false,
-                    status: 0,
-                    instruction_error: 0,
-                    instruction_error_index: 0,
-                    custom_error: 0,
-                    return_data: vec![],
-                    executed_units: 0,
-                    fee_details: None,
-                })
-            }
-        };
-
-    let mock_loader = MockAddressLoader {
-        loaded_addresses: context
-            .tx
-            .as_ref()?
-            .message
-            .as_ref()?
-            .loaded_addresses
-            .as_ref()
-            .map(LoadedAddresses::from)
-            .unwrap_or_default(),
-    };
-
-    let message_hash = &context.tx.as_ref()?.message_hash;
-    let message_hash = if message_hash.is_empty() {
-        // Default: empty message hash (this keeps tests simpler)
-        // Note: firedancer doesn't use message hash
-        Hash::new_from_array([0u8; 32])
-    } else {
-        Hash::new(message_hash)
-    };
-    let sanitized_transaction = match SanitizedTransaction::try_new(
-        sanitized_versioned_transaction,
-        message_hash,
-        context.tx?.is_simple_vote_tx,
-        mock_loader,
-        bank.get_reserved_account_keys(),
+    let sanitized_transaction = match bank.verify_transaction(
+        versioned_transaction,
+        TransactionVerificationMode::HashAndVerifyPrecompiles,
     ) {
         Ok(v) => v,
         Err(e) => {
@@ -582,7 +541,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             let status = u32::from_le_bytes(err.try_into().unwrap()) + 1;
             return Some(TxnResult {
                 executed: false,
-                sanitization_error: false,
+                sanitization_error: true,
                 resulting_state: None,
                 rent: 0,
                 is_ok: false,
@@ -597,30 +556,7 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         }
     };
 
-    // Verify precompiles
-    let pre_result = sanitized_transaction.verify_precompiles(&feature_set);
-    if let Err(pre_error) = pre_result {
-        let serialized = bincode::serialize(&pre_error).unwrap_or(vec![0, 0, 0, 0]);
-        let status = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
-        // Some of the values are sort of arbitrary, they're set to match Firedancer behavior
-        // For example, sanitization_error: true.
-        return Some(TxnResult {
-            executed: false,
-            sanitization_error: true,
-            resulting_state: None,
-            rent: 0,
-            is_ok: false,
-            status,
-            instruction_error: 0,
-            instruction_error_index: 0,
-            custom_error: 0,
-            return_data: vec![],
-            executed_units: 0,
-            fee_details: None,
-        });
-    }
-
-    let transactions = [sanitized_transaction];
+    let transactions = [sanitized_transaction.clone()];
 
     let lock_results = bank.rc.accounts.lock_accounts(transactions.iter(), 64);
 
@@ -653,15 +589,26 @@ fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         configs,
     );
 
-    // Only keep accounts that were passed in as account_keys
     let mut txn_result: TxnResult = result.into();
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
+        let mut loaded_account_keys = HashSet::<Pubkey>::new();
+        loaded_account_keys.extend(
+            account_keys
+                .iter()
+                .map(|key| Pubkey::new_from_array(key.clone().try_into().ok().unwrap())),
+        );
+        match sanitized_transaction.message() {
+            SanitizedMessage::Legacy(_) => {}
+            SanitizedMessage::V0(message) => {
+                loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
+                loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
+            }
+        }
+
+        // Only keep accounts that were passed in as account_keys or as ALUT accounts
         relevant_accounts.acct_states.retain(|account| {
-            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok().unwrap());
-            (account_keys.contains(&account.address)
-                || loaded_account_keys_writable.contains(&account.address)
-                || loaded_account_keys_readonly.contains(&account.address))
-                && pubkey != sysvar::instructions::id()
+            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
+            loaded_account_keys.contains(&pubkey) && pubkey != sysvar::instructions::id()
         });
 
         // Fill values for executable accounts with no lamports reported in output (this metadata was omitted by Agave for performance reasons)

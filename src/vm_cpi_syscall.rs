@@ -1,7 +1,10 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils::{self, vm::mem_regions, vm::STACK_SIZE},
+    utils::{
+        err_map::stable_result_to_err_no,
+        vm::{mem_regions, HEAP_MAX, STACK_SIZE},
+    },
     InstrContext,
 };
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -15,7 +18,7 @@ use solana_program_runtime::{
         error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
-        vm::{Config, ContextObject, EbpfVm},
+        vm::{ContextObject, EbpfVm},
     },
     sysvar_cache::SysvarCache,
 };
@@ -175,12 +178,17 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Set up memory mapping
     let syscall_inv = input.syscall_invocation.unwrap();
+    // Follow FD harness behavior for heap_max
+    if vm_ctx.heap_max as usize > HEAP_MAX {
+        return None;
+    }
 
     let rodata = vm_ctx.rodata;
     let syscall_fn_name = syscall_inv.function_name.clone();
     let mut stack = syscall_inv.stack_prefix;
     stack.resize(STACK_SIZE, 0);
     let mut heap = syscall_inv.heap_prefix;
+
     heap.resize(vm_ctx.heap_max as usize, 0);
 
     let mut regions = vec![
@@ -191,13 +199,11 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
 
-    let config = &Config {
-        aligned_memory_mapping: true,
-        enable_sbpf_v2: false,
-        ..Config::default()
-    };
-
-    let memory_mapping = match MemoryMapping::new(regions, config, &SBPFVersion::V1) {
+    let memory_mapping = match MemoryMapping::new(
+        regions,
+        program_runtime_environment_v1.get_config(),
+        &SBPFVersion::V1,
+    ) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
@@ -232,19 +238,15 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
+    let program_id = instr_ctx.instruction.program_id;
     Some(SyscallEffects {
-        error: match program_result {
-            StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => {
-                utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
-            }
-        },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0: match program_result {
             StableResult::Ok(n) => n,
             StableResult::Err(_) => 0,
         },
+        error: stable_result_to_err_no(program_result, vm.context_object_pointer, &program_id),
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
@@ -255,11 +257,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
-            .iter()
-            .fold(String::new(), |mut acc, s| {
-                acc.push_str(s);
-                acc
-            })
+            .join("\n")
             .into_bytes(),
         ..Default::default()
     })

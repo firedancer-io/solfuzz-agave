@@ -1,8 +1,9 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils,
+    utils::err_map::stable_result_to_err_no,
     utils::vm::mem_regions,
+    utils::vm::HEAP_MAX,
     utils::vm::STACK_SIZE,
     InstrContext,
 };
@@ -20,7 +21,7 @@ use solana_program_runtime::{
         error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
-        vm::{Config, EbpfVm},
+        vm::EbpfVm,
     },
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
@@ -63,6 +64,10 @@ fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
     let feature_set = instr_ctx.feature_set;
+
+    let program_runtime_environment_v1 =
+        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
+            .unwrap();
 
     // Create invoke context
     // TODO: factor this into common code with lib.rs
@@ -122,10 +127,14 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Set up memory mapping
     let vm_ctx = input.vm_ctx.unwrap();
+    // Follow FD harness behavior
+    if vm_ctx.heap_max as usize > HEAP_MAX {
+        return None;
+    }
+
     let rodata = vm_ctx.rodata;
     let mut stack = vec![0; STACK_SIZE];
-    let heap_max = vm_ctx.heap_max;
-    let mut heap = vec![0; heap_max as usize];
+    let mut heap = vec![0; vm_ctx.heap_max as usize];
     let mut regions = vec![
         MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
@@ -134,13 +143,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
     mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
 
-    let config = &Config {
-        aligned_memory_mapping: true,
-        enable_sbpf_v2: true,
-        ..Config::default()
-    };
-
-    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
+    let memory_mapping = match MemoryMapping::new(
+        regions,
+        program_runtime_environment_v1.get_config(),
+        sbpf_version,
+    ) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
@@ -173,9 +180,6 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     }
 
     // Actually invoke the syscall
-    let program_runtime_environment_v1 =
-        create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
-            .unwrap();
 
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
@@ -184,14 +188,9 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.invoke_function(syscall_func);
 
     // Unwrap and return the effects of the syscall
+    let program_id = instr_ctx.instruction.program_id;
     let program_result = vm.program_result;
     Some(SyscallEffects {
-        error: match program_result {
-            StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_error) => {
-                utils::vm::err_map::get_fd_vm_err_code(ebpf_error).into()
-            }
-        },
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0: match program_result {
@@ -205,15 +204,12 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         inputdata: vec![], // deprecated
         rodata,
         frame_count: vm.call_depth,
+        error: stable_result_to_err_no(program_result, &invoke_context, &program_id),
         log: invoke_context
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
-            .iter()
-            .fold(String::new(), |mut acc, s| {
-                acc.push_str(s);
-                acc
-            })
+            .join("\n")
             .into_bytes(),
         pc: 0,
     })

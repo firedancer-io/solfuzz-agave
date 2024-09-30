@@ -1,3 +1,5 @@
+/* DEPRECATED, use utils/err_map.rs instead. Saving this for vm_interp.rs, which will
+need more substantial changes to accomodate the newer err_map.rs */
 use solana_program_runtime::solana_rbpf::error::EbpfError;
 use solana_program_runtime::solana_rbpf::verifier::VerifierError;
 const TRUNCATE_ERROR_WORDS: usize = 7;
