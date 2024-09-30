@@ -520,7 +520,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         &mut timings,
         None,
         None,
-        true,
+        false,
     );
 
     let mut txn_result: TxnResult = result.into();
