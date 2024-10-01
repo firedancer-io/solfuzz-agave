@@ -37,12 +37,21 @@ jobs:
         run: |
           cargo check --release
           cargo test --release
+          cargo clean
 
-      - name: Run build
-        run: make -j shared_obj binaries
+      - name: Run binaries build
+        run: make -j binaries
 
       - name: Run test-vectors
-        run: ./scripts/run_test_vectors.sh
+        run: |
+          ./scripts/run_test_vectors.sh
+          rm -rf dump/
+      
+      - name: Clean up binaries
+        run: make clean
+      
+      - name: Run shared obj build
+        run: make -j shared_obj
 
       - uses: actions/upload-artifact@v4
         if: ${{ inputs.upload_artifacts }}
