@@ -25,7 +25,10 @@ use solana_program_runtime::{
     },
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
-use solana_sdk::{account::AccountSharedData, rent::Rent};
+use solana_sdk::{
+    account::AccountSharedData, clock::Clock, epoch_schedule::EpochSchedule, rent::Rent,
+    sysvar::SysvarId,
+};
 use std::{ffi::c_int, sync::Arc};
 
 #[no_mangle]
@@ -63,6 +66,7 @@ fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
 
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
+
     let feature_set = instr_ctx.feature_set;
 
     let program_runtime_environment_v1 =
@@ -96,7 +100,36 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     load_builtins(&mut program_cache_for_tx_batch);
 
-    let sysvar_cache = SysvarCache::default();
+    let mut sysvar_cache = SysvarCache::default();
+
+    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
+        if let Some(account) = instr_ctx.accounts.iter().find(|(key, _)| key == pubkey) {
+            if account.1.lamports > 0 {
+                callbackback(&account.1.data);
+            }
+        }
+    });
+
+    // Any default values for missing sysvar values should be set here
+    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
+        if *pubkey == Clock::id() {
+            // Set the default clock slot to something arbitrary beyond 0
+            // This prevents DelayedVisibility errors when executing BPF programs
+            let default_clock = Clock {
+                slot: 10,
+                ..Default::default()
+            };
+            let clock_data = bincode::serialize(&default_clock).unwrap();
+            callbackback(&clock_data);
+        }
+        if *pubkey == EpochSchedule::id() {
+            callbackback(&bincode::serialize(&EpochSchedule::default()).unwrap());
+        }
+        if *pubkey == Rent::id() {
+            callbackback(&bincode::serialize(&Rent::default()).unwrap());
+        }
+    });
+
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache
         .get_recent_blockhashes()
