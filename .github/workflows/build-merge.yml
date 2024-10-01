@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - 'agave-v2.0'
-  pull_request:
 
 jobs:
   build:
