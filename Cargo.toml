@@ -21,6 +21,7 @@ lazy_static = "1.4.0"
 prost = "0.13.1"
 prost-types = "0.13.1"
 libc = "0.2.155"
+
 solana-address-lookup-table-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
 solana-accounts-db = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
 solana-bpf-loader-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
@@ -40,6 +41,7 @@ solana-timings = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5
 solana-vote-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
 solana-zk-sdk = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
 solana-zk-elgamal-proof-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
+solana-ledger = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 log = "0.4.22" # without this, prost 0.11-0.13 complain

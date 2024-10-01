@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod elf_loader;
+mod shred_parse;
 pub mod txn_fuzzer;
 pub mod utils;
 mod vm_cpi_syscall;
