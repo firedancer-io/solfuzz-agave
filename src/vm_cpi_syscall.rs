@@ -9,10 +9,10 @@ use crate::{
 };
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_log_collector::LogCollector;
 use solana_program_runtime::{
     invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata},
     loaded_programs::ProgramCacheForTxBatch,
+    log_collector::LogCollector,
     solana_rbpf::{
         ebpf,
         error::StableResult,

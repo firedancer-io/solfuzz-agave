@@ -1,3 +1,10 @@
+# Useful for testing patches/changes to agave before pushing to 
+# https://github.com/firedancer-io/fd_agave/tree/solfuzz-agave-v2.0-patches
+
+# To use this manifest, have agave cloned to `../fd_agave` and rename this to Cargo.toml
+# Do NOT commit the renamed file to the repository. Revert original Cargo.toml before committing.
+# Save any changes to this file in `Cargo_local.toml.bak` for future reference.
+
 [package]
 name = "solfuzz-agave"
 version = "0.1.0"
@@ -6,10 +13,6 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-# We point deps to firedancer-io/agave fork's `solfuzz-agave-vX.X-patches` branch
-# This branch is based on the agave branch we are tracking and contains patches to make fuzzing easier
-# Refer to https://github.com/firedancer-io/agave/blob/solfuzz-agave-v2.0-patches/SOLFUZZ_README.md
-# for details on how to manage this branch
 [dependencies]
 arrayref = "0.3.8" 
 blake3 = "1.5.1"
@@ -21,25 +24,23 @@ lazy_static = "1.4.0"
 prost = "0.13.1"
 prost-types = "0.13.1"
 libc = "0.2.155"
-solana-address-lookup-table-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-accounts-db = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-bpf-loader-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-compute-budget = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-compute-budget-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-config-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-loader-v4-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-log-collector = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-program-runtime = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-runtime = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723", features = ["dev-context-only-utils"] }
-solana-stake-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-system-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-svm = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-sdk = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-timings = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-vote-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-zk-sdk = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-zk-elgamal-proof-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
+solana-address-lookup-table-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-accounts-db = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-bpf-loader-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-compute-budget = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-compute-budget-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-config-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-loader-v4-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-program-runtime = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-runtime = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e", features = ["dev-context-only-utils"] }
+solana-stake-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-system-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-svm = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-sdk = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-vote-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-zk-sdk = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-zk-elgamal-proof-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 log = "0.4.22" # without this, prost 0.11-0.13 complain
@@ -47,10 +48,9 @@ log = "0.4.22" # without this, prost 0.11-0.13 complain
 [build-dependencies]
 prost-build = "0.13.1"
 
-
 [patch.crates-io]
-solana-program = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
-solana-zk-token-sdk = { git = "https://github.com/firedancer-io/agave", rev = "f70ab5598ccd86b216c3928e4397bf4a5b58d723" }
+solana-program = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
+solana-zk-token-sdk = { git = "https://github.com/firedancer-io/agave", rev = "1ac7aa7a25ed39a50f6211f5c919be50df281d6e" }
 
 [features]
 # This feature is used to stub out certain parts of the agave runtime for fuzzing

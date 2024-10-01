@@ -11,6 +11,7 @@ use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::MessageAddressTableLookup;
 use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_program::pubkey::Pubkey;
+use solana_program_runtime::timings::ExecuteTimings;
 use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
@@ -30,19 +31,14 @@ use solana_sdk::transaction::{
 use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
-use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
-use solana_svm::transaction_processing_result::{
-    ProcessedTransaction, TransactionProcessingResultExtensions,
-};
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
-use solana_timings::ExecuteTimings;
+use solana_svm::transaction_results::TransactionExecutionResult;
 use std::borrow::Cow;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_txn_execute_v1(
     out_ptr: *mut u8,
@@ -210,8 +206,9 @@ impl From<LoadedTransaction> for proto::ResultingState {
 
 impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     fn from(value: LoadAndExecuteTransactionsOutput) -> TxnResult {
-        let execution_results = &value.processing_results[0];
+        let execution_results = &value.execution_results[0];
         let (
+            executed,
             is_ok,
             sanitization_error,
             status,
@@ -224,14 +221,9 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
             rent,
             resulting_state,
         ) = match execution_results {
-            Ok(txn) => {
-                let is_ok = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        executed_tx.execution_details.status.is_ok()
-                    }
-                    ProcessedTransaction::FeesOnly(_) => false,
-                };
-                let transaction_error = txn.status();
+            TransactionExecutionResult::Executed { details, .. } => {
+                let is_ok: bool = details.status.is_ok();
+                let transaction_error = details.status.clone();
                 let (instr_err_idx, instruction_error) = match transaction_error.as_ref() {
                     Err(TransactionError::InstructionError(instr_err_idx, instr_err)) => {
                         (*instr_err_idx, Some(instr_err.clone()))
@@ -259,34 +251,17 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     }
                     None => 0,
                 };
-                let rent = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        executed_tx.loaded_transaction.rent
-                    }
-                    ProcessedTransaction::FeesOnly(_) => 0,
-                };
-                let resulting_state: Option<ResultingState> = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        Some(executed_tx.loaded_transaction.clone().into())
-                    }
-                    ProcessedTransaction::FeesOnly(_) => None,
-                };
-                let executed_units = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => {
-                        executed_tx.execution_details.executed_units
-                    }
-                    ProcessedTransaction::FeesOnly(_) => 0,
-                };
-                let return_data = match txn {
-                    ProcessedTransaction::Executed(executed_tx) => executed_tx
-                        .execution_details
-                        .return_data
-                        .as_ref()
-                        .map(|info| info.clone().data)
-                        .unwrap_or_default(),
-                    ProcessedTransaction::FeesOnly(_) => vec![],
-                };
+                let rent = value.loaded_transactions[0].clone().unwrap().rent;
+                let resulting_state: Option<ResultingState> =
+                    Some(value.loaded_transactions[0].clone().unwrap().into());
+                let executed_units = details.executed_units;
+                let return_data = details
+                    .return_data
+                    .clone()
+                    .map(|info| info.data)
+                    .unwrap_or_default();
                 (
+                    true,
                     is_ok,
                     false,
                     status,
@@ -295,12 +270,12 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                     custom_error,
                     executed_units,
                     return_data,
-                    Some(txn.fee_details()),
+                    Some(details.fee_details),
                     rent,
                     resulting_state,
                 )
             }
-            Err(transaction_error) => {
+            TransactionExecutionResult::NotExecuted(transaction_error) => {
                 let (instr_err_idx, instruction_error) = match transaction_error {
                     TransactionError::InstructionError(instr_err_idx, instr_err) => {
                         (*instr_err_idx, Some(instr_err.clone()))
@@ -319,6 +294,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
                 let status = u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1;
                 (
                     false,
+                    false,
                     true,
                     status,
                     instr_err_no,
@@ -334,7 +310,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
         };
 
         TxnResult {
-            executed: execution_results.was_processed(),
+            executed,
             sanitization_error,
             resulting_state,
             rent,
@@ -580,14 +556,8 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         check_program_modification_slot: false,
     };
 
-    let mut metrics = TransactionErrorMetrics::default();
-    let result = bank.load_and_execute_transactions(
-        &batch,
-        context.max_age as usize,
-        &mut timings,
-        &mut metrics,
-        configs,
-    );
+    let result =
+        bank.load_and_execute_transactions(&batch, context.max_age as usize, &mut timings, configs);
 
     let mut txn_result: TxnResult = result.into();
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
