@@ -190,8 +190,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     blake3_syscall_enabled,
     zk_token_sdk_enabled,
     curve25519_syscall_enabled,
-    libsecp256k1_fail_on_bad_count,
-    libsecp256k1_fail_on_bad_count2,
     error_on_syscall_bpf_function_hash_collisions,
     reject_callx_r10,
     enable_partitioned_epoch_reward,

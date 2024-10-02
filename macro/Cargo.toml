@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 proc-macro2 = "1.0"
-solana-sdk = { git = "https://github.com/anza-xyz/agave", rev = "d36954cb72679dbe130f4a0a212b8c8a0026ea78" }
+solana-sdk = { git = "https://github.com/firedancer-io/agave", rev = "ab40f6333c1fa12a9941b752a8d11a3c3fa0a81f" }
 syn = { version = "1.0", features = ["full"] }
 quote = "1.0"
 
