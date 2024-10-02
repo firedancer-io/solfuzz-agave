@@ -26,6 +26,7 @@ solana-bpf-loader-program = { path = "../agave/programs/bpf_loader" }
 solana-compute-budget = { path = "../agave/compute-budget" }
 solana-compute-budget-program = { path = "../agave/programs/compute-budget" }
 solana-config-program = { path = "../agave/programs/config" }
+solana-ledger = { path = "../agave/ledger" }
 solana-loader-v4-program = { path = "../agave/programs/loader-v4" }
 solana-log-collector = { path = "../agave/log-collector" }
 solana-program = { path = "../agave/sdk/program" }
