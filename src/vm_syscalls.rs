@@ -11,7 +11,7 @@ use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
-use solana_program_runtime::sysvar_cache::SysvarCache;
+use solana_program_runtime::{solana_rbpf::program, sysvar_cache::SysvarCache};
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
 use solana_program_runtime::{
     invoke_context::InvokeContext,
@@ -29,6 +29,7 @@ use solana_sdk::{
     account::AccountSharedData, clock::Clock, epoch_schedule::EpochSchedule, rent::Rent,
     sysvar::SysvarId,
 };
+use solana_sdk::pubkey::Pubkey;
 use std::{ffi::c_int, sync::Arc};
 
 #[no_mangle]
@@ -95,6 +96,12 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
     );
+
+    if let Some(vm_ctx) = &input.vm_ctx {
+        let return_data = vm_ctx.return_data.clone().unwrap();
+        let program_id = Pubkey::try_from(return_data.program_id).unwrap();
+        transaction_context.set_return_data(program_id, return_data.data).unwrap();
+    }
 
     // sigh ... What is this mess?
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
