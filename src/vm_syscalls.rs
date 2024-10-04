@@ -24,12 +24,12 @@ use solana_program_runtime::{
         vm::EbpfVm,
     },
 };
+use solana_sdk::pubkey::Pubkey;
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{
     account::AccountSharedData, clock::Clock, epoch_schedule::EpochSchedule, rent::Rent,
     sysvar::SysvarId,
 };
-use solana_sdk::pubkey::Pubkey;
 use std::{ffi::c_int, sync::Arc};
 
 #[no_mangle]
@@ -100,7 +100,9 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     if let Some(vm_ctx) = &input.vm_ctx {
         let return_data = vm_ctx.return_data.clone().unwrap();
         let program_id = Pubkey::try_from(return_data.program_id).unwrap();
-        transaction_context.set_return_data(program_id, return_data.data).unwrap();
+        transaction_context
+            .set_return_data(program_id, return_data.data)
+            .unwrap();
     }
 
     // sigh ... What is this mess?
