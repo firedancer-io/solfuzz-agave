@@ -179,7 +179,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut heap = vec![0; vm_ctx.heap_max as usize];
     let mut regions = vec![
         MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
-        MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
+        MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 4096),
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
     let mut input_data_regions = vm_ctx.input_data_regions.clone();
