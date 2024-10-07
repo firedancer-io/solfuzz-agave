@@ -23,7 +23,8 @@ else
 fi
 
 find dump/test-vectors/instr/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_instr {} + > $LOG_PATH/test_exec_instr.log 2>&1
-find dump/test-vectors/txn/fixtures/ -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_txn.log 2>&1
+find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_precompile.log 2>&1
+find dump/test-vectors/txn/fixtures/programs -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_txn.log 2>&1
 
 failed=`grep -wR FAIL $LOG_PATH | wc -l`
 passed=`grep -wR OK $LOG_PATH | wc -l`
