@@ -248,6 +248,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         rodata,
         frame_count: vm.call_depth,
         error: stable_result_to_err_no(program_result, &invoke_context, &program_id),
+        error_kind: 0, // FIXME: placeholder
         log: invoke_context
             .get_log_collector()?
             .borrow()
