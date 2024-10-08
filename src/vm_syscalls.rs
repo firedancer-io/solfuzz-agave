@@ -98,11 +98,12 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     );
 
     if let Some(vm_ctx) = &input.vm_ctx {
-        let return_data = vm_ctx.return_data.clone().unwrap();
-        let program_id = Pubkey::try_from(return_data.program_id).unwrap();
-        transaction_context
-            .set_return_data(program_id, return_data.data)
-            .unwrap();
+        if let Some(return_data) = vm_ctx.return_data.clone() {
+            let program_id = Pubkey::try_from(return_data.program_id).unwrap();
+            transaction_context
+                .set_return_data(program_id, return_data.data)
+                .unwrap();
+        }
     }
 
     // sigh ... What is this mess?
