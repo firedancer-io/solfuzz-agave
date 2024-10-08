@@ -2,7 +2,7 @@ use crate::{
     load_builtins,
     proto::{InstrEffects, SyscallContext, SyscallEffects},
     utils::{
-        err_map::stable_result_to_err_no,
+        err_map::unpack_stable_result,
         vm::{mem_regions, HEAP_MAX, STACK_SIZE},
     },
     InstrContext,
@@ -15,7 +15,6 @@ use solana_program_runtime::{
     loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
         ebpf,
-        error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::{ContextObject, EbpfVm},
@@ -263,14 +262,14 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
     let program_id = instr_ctx.instruction.program_id;
+    let (error, error_kind, r0) =
+        unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
     Some(SyscallEffects {
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
-        r0: match program_result {
-            StableResult::Ok(n) => n,
-            StableResult::Err(_) => 0,
-        },
-        error: stable_result_to_err_no(program_result, vm.context_object_pointer, &program_id),
+        error,
+        error_kind: error_kind as i32,
+        r0,
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
