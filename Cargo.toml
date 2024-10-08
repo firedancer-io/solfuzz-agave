@@ -37,6 +37,7 @@ solana-timings = { git = "https://github.com/firedancer-io/agave", rev = "f5acfa
 solana-vote-program = { git = "https://github.com/firedancer-io/agave", rev = "f5acfa6a316baef54b7ee81f5f02230839f436fd" }
 solana-zk-sdk = { git = "https://github.com/firedancer-io/agave", rev = "f5acfa6a316baef54b7ee81f5f02230839f436fd" }
 solana-zk-elgamal-proof-program = { git = "https://github.com/firedancer-io/agave", rev = "f5acfa6a316baef54b7ee81f5f02230839f436fd" }
+solana-poseidon = { git = "https://github.com/firedancer-io/agave", rev = "f5acfa6a316baef54b7ee81f5f02230839f436fd" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 

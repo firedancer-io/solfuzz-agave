@@ -1,10 +1,12 @@
 use crate::proto::ErrKind;
 use solana_bpf_loader_program::syscalls::SyscallError;
+use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{
     invoke_context::InvokeContext,
     solana_rbpf::error::{EbpfError, StableResult},
     stable_log,
 };
+
 use solana_sdk::{instruction::InstructionError, pubkey::Pubkey};
 
 // Important!
@@ -190,6 +192,9 @@ pub fn unpack_stable_result(
                         &ebpf_err_to_str(syscall_error),
                     );
                     (ebpf_err_to_num(syscall_error), ErrKind::Ebpf)
+                } else if let Some(_) = syscall_error.downcast_ref::<PoseidonSyscallError>() {
+                    // Don't bother logging PoseidonSyscallError, it's not logged in Agave
+                    (-1, ErrKind::Syscall)
                 } else {
                     // This should never happen, so we return -1 to highlight an unknown error
                     stable_log::program_failure(&logger, program_id, &ebpf_err_to_str(err));
