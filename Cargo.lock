@@ -4925,6 +4925,7 @@ dependencies = [
  "solana-ledger",
  "solana-loader-v4-program",
  "solana-log-collector",
+ "solana-poseidon",
  "solana-program",
  "solana-program-runtime",
  "solana-runtime",
