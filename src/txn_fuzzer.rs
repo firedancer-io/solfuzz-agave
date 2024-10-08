@@ -14,7 +14,6 @@ use solana_program::pubkey::Pubkey;
 use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
-use solana_runtime::transaction_batch::{OwnedOrBorrowed, TransactionBatch};
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::FeatureSet;
@@ -557,13 +556,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let transactions = [sanitized_transaction.clone()];
 
-    let lock_results = bank.rc.accounts.lock_accounts(transactions.iter(), 64);
-
-    let batch = TransactionBatch::new(
-        lock_results,
-        &bank,
-        OwnedOrBorrowed::Borrowed(&transactions),
-    );
+    let batch = bank.prepare_sanitized_batch(&transactions);
 
     let recording_config = ExecutionRecordingConfig {
         enable_cpi_recording: false,
@@ -593,6 +586,12 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     );
 
     let mut txn_result: TxnResult = result.into();
+
+    /* Ignore error code 38 */
+    if txn_result.sanitization_error && txn_result.status == 38 {
+        return None;
+    }
+
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
         let mut loaded_account_keys = HashSet::<Pubkey>::new();
         loaded_account_keys.extend(
