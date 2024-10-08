@@ -1,3 +1,4 @@
+use crate::proto::ErrKind;
 use solana_bpf_loader_program::syscalls::SyscallError;
 use solana_program_runtime::{
     invoke_context::InvokeContext,
@@ -5,7 +6,6 @@ use solana_program_runtime::{
     stable_log,
 };
 use solana_sdk::{instruction::InstructionError, pubkey::Pubkey};
-use crate::proto::ErrKind;
 
 // Important!
 // The error mapping in this file should be kept aligned with Firedancer.
