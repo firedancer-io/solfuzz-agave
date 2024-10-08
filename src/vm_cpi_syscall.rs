@@ -1,6 +1,6 @@
 use crate::{
     load_builtins,
-    proto::{SyscallContext, SyscallEffects},
+    proto::{InstrEffects, SyscallContext, SyscallEffects},
     utils::{
         err_map::stable_result_to_err_no,
         vm::{mem_regions, HEAP_MAX, STACK_SIZE},
@@ -23,9 +23,13 @@ use solana_program_runtime::{
     sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
-    account::AccountSharedData,
+    account::{AccountSharedData, WritableAccount},
+    instruction::InstructionError,
+    pubkey::Pubkey,
     rent::Rent,
-    transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext},
+    transaction_context::{
+        IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
+    },
 };
 use std::sync::Arc;
 
@@ -158,6 +162,26 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Setup syscall context in the invoke context
     let vm_ctx = input.vm_ctx.unwrap();
+    let instr_accounts_len = instr_accounts.len();
+
+    // Setup the CPI callback if there are exec effects
+    #[cfg(feature = "stub-agave")]
+    if let Some(exec_effects) = input.exec_effects {
+        invoke_context.proc_instr_callback = Some(Box::new(
+            move |txn_ctx: &mut TransactionContext,
+                  instr_data: &[u8],
+                  instr_accts: &[InstructionAccount],
+                  prog_indices: &[IndexOfAccount]| {
+                process_instruction_cpi_callback(
+                    txn_ctx,
+                    instr_data,
+                    instr_accts,
+                    prog_indices,
+                    &exec_effects,
+                )
+            },
+        ));
+    }
 
     invoke_context
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
@@ -170,7 +194,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                     vm_owner_addr: 0,
                     vm_lamports_addr: 0,
                 };
-                instr_accounts.len()
+                instr_accounts_len
             ], // TODO: accounts metadata for direct mapping support
             trace_log: Vec::new(),
         })
@@ -261,4 +285,52 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             .into_bytes(),
         ..Default::default()
     })
+}
+
+#[allow(dead_code)]
+fn process_instruction_cpi_callback(
+    txn_ctx: &mut TransactionContext,
+    instr_data: &[u8],
+    instr_accts: &[InstructionAccount],
+    prog_indices: &[IndexOfAccount],
+    cpi_exec_effects: &InstrEffects,
+) -> Result<(), InstructionError> {
+    // Push the instruction context. Copied verbatim from InvokeContext::process_instruction
+    txn_ctx
+        .get_next_instruction_context()?
+        .configure(prog_indices, instr_accts, instr_data);
+
+    // Iterate through instruction accounts
+    for instr_acct in instr_accts.iter() {
+        let idx_in_txn = instr_acct.index_in_transaction;
+        let acct_pubkey = txn_ctx.get_key_of_account_at_index(idx_in_txn)?;
+
+        // Find (first) account in exec_effects.modified_accounts that matches the pubkey
+        if let Some(acct_state) = cpi_exec_effects
+            .modified_accounts
+            .iter()
+            .find(|modified| modified.address == acct_pubkey.to_bytes())
+        {
+            let Ok(acct_ref) = txn_ctx.get_account_at_index(idx_in_txn) else {
+                continue;
+            };
+            let Ok(mut acct) = acct_ref.try_borrow_mut() else {
+                continue;
+            };
+
+            // Update the account state
+            acct.set_lamports(acct_state.lamports);
+            acct.set_executable(acct_state.executable);
+            acct.set_rent_epoch(acct_state.rent_epoch);
+            if !acct_state.data.is_empty() {
+                acct.set_data_from_slice(&acct_state.data);
+            }
+
+            if let Ok(new_owner_bytes) = <[u8; 32]>::try_from(acct_state.owner.clone()) {
+                let new_owner = Pubkey::new_from_array(new_owner_bytes);
+                acct.set_owner(new_owner);
+            }
+        }
+    }
+    Ok(())
 }
