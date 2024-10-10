@@ -586,12 +586,6 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     );
 
     let mut txn_result: TxnResult = result.into();
-
-    /* Ignore error code 38 */
-    if txn_result.sanitization_error && txn_result.status == 38 {
-        return None;
-    }
-
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
         let mut loaded_account_keys = HashSet::<Pubkey>::new();
         loaded_account_keys.extend(
