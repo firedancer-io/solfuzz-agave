@@ -40,6 +40,7 @@ solana-timings = { path = "../agave/timings" }
 solana-vote-program = { path = "../agave/programs/vote" }
 solana-zk-sdk = { path = "../agave/zk-sdk" }
 solana-zk-elgamal-proof-program = { path = "../agave/programs/zk-elgamal-proof" }
+solana-poseidon = { path = "../agave/poseidon" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.61"
 

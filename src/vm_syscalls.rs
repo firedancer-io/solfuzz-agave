@@ -1,7 +1,7 @@
 use crate::{
     load_builtins,
     proto::{SyscallContext, SyscallEffects},
-    utils::err_map::stable_result_to_err_no,
+    utils::err_map::unpack_stable_result,
     utils::vm::mem_regions,
     utils::vm::HEAP_MAX,
     utils::vm::STACK_GAP_SIZE,
@@ -19,7 +19,6 @@ use solana_program_runtime::{
     loaded_programs::ProgramCacheForTxBatch,
     solana_rbpf::{
         ebpf,
-        error::StableResult,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::EbpfVm,
@@ -234,13 +233,12 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_id = instr_ctx.instruction.program_id;
     let program_result = vm.program_result;
+    let (error, error_kind, r0) =
+        unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
     Some(SyscallEffects {
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
-        r0: match program_result {
-            StableResult::Ok(n) => n,
-            StableResult::Err(_) => 0,
-        },
+        r0,
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap,
         stack,
@@ -248,8 +246,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         inputdata: vec![], // deprecated
         rodata,
         frame_count: vm.call_depth,
-        error: stable_result_to_err_no(program_result, &invoke_context, &program_id),
-        error_kind: 0, // FIXME: placeholder
+        error,
+        error_kind: error_kind as i32,
         log: invoke_context
             .get_log_collector()?
             .borrow()
