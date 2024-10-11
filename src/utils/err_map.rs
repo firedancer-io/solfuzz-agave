@@ -192,7 +192,10 @@ pub fn unpack_stable_result(
                         &ebpf_err_to_str(syscall_error),
                     );
                     (ebpf_err_to_num(syscall_error), ErrKind::Ebpf)
-                } else if let Some(_) = syscall_error.downcast_ref::<PoseidonSyscallError>() {
+                } else if syscall_error
+                    .downcast_ref::<PoseidonSyscallError>()
+                    .is_some()
+                {
                     // Don't bother logging PoseidonSyscallError, it's not logged in Agave
                     (-1, ErrKind::Syscall)
                 } else {
