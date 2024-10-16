@@ -219,8 +219,12 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
-    let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
+    let mut aligned_regions = Vec::new();
+    mem_regions::setup_input_regions(
+        &mut regions,
+        &mut aligned_regions,
+        &vm_ctx.input_data_regions,
+    );
 
     let memory_mapping = match MemoryMapping::new(
         regions,

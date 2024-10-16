@@ -132,8 +132,12 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
     ];
 
-    let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
+    let mut aligned_regions = Vec::new();
+    mem_regions::setup_input_regions(
+        &mut regions,
+        &mut aligned_regions,
+        &vm_ctx.input_data_regions,
+    );
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: false,
