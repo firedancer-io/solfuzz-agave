@@ -2,7 +2,7 @@ use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
     utils::{
         pchash_inverse,
-        vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
+        vm::{err_map, mem_regions, STACK_GAP_SIZE, STACK_SIZE},
     },
     InstrContext,
 };
@@ -10,14 +10,19 @@ use bincode::Error;
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_program_runtime::solana_rbpf::{
-    declare_builtin_function, ebpf,
-    elf::Executable,
-    error::{EbpfError, StableResult},
-    memory_region::{MemoryMapping, MemoryRegion},
-    program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion},
-    verifier::RequisiteVerifier,
-    vm::{Config, ContextObject, EbpfVm, TestContextObject},
+use solana_program_runtime::{
+    mem_pool::VmMemoryPool,
+    solana_rbpf::{
+        aligned_memory::AlignedMemory,
+        declare_builtin_function,
+        ebpf::{self, HOST_ALIGN},
+        elf::Executable,
+        error::{EbpfError, StableResult},
+        memory_region::{MemoryMapping, MemoryRegion},
+        program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion},
+        verifier::RequisiteVerifier,
+        vm::{Config, ContextObject, EbpfVm, TestContextObject},
+    },
 };
 use std::{borrow::Borrow, ffi::c_int};
 
@@ -120,20 +125,27 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
 
     let syscall_inv = syscall_context.syscall_invocation.unwrap();
 
-    let rodata = &vm_ctx.rodata;
-    let mut stack = syscall_inv.stack_prefix;
-    stack.resize(STACK_SIZE, 0);
-    let mut heap = syscall_inv.heap_prefix;
-    heap.resize(HEAP_MAX, 0);
+    let mut mempool = VmMemoryPool::new();
+    let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
+    let mut stack = mempool.get_stack(STACK_SIZE);
+    let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
 
     let mut regions = vec![
-        MemoryRegion::new_readonly(rodata, ebpf::MM_PROGRAM_START),
-        MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
-        MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
+        MemoryRegion::new_writable_gapped(
+            stack.as_slice_mut(),
+            ebpf::MM_STACK_START,
+            STACK_GAP_SIZE,
+        ),
+        MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
 
-    let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
+    let mut aligned_regions = Vec::new();
+    mem_regions::setup_input_regions(
+        &mut regions,
+        &mut aligned_regions,
+        &vm_ctx.input_data_regions,
+    );
     let config = &Config {
         aligned_memory_mapping: true,
         enable_sbpf_v2: false,
@@ -166,6 +178,9 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     vm.registers[9] = vm_ctx.r9;
     vm.registers[10] = vm_ctx.r10; // set in vm.execute_program
     vm.registers[11] = vm_ctx.r11; // set in vm.execute_program
+
+    mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix);
+    mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix);
 
     let mut executable = Executable::from_text_bytes(
         &vm_ctx.rodata,
@@ -229,9 +244,9 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         },
         cu_avail: vm.context_object_pointer.get_remaining(),
         frame_count: vm.call_depth,
-        heap,
-        stack,
-        rodata: rodata.to_vec(),
+        heap: heap.as_slice().into(),
+        stack: stack.as_slice().into(),
+        rodata: rodata.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
         pc: match result {

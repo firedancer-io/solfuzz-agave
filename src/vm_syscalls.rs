@@ -17,8 +17,11 @@ use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm:
 use solana_program_runtime::{
     invoke_context::InvokeContext,
     loaded_programs::ProgramCacheForTxBatch,
+    mem_pool::VmMemoryPool,
     solana_rbpf::{
+        aligned_memory::AlignedMemory,
         ebpf,
+        ebpf::HOST_ALIGN,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::EbpfVm,
@@ -58,11 +61,6 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     *out_psz = out_vec.len() as u64;
 
     1
-}
-
-fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
-    let size = dst.len().min(src.len());
-    dst[..size].copy_from_slice(&src[..size]);
 }
 
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
@@ -175,16 +173,43 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         return None;
     }
 
-    let rodata = vm_ctx.rodata;
-    let mut stack = vec![0; STACK_SIZE];
-    let mut heap = vec![0; vm_ctx.heap_max as usize];
+    // Memory regions.
+    // In Agave all memory regions are AlignedMemory::<HOST_ALIGN> == AlignedMemory::<16>,
+    // i.e. they're all 16-byte aligned in the host.
+    // The memory regions are:
+    //   1. program rodata
+    //   2. stack
+    //   3. heap
+    //   4. input data aka accounts
+    // There's some extra quirks:
+    //   - heap size is MIN_HEAP_FRAME_BYTES..=MAX_HEAP_FRAME_BYTES
+    //   - input data (at least when direct mapping is off) is 1 single map of all
+    //     serialized accounts (and each account is serialized to a multiple of 16 bytes)
+    // In this implementation, however:
+    //   - heap can be smaller than MIN_HEAP_FRAME_BYTES
+    //   - input data is made of multiple regions, and regions don't necessarily have
+    //     length multiple of 16, i.e. virtual addresses may be unaligned
+    // These differences allow us to test more edge cases.
+    let mut mempool = VmMemoryPool::new();
+    let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
+    let mut stack = mempool.get_stack(STACK_SIZE);
+    // let mut heap = mempool.get_heap(heap_max); // this would force MIN_HEAP_FRAME_BYTES
+    let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
     let mut regions = vec![
-        MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
-        MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, STACK_GAP_SIZE),
-        MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
+        MemoryRegion::new_writable_gapped(
+            stack.as_slice_mut(),
+            ebpf::MM_STACK_START,
+            STACK_GAP_SIZE,
+        ),
+        MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
-    let mut input_data_regions = vm_ctx.input_data_regions.clone();
-    mem_regions::setup_input_regions(&mut regions, &mut input_data_regions);
+    let mut aligned_regions = Vec::new();
+    mem_regions::setup_input_regions(
+        &mut regions,
+        &mut aligned_regions,
+        &vm_ctx.input_data_regions,
+    );
 
     let memory_mapping = match MemoryMapping::new(
         regions,
@@ -218,8 +243,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.registers[11] = vm_ctx.r11;
 
     if let Some(syscall_invocation) = input.syscall_invocation.clone() {
-        copy_memory_prefix(&mut heap, &syscall_invocation.heap_prefix);
-        copy_memory_prefix(&mut stack, &syscall_invocation.stack_prefix);
+        mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_invocation.heap_prefix);
+        mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_invocation.stack_prefix);
     }
 
     // Actually invoke the syscall
@@ -240,11 +265,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0,
         cu_avail: vm.context_object_pointer.get_remaining(),
-        heap,
-        stack,
+        heap: heap.as_slice().into(),
+        stack: stack.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         inputdata: vec![], // deprecated
-        rodata,
+        rodata: rodata.as_slice().into(),
         frame_count: vm.call_depth,
         error,
         error_kind: error_kind as i32,
