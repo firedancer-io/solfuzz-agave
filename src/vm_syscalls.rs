@@ -63,11 +63,6 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     1
 }
 
-fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
-    let size = dst.len().min(src.len());
-    dst[..size].copy_from_slice(&src[..size]);
-}
-
 fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
 
@@ -248,8 +243,8 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.registers[11] = vm_ctx.r11;
 
     if let Some(syscall_invocation) = input.syscall_invocation.clone() {
-        copy_memory_prefix(heap.as_slice_mut(), &syscall_invocation.heap_prefix);
-        copy_memory_prefix(stack.as_slice_mut(), &syscall_invocation.stack_prefix);
+        mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_invocation.heap_prefix);
+        mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_invocation.stack_prefix);
     }
 
     // Actually invoke the syscall

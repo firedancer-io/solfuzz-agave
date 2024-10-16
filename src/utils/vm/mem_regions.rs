@@ -68,6 +68,11 @@ pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<Inp
     }
 }
 
+pub fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
+    let size = dst.len().min(src.len());
+    dst[..size].copy_from_slice(&src[..size]);
+}
+
 fn mem_region_to_input_data_region(region: &MemoryRegion) -> InputDataRegion {
     InputDataRegion {
         content: unsafe {

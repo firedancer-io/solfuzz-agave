@@ -3,7 +3,7 @@ use crate::{
     proto::{InstrEffects, SyscallContext, SyscallEffects},
     utils::{
         err_map::unpack_stable_result,
-        vm::{mem_regions, HEAP_MAX, STACK_SIZE},
+        vm::{mem_regions, HEAP_MAX, STACK_GAP_SIZE, STACK_SIZE},
     },
     InstrContext,
 };
@@ -13,8 +13,11 @@ use solana_log_collector::LogCollector;
 use solana_program_runtime::{
     invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata},
     loaded_programs::ProgramCacheForTxBatch,
+    mem_pool::VmMemoryPool,
     solana_rbpf::{
+        aligned_memory::AlignedMemory,
         ebpf,
+        ebpf::HOST_ALIGN,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
         vm::{ContextObject, EbpfVm},
@@ -206,18 +209,20 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         return None;
     }
 
-    let rodata = vm_ctx.rodata;
+    let mut mempool = VmMemoryPool::new();
+    let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
     let syscall_fn_name = syscall_inv.function_name.clone();
-    let mut stack = syscall_inv.stack_prefix;
-    stack.resize(STACK_SIZE, 0);
-    let mut heap = syscall_inv.heap_prefix;
-
-    heap.resize(vm_ctx.heap_max as usize, 0);
+    let mut stack = mempool.get_stack(STACK_SIZE);
+    let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
 
     let mut regions = vec![
-        MemoryRegion::new_readonly(&rodata, ebpf::MM_PROGRAM_START),
-        MemoryRegion::new_writable_gapped(&mut stack, ebpf::MM_STACK_START, 0),
-        MemoryRegion::new_writable(&mut heap, ebpf::MM_HEAP_START),
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
+        MemoryRegion::new_writable_gapped(
+            stack.as_slice_mut(),
+            ebpf::MM_STACK_START,
+            STACK_GAP_SIZE,
+        ),
+        MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
     let mut aligned_regions = Vec::new();
     mem_regions::setup_input_regions(
@@ -257,6 +262,9 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.registers[10] = vm_ctx.r10;
     vm.registers[11] = vm_ctx.r11;
 
+    mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix);
+    mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix);
+
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
         .get_function_registry()
@@ -275,9 +283,9 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         error_kind: error_kind as i32,
         r0,
         cu_avail: vm.context_object_pointer.get_remaining(),
-        heap,
-        stack,
-        rodata,
+        heap: heap.as_slice().into(),
+        stack: stack.as_slice().into(),
+        rodata: rodata.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         frame_count: vm.call_depth,
         log: invoke_context
