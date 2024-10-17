@@ -220,7 +220,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_poseidon_syscall,
     timely_vote_credits,
     remaining_compute_units_syscall_enabled,
-    enable_program_runtime_v2_and_loader_v4,
+    // enable_program_runtime_v2_and_loader_v4,
     better_error_codes_for_tx_lamport_check,
     enable_alt_bn128_compression_syscall,
     update_hashes_per_tick2,
