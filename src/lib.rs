@@ -774,6 +774,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             &[compiled_instruction.clone()],
             &invoke_context.environment_config.feature_set,
         );
+
         return Some(InstrEffects {
             custom_err: None,
             result: if result.is_err() {
