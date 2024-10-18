@@ -111,7 +111,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
             .unwrap();
     }
     let program_runtime_environment_v1 =
-        BuiltinProgram::new_loader(*unstubbed_runtime.get_config(), stubbed_syscall_reg);
+        BuiltinProgram::new_loader(unstubbed_runtime.get_config().clone(), stubbed_syscall_reg);
 
     let sbpf_version: SBPFVersion = SBPFVersion::V1;
     let loader = std::sync::Arc::new(program_runtime_environment_v1);
@@ -148,7 +148,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     );
     let config = &Config {
         aligned_memory_mapping: true,
-        enable_sbpf_v2: false,
+        enabled_sbpf_versions: SBPFVersion::V1..=SBPFVersion::V1,
         ..Config::default()
     };
 
@@ -185,7 +185,7 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let mut executable = Executable::from_text_bytes(
         &vm_ctx.rodata,
         loader,
-        sbpf_version.clone(),
+        sbpf_version,
         function_registry,
     )
     .unwrap();
