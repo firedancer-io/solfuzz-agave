@@ -3,7 +3,7 @@ use crate::{
     proto::{InstrEffects, SyscallContext, SyscallEffects},
     utils::{
         err_map::unpack_stable_result,
-        vm::{mem_regions, HEAP_MAX, STACK_GAP_SIZE, STACK_SIZE},
+        vm::{mem_regions, HEAP_MAX, STACK_SIZE},
     },
     InstrContext,
 };
@@ -108,6 +108,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         false,
     )
     .unwrap();
+    let config = program_runtime_environment_v1.get_config();
 
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
@@ -220,7 +221,11 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
-            STACK_GAP_SIZE,
+            if config.enable_stack_frame_gaps {
+                config.stack_frame_size as u64
+            } else {
+                0
+            },
         ),
         MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
@@ -231,11 +236,7 @@ fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         &vm_ctx.input_data_regions,
     );
 
-    let memory_mapping = match MemoryMapping::new(
-        regions,
-        program_runtime_environment_v1.get_config(),
-        &SBPFVersion::V1,
-    ) {
+    let memory_mapping = match MemoryMapping::new(regions, config, &SBPFVersion::V1) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };

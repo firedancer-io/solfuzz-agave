@@ -2,7 +2,7 @@ use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
     utils::{
         pchash_inverse,
-        vm::{err_map, mem_regions, STACK_GAP_SIZE, STACK_SIZE},
+        vm::{err_map, mem_regions, STACK_SIZE},
     },
     InstrContext,
 };
@@ -24,6 +24,7 @@ use solana_program_runtime::{
         vm::{Config, ContextObject, EbpfVm, TestContextObject},
     },
 };
+use solana_sdk::feature_set::bpf_account_data_direct_mapping;
 use std::{borrow::Borrow, ffi::c_int};
 
 declare_builtin_function!(
@@ -130,12 +131,24 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
     let mut stack = mempool.get_stack(STACK_SIZE);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
 
+    /* TODO: should we just use loader.get_config()? */
+    let config = &Config {
+        aligned_memory_mapping: true,
+        enabled_sbpf_versions: SBPFVersion::V1..=SBPFVersion::V1,
+        enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
+        ..Config::default()
+    };
+
     let mut regions = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
-            STACK_GAP_SIZE,
+            if config.enable_stack_frame_gaps {
+                config.stack_frame_size as u64
+            } else {
+                0
+            },
         ),
         MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
@@ -146,11 +159,6 @@ fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> 
         &mut aligned_regions,
         &vm_ctx.input_data_regions,
     );
-    let config = &Config {
-        aligned_memory_mapping: true,
-        enabled_sbpf_versions: SBPFVersion::V1..=SBPFVersion::V1,
-        ..Config::default()
-    };
 
     let memory_mapping = match MemoryMapping::new(regions, config, &sbpf_version) {
         Ok(mapping) => mapping,

@@ -4,7 +4,6 @@ use crate::{
     utils::err_map::unpack_stable_result,
     utils::vm::mem_regions,
     utils::vm::HEAP_MAX,
-    utils::vm::STACK_GAP_SIZE,
     utils::vm::STACK_SIZE,
     InstrContext,
 };
@@ -71,6 +70,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let program_runtime_environment_v1 =
         create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
             .unwrap();
+    let config = program_runtime_environment_v1.get_config();
 
     // Create invoke context
     // TODO: factor this into common code with lib.rs
@@ -181,6 +181,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     //   2. stack
     //   3. heap
     //   4. input data aka accounts
+    // The stack gap is size is 0 iff direct mapping is enabled.
     // There's some extra quirks:
     //   - heap size is MIN_HEAP_FRAME_BYTES..=MAX_HEAP_FRAME_BYTES
     //   - input data (at least when direct mapping is off) is 1 single map of all
@@ -200,7 +201,11 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
-            STACK_GAP_SIZE,
+            if !sbpf_version.dynamic_stack_frames() && config.enable_stack_frame_gaps {
+                config.stack_frame_size as u64
+            } else {
+                0
+            },
         ),
         MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
@@ -211,11 +216,7 @@ fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         &vm_ctx.input_data_regions,
     );
 
-    let memory_mapping = match MemoryMapping::new(
-        regions,
-        program_runtime_environment_v1.get_config(),
-        sbpf_version,
-    ) {
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
