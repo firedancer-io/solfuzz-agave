@@ -850,7 +850,7 @@ impl TryFrom<proto::AcctState> for (Pubkey, Account) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn sol_compat_init() {
+pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
     env::set_var("SOLANA_RAYON_THREADS", "1");
     env::set_var("RAYON_NUM_THREADS", "1");
 }
