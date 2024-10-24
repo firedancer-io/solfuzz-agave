@@ -32,6 +32,7 @@ use solana_sdk::rent_collector::RentCollector;
 use solana_sdk::stable_layout::stable_instruction::StableInstruction;
 use solana_sdk::stable_layout::stable_vec::StableVec;
 use solana_sdk::sysvar::SysvarId;
+use solana_sdk::sysvar::last_restart_slot;
 use solana_sdk::transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
@@ -593,6 +594,10 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         }
         if *pubkey == Rent::id() {
             callbackback(&bincode::serialize(&Rent::default()).unwrap());
+        }
+        if *pubkey == last_restart_slot::id() {
+            let slot_val = 5000 as u64;
+            callbackback(&bincode::serialize(&slot_val).unwrap());
         }
     });
 
