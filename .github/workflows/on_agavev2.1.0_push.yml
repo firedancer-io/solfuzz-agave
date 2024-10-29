@@ -1,0 +1,22 @@
+name: Trigger Solfuzz CI
+
+on:
+  workflow_run:
+    workflows: ["Build, check, test, release"]
+    types:
+      - completed
+    branches:
+      - agave-v2.1.0
+jobs:
+  kick_solfuzz_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: dispatch solfuzz CI
+        run: |
+          curl -L \
+          -X POST \
+          https://api.github.com/repos/firedancer-io/solfuzz/dispatches \
+          -H 'Accept: application/vnd.github.everest-preview+json' \
+          -H "Authorization: Bearer ${{ secrets.PAT }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          --data '{"event_type": "solfuzz_agave_v2.1.0"}'
