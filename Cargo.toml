@@ -32,12 +32,14 @@ solana-runtime = { git = "https://github.com/firedancer-io/agave", rev = "b641c6
 solana-stake-program = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-system-program = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-svm = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
+solana-svm-transaction = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-sdk = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-timings = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-vote-program = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-zk-sdk = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-zk-elgamal-proof-program = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solana-poseidon = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
+solana-runtime-transaction = { git = "https://github.com/firedancer-io/agave", rev = "b641c6e050d759e41dd7d794c3d0a12638c11800" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.65"
 

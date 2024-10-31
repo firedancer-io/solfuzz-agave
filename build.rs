@@ -20,6 +20,7 @@ fn main() -> Result<()> {
         proto_base_path.join("txn.proto"),
         proto_base_path.join("elf.proto"),
         proto_base_path.join("shred.proto"),
+        proto_base_path.join("pack.proto"),
     ];
 
     protos
