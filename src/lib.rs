@@ -578,6 +578,22 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
 
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     #[cfg(feature = "core-bpf-conformance")]
+    // The BPF version of some builtin programs are built with the assumption
+    // that certain features will be active at the time of their deployment.
+    // Some of these features are already active on all clusters.
+    //
+    // As a result, they must be activated when testing for conformance.
+    {
+        if &input.instruction.program_id == &solana_sdk::address_lookup_table::program::id() {
+            // The BPF version of Address Lookup Table depends on `SolGetSysvar`
+            // to read slot hash data.
+            input
+                .feature_set
+                .activate(&get_sysvar_syscall_enabled::id(), 0);
+        }
+    }
+
+    #[cfg(feature = "core-bpf-conformance")]
     // If the fixture declares `cu_avail` to be less than the builtin version's
     // `DEFAULT_COMPUTE_UNITS`, the program should fail on compute meter
     // exhaustion.
