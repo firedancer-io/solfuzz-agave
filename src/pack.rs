@@ -61,6 +61,8 @@ fn execute_pack_cbp(input: PackComputeBudgetContext) -> Option<PackComputeBudget
                 /* prioritization fee (Agave) and rewards (FD) are equivalent
                    https://github.com/firedancer-io/firedancer/blob/5e68f9bc5b8aa5ddfff917d27b8089f63adb25c0/src/ballet/pack/fd_compute_budget_program.h#L148-L149 */
                 rewards: fee_budget_limits.prioritization_fee,
+                heap_sz: cbp_limits.updated_heap_bytes,
+                loaded_acct_data_sz: cbp_limits.loaded_accounts_bytes.into(),
             })
         }
         Err(_) => Some(PackComputeBudgetEffects::default()),
