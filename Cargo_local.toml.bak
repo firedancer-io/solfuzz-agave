@@ -35,12 +35,14 @@ solana-runtime = { path = "../agave/runtime", features = ["dev-context-only-util
 solana-stake-program = { path = "../agave/programs/stake" }
 solana-system-program = { path = "../agave/programs/system" }
 solana-svm = { path = "../agave/svm" }
+solana-svm-transaction = { path = "../fd_agave/svm-transaction" }
 solana-sdk = { path = "../agave/sdk" }
 solana-timings = { path = "../agave/timings" }
 solana-vote-program = { path = "../agave/programs/vote" }
 solana-zk-sdk = { path = "../agave/zk-sdk" }
 solana-zk-elgamal-proof-program = { path = "../agave/programs/zk-elgamal-proof" }
 solana-poseidon = { path = "../agave/poseidon" }
+solana-runtime-transaction = { path = "../agave/runtime-transaction" }
 solfuzz-agave-macro = { path = "macro" }
 thiserror = "1.0.65"
 
