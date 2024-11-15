@@ -23,9 +23,10 @@ impl ToTokens for ElfBytes {
     }
 }
 
-const SUPPORTED_BUILTINS: [Pubkey; 2] = [
+const SUPPORTED_BUILTINS: [Pubkey; 3] = [
     solana_sdk::address_lookup_table::program::id(),
     solana_sdk::config::program::id(),
+    solana_sdk::stake::program::id(),
 ];
 
 fn read_file(path: &Path) -> Vec<u8> {
@@ -112,6 +113,11 @@ pub fn declare_core_bpf_default_compute_units(_: TokenStream) -> TokenStream {
             tokens = quote! {
                 #[cfg(feature = "core-bpf")]
                 const CORE_BPF_DEFAULT_COMPUTE_UNITS: u64 = solana_config_program::config_processor::DEFAULT_COMPUTE_UNITS;
+            }
+        } else if program_id == solana_sdk::stake::program::id() {
+            tokens = quote! {
+                #[cfg(feature = "core-bpf")]
+                const CORE_BPF_DEFAULT_COMPUTE_UNITS: u64 = solana_stake_program::stake_instruction::DEFAULT_COMPUTE_UNITS;
             }
         }
     }
