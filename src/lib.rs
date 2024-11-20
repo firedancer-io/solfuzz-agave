@@ -51,7 +51,11 @@ use std::sync::Arc;
 use thiserror::Error;
 
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
-use solana_sdk::{account::WritableAccount, slot_hashes::SlotHashes, sysvar::Sysvar};
+use solana_sdk::{
+    account::WritableAccount,
+    slot_hashes::{SlotHash, SlotHashes},
+    sysvar::Sysvar,
+};
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 #[macro_export]
@@ -620,11 +624,16 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 if &input.instruction.program_id == &solana_sdk::address_lookup_table::program::id()
                     && pubkey == &SlotHashes::id()
                 {
-                    if account.1.data.len() < SlotHashes::size_of() {
-                        // Extend the data to the right size.
-                        let mut data = vec![0; SlotHashes::size_of()];
-                        data[..account.1.data.len()].copy_from_slice(&account.1.data);
-                        return callbackback(&data);
+                    let data_len = account.1.data.len();
+                    if (data_len > 8 && (data_len - 8) % std::mem::size_of::<SlotHash>() == 0)
+                        || data_len == 8
+                    {
+                        if data_len < SlotHashes::size_of() {
+                            // Extend the data to the right size.
+                            let mut data = vec![0; SlotHashes::size_of()];
+                            data[..data_len].copy_from_slice(&account.1.data);
+                            return callbackback(&data);
+                        }
                     }
                 }
                 callbackback(&account.1.data);
