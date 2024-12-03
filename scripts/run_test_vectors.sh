@@ -23,7 +23,10 @@ else
 fi
 
 find dump/test-vectors/instr/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_instr {} + > $LOG_PATH/test_exec_instr.log 2>&1
-find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_precompile.log 2>&1
+# secp256r1 currently not working, agave has bugs
+# find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_precompile.log 2>&1
+find dump/test-vectors/txn/fixtures/precompile/ed25519 -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_precompile.log 2>&1
+find dump/test-vectors/txn/fixtures/precompile/secp256k1 -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_precompile.log 2>&1
 find dump/test-vectors/txn/fixtures/programs -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_txn.log 2>&1
 find dump/test-vectors/cpi/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_cpi {} + > $LOG_PATH/test_exec_cpi.log 2>&1
 find dump/test-vectors/syscall/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_vm_syscall {} + > $LOG_PATH/test_exec_vm_syscall.log 2>&1

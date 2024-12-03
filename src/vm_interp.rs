@@ -111,10 +111,19 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             .register_function(key, name, SyscallStub::vm)
             .unwrap();
     }
-    let program_runtime_environment_v1 =
-        BuiltinProgram::new_loader(unstubbed_runtime.get_config().clone(), stubbed_syscall_reg);
 
-    let sbpf_version: SBPFVersion = SBPFVersion::V1;
+    //TODO: support SBPF version
+    let sbpf_version = SBPFVersion::V1;
+    let config = &Config {
+        aligned_memory_mapping: true,
+        enabled_sbpf_versions: SBPFVersion::V1..=SBPFVersion::V1,
+        enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
+        enable_instruction_tracing: true,
+        ..Config::default()
+    };
+
+    let program_runtime_environment_v1 =
+        BuiltinProgram::new_loader(config.clone(), stubbed_syscall_reg);
     let loader = std::sync::Arc::new(program_runtime_environment_v1);
 
     // Setup TestContextObject
@@ -134,14 +143,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
     let mut stack = mempool.get_stack(STACK_SIZE);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
-
-    /* TODO: should we just use loader.get_config()? */
-    let config = &Config {
-        aligned_memory_mapping: true,
-        enabled_sbpf_versions: SBPFVersion::V1..=SBPFVersion::V1,
-        enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
-        ..Config::default()
-    };
 
     let mut regions = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
@@ -200,14 +201,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     if executable.verify::<RequisiteVerifier>().is_err() {
         return Some(SyscallEffects {
-            error: -1,
+            error: -2,
             ..Default::default()
         });
     }
 
     if executable.jit_compile().is_err() {
         return Some(SyscallEffects {
-            error: -1,
+            error: -3,
             ..Default::default()
         });
     }
@@ -224,6 +225,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let result = match result {
         StableResult::Err(err) => StableResult::Err(process_result(&mut vm, &executable, err)),
         StableResult::Ok(n) => StableResult::Ok(n),
+    };
+
+    // When a program fails, the register in trace_log are not properly
+    // captured (they represent the state at the end of the previous ix).
+    // For simplicity, we ignore them.
+    let out_registers = match result {
+        StableResult::Err(_) => &[0; 12],
+        StableResult::Ok(_) => vm.context_object_pointer.trace_log.last()?,
     };
 
     if let StableResult::Err(err) = result.borrow() {
@@ -246,10 +255,17 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             StableResult::Ok(_) => 0,
             StableResult::Err(ref ebpf_err) => err_map::get_fd_vm_err_code(ebpf_err).into(),
         },
-        r0: match result {
-            StableResult::Ok(n) => n,
-            StableResult::Err(_) => 0,
-        },
+        r0: out_registers[0],
+        r1: out_registers[1],
+        r2: out_registers[2],
+        r3: out_registers[3],
+        r4: out_registers[4],
+        r5: out_registers[5],
+        r6: out_registers[6],
+        r7: out_registers[7],
+        r8: out_registers[8],
+        r9: out_registers[9],
+        r10: out_registers[10],
         cu_avail: vm.context_object_pointer.get_remaining(),
         frame_count: vm.call_depth,
         heap: heap.as_slice().into(),
@@ -264,7 +280,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             },
             StableResult::Err(_) => vm.registers[11],
         },
-        ..Default::default() // FIXME: implement rodata
+        ..Default::default()
     })
 }
 

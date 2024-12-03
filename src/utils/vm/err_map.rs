@@ -16,12 +16,16 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
         EbpfError::CallDepthExceeded => 11,     /* FD_VM_ERR_SIGSTACK */
         EbpfError::InvalidInstruction => 12,    /* FD_VM_ERR_SIGILL */
         EbpfError::AccessViolation(_, _, _, _) => 13, /* FD_VM_ERR_SIGSEGV */
+        EbpfError::StackAccessViolation(_, _, _, _) => 13, /* FD_VM_ERR_SIGSEGV */
         /* FD_VM_ERR_SIGBUS (14) and FD_VM_ERR_SIGRDONLY (15) not used */
         EbpfError::ExceededMaxInstructions => 16, /* FD_VM_ERR_SIGCOST*/
-        EbpfError::DivideByZero => 17,            /* FD_VM_ERR_SIGFPE */
+        EbpfError::DivideByZero => 18,            /* FD_VM_ERR_SIGFPE */
         /* EbpfError::DivideOverflow isn't possible in SBPFv1 bytecode,
         so we don't have a mapping.  */
-        _ => -1,
+        err => {
+            eprintln!("unknown error: {:?}", err);
+            -1
+        }
     }
 }
 

@@ -317,6 +317,17 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
         r0,
+        // Registers are only for vm_interp
+        r1: 0,
+        r2: 0,
+        r3: 0,
+        r4: 0,
+        r5: 0,
+        r6: 0,
+        r7: 0,
+        r8: 0,
+        r9: 0,
+        r10: 0,
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap: heap.as_slice().into(),
         stack: stack.as_slice().into(),
