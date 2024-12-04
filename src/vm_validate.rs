@@ -63,7 +63,7 @@ pub fn validate_vm_text(text_bytes: &[u8], feature_set: &FeatureSet) -> Option<V
     let exec = match Executable::new_from_text_bytes(
         text_bytes,
         std::sync::Arc::new(program_runtime_environment_v1),
-        solana_program_runtime::solana_rbpf::program::SBPFVersion::V1,
+        solana_program_runtime::solana_rbpf::program::SBPFVersion::V0,
         FunctionRegistry::default(),
     ) {
         Ok(v) => v,

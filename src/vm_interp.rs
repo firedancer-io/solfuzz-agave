@@ -109,8 +109,16 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     )
     .unwrap();
 
+    let vm_ctx = syscall_context.vm_ctx.unwrap();
+    let sbpf_version = match vm_ctx.sbpf_version {
+        1 => SBPFVersion::V1,
+        2 => SBPFVersion::V2,
+        3 => SBPFVersion::V3,
+        _ => SBPFVersion::V0,
+    };
+
     // stub syscalls
-    let syscall_reg = unstubbed_runtime.get_function_registry();
+    let syscall_reg = unstubbed_runtime.get_function_registry(sbpf_version);
     let mut stubbed_syscall_reg = FunctionRegistry::<BuiltinFunction<TestContextObject>>::default();
 
     for (key, (name, _)) in syscall_reg.iter() {
@@ -119,11 +127,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             .unwrap();
     }
 
-    //TODO: support SBPF version
-    let sbpf_version = SBPFVersion::V1;
     let config = &Config {
         aligned_memory_mapping: true,
-        enabled_sbpf_versions: SBPFVersion::V1..=SBPFVersion::V1,
+        enabled_sbpf_versions: SBPFVersion::V0..=sbpf_version,
         enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
         enable_instruction_tracing: true,
         ..Config::default()
@@ -137,7 +143,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut context_obj = TestContextObject::new(instr_ctx.cu_avail);
 
     // setup memory
-    let vm_ctx = syscall_context.vm_ctx.unwrap();
     if vm_ctx.heap_max as usize > HEAP_MAX {
         return None;
     }
@@ -152,7 +157,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
 
     let mut regions = vec![
-        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
@@ -172,22 +177,27 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         &vm_ctx.input_data_regions,
     );
 
-    let memory_mapping = match MemoryMapping::new(regions, config, &sbpf_version) {
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
 
     let mut vm = EbpfVm::new(
         loader.clone(),
-        &sbpf_version,
+        sbpf_version,
         &mut context_obj,
         memory_mapping,
         STACK_SIZE,
     );
 
-    // setup registers
+    // Setup registers.
+    // r1, r10, r11 are initialized by EbpfVm::new (r10) or EbpfVm::execute_program (r1, r11)
+    // Modifying them will most like break execution.
+    // In syscalls we allow override them (especially r1) because that simulates the fact
+    // that a program partially executed before reaching the syscall.
+    // Here we want to test what happens when the program starts from the beginning.
     vm.registers[0] = vm_ctx.r0;
-    vm.registers[1] = vm_ctx.r1; // set in vm.execute_program
+    // vm.registers[1] = vm_ctx.r1; // do not override
     vm.registers[2] = vm_ctx.r2;
     vm.registers[3] = vm_ctx.r3;
     vm.registers[4] = vm_ctx.r4;
@@ -196,8 +206,8 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     vm.registers[7] = vm_ctx.r7;
     vm.registers[8] = vm_ctx.r8;
     vm.registers[9] = vm_ctx.r9;
-    vm.registers[10] = vm_ctx.r10; // set in vm.execute_program
-    vm.registers[11] = vm_ctx.r11; // set in vm.execute_program
+    // vm.registers[10] = vm_ctx.r10; // do not override
+    // vm.registers[11] = vm_ctx.r11; // do not override
 
     mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix);
     mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix);

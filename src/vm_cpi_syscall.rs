@@ -229,7 +229,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
 
     let mut regions = vec![
-        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_PROGRAM_START),
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
@@ -248,7 +248,9 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         &vm_ctx.input_data_regions,
     );
 
-    let memory_mapping = match MemoryMapping::new(regions, config, &SBPFVersion::V1) {
+    let sbpf_version = SBPFVersion::V0;
+
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
@@ -257,7 +259,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let loader = std::sync::Arc::new(BuiltinProgram::new_mock());
     let mut vm = EbpfVm::new(
         loader,
-        &SBPFVersion::V1,
+        sbpf_version,
         &mut invoke_context,
         memory_mapping,
         STACK_SIZE,
@@ -280,7 +282,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
-        .get_function_registry()
+        .get_function_registry(sbpf_version)
         .lookup_by_name(syscall_fn_name.as_slice())?;
     vm.invoke_function(syscall_func);
 

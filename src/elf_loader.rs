@@ -58,7 +58,7 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
     elf_effects.rodata = ro_section.to_vec();
     elf_effects.rodata_sz = ro_section.len() as u64;
     elf_effects.entry_pc = elf_exec.get_entrypoint_instruction_offset() as u64;
-    elf_effects.text_off = text_vaddr - ebpf::MM_PROGRAM_START;
+    elf_effects.text_off = text_vaddr - ebpf::MM_RODATA_START;
     elf_effects.text_cnt = (raw_text_sz / 8) as u64;
     elf_effects.calldests = calldests.into_iter().collect();
     Some(elf_effects)
