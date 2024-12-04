@@ -88,6 +88,13 @@ pub unsafe extern "C" fn sol_compat_vm_interp_v1(
     1
 }
 
+pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
+    if let Some(i) = v.iter().rposition(|x| *x != 0) {
+        return v[..i + 1].into();
+    }
+    vec![]
+}
+
 // We are actually executing the JIT-compiled program here
 pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
@@ -269,7 +276,8 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         cu_avail: vm.context_object_pointer.get_remaining(),
         frame_count: vm.call_depth,
         heap: heap.as_slice().into(),
-        stack: stack.as_slice().into(),
+        /* Compress stack by removing right-most 0s, mainly to save 256kB space when stack is unused */
+        stack: vec_rtrim_zeros(stack.as_slice()),
         rodata: rodata.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
