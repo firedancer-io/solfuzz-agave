@@ -30,7 +30,8 @@ find dump/test-vectors/txn/fixtures/precompile/secp256k1 -type f -name '*.fix' -
 find dump/test-vectors/txn/fixtures/programs -type f -name '*.fix' -exec ./target/release/test_exec_txn {} + > $LOG_PATH/test_exec_txn.log 2>&1
 find dump/test-vectors/cpi/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_cpi {} + > $LOG_PATH/test_exec_cpi.log 2>&1
 find dump/test-vectors/syscall/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_vm_syscall {} + > $LOG_PATH/test_exec_vm_syscall.log 2>&1
-find dump/test-vectors/vm_interp/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_vm_interp {} + > $LOG_PATH/test_exec_vm_interp.log 2>&1
+find dump/test-vectors/vm_interp/fixtures/latest -type f -name '*.fix' -exec ./target/release/test_exec_vm_interp {} + > $LOG_PATH/test_exec_vm_interp.log 2>&1
+find dump/test-vectors/vm_interp/fixtures/v0 -type f -name '*.fix' -exec ./target/release/test_exec_vm_interp {} + > $LOG_PATH/test_exec_vm_interp.log 2>&1
 find dump/test-vectors/elf_loader/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_elf_loader {} + > $LOG_PATH/test_exec_elf_loader.log 2>&1
 find dump/test-vectors/vm_validate/fixtures -type f -name '*.fix' -exec ./target/release/test_exec_vm_validate {} + > $LOG_PATH/test_exec_vm_validate.log 2>&1
 

@@ -309,6 +309,7 @@ difference in error checks in CALL_IMM, which we handle in process_result.
 [1](https://github.com/firedancer-io/firedancer/blob/93cea434dfe2f728f2ab4746590972644c06b863/src/ballet/sbpf/fd_sbpf_loader.h#L27). */
 fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
     let mut fn_reg = FunctionRegistry::default();
+    let max_pc = vm_ctx.rodata.len() / 8;
 
     // register entry point
     let _ = fn_reg.register_function(
@@ -322,11 +323,15 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
         for bit_idx in 0..8 {
             if (byte & (1 << bit_idx)) != 0 {
                 let pc = byte_idx * 8 + bit_idx;
-                let _ = fn_reg.register_function(
-                    ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64)),
-                    b"fn",
-                    pc,
-                );
+                // ignore invalid pc, i.e. assume the test was set up correctly.
+                // registering fn beyond max_pc segfaults inside the JIT.
+                if pc < max_pc {
+                    let _ = fn_reg.register_function(
+                        ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64)),
+                        b"fn",
+                        pc,
+                    );
+                }
             }
         }
     }
