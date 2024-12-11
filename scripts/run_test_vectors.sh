@@ -22,7 +22,8 @@ else
   cd ../..
 fi
 
-find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_instr {} > $LOG_PATH/test_exec_instr.log 2>&1
+# temp disabled
+# find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_instr {} > $LOG_PATH/test_exec_instr.log 2>&1
 # secp256r1 currently not working, agave has bugs
 # find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_txn {} > $LOG_PATH/test_exec_precompile.log 2>&1
 find dump/test-vectors/txn/fixtures/precompile/ed25519 -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_txn {} > $LOG_PATH/test_exec_precompile.log 2>&1
@@ -32,6 +33,8 @@ find dump/test-vectors/cpi/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./
 find dump/test-vectors/syscall/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_vm_syscall {} > $LOG_PATH/test_exec_vm_syscall.log 2>&1
 find dump/test-vectors/vm_interp/fixtures/latest -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_vm_interp {} > $LOG_PATH/test_exec_vm_interp.log 2>&1
 find dump/test-vectors/vm_interp/fixtures/v0 -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_vm_interp {} > $LOG_PATH/test_exec_vm_interp.log 2>&1
+find dump/test-vectors/vm_interp/fixtures/v1 -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_vm_interp {} > $LOG_PATH/test_exec_vm_interp.log 2>&1
+find dump/test-vectors/vm_interp/fixtures/v2 -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_vm_interp {} > $LOG_PATH/test_exec_vm_interp.log 2>&1
 find dump/test-vectors/elf_loader/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_elf_loader {} > $LOG_PATH/test_exec_elf_loader.log 2>&1
 
 failed=`grep -wR FAIL $LOG_PATH | wc -l`

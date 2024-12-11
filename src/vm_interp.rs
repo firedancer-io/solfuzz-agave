@@ -19,7 +19,7 @@ use solana_program_runtime::{
         elf::Executable,
         error::{EbpfError, StableResult},
         memory_region::{MemoryMapping, MemoryRegion},
-        program::{BuiltinFunction, BuiltinProgram, FunctionRegistry, SBPFVersion},
+        program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
         verifier::RequisiteVerifier,
         vm::{Config, ContextObject, EbpfVm, TestContextObject},
     },
@@ -31,11 +31,11 @@ declare_builtin_function!(
     SyscallStub,
     fn rust(
         _invoke_context: &mut TestContextObject,
-        _hash_addr: u64,
-        _recovery_id_val: u64,
-        _signature_addr: u64,
-        _result_addr: u64,
-        _arg5: u64,
+        _r1: u64,
+        _r2: u64,
+        _r3: u64,
+        _r4: u64,
+        _r5: u64,
         _memory_mapping: &mut MemoryMapping,
     ) -> Result<u64, Error> {
         // TODO: deduct CUs?
@@ -98,7 +98,7 @@ pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
 // We are actually executing the JIT-compiled program here
 pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
-    let feature_set = instr_ctx.feature_set;
+    let mut feature_set = instr_ctx.feature_set;
 
     // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
@@ -117,44 +117,64 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         _ => SBPFVersion::V0,
     };
 
-    // stub syscalls
-    let syscall_reg = unstubbed_runtime.get_function_registry(sbpf_version);
-    let mut stubbed_syscall_reg = FunctionRegistry::<BuiltinFunction<TestContextObject>>::default();
-
-    for (key, (name, _)) in syscall_reg.iter() {
-        stubbed_syscall_reg
-            .register_function(key, name, SyscallStub::vm)
-            .unwrap();
+    /* Enable direct_mapping for SBPF version >= v1 */
+    if sbpf_version >= SBPFVersion::V1 {
+        feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
     }
-
     let config = &Config {
-        aligned_memory_mapping: true,
         enabled_sbpf_versions: SBPFVersion::V0..=sbpf_version,
         enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
         enable_instruction_tracing: true,
         ..Config::default()
     };
 
-    let program_runtime_environment_v1 =
-        BuiltinProgram::new_loader(config.clone(), stubbed_syscall_reg);
-    let loader = std::sync::Arc::new(program_runtime_environment_v1);
+    let mut loader = BuiltinProgram::new_loader_with_dense_registration(config.clone());
+
+    // Stub syscalls
+    // Note: unstubbed_runtime is "v1", so syscalls are only registered for version < V3,
+    //       i.e. unstubbed_runtime.get_function_registry(sbpf_version) does NOT work.
+    let syscall_reg = unstubbed_runtime.get_function_registry(SBPFVersion::V0);
+    for (j, (_key, (name, _func))) in syscall_reg.iter().enumerate() {
+        loader
+            .register_function(
+                std::str::from_utf8(name).unwrap(),
+                j as u32,
+                SyscallStub::vm,
+            )
+            .unwrap();
+    }
+    let loader = std::sync::Arc::new(loader);
+
+    let function_registry = setup_internal_fn_registry(&vm_ctx, sbpf_version);
+    let mut executable =
+        Executable::from_text_bytes(&vm_ctx.rodata, loader, sbpf_version, function_registry)
+            .unwrap();
+
+    if executable.verify::<RequisiteVerifier>().is_err() {
+        return Some(SyscallEffects {
+            error: -2,
+            ..Default::default()
+        });
+    }
+
+    if !USE_INTERPRETER && executable.jit_compile().is_err() {
+        return Some(SyscallEffects {
+            error: -3,
+            ..Default::default()
+        });
+    }
 
     // Setup TestContextObject
     let mut context_obj = TestContextObject::new(instr_ctx.cu_avail);
 
     // setup memory
-    if vm_ctx.heap_max as usize > HEAP_MAX {
-        return None;
-    }
-
-    let function_registry = setup_internal_fn_registry(&vm_ctx);
-
+    let heap_max = (vm_ctx.heap_max as usize).min(HEAP_MAX);
     let syscall_inv = syscall_context.syscall_invocation.unwrap();
 
     let mut mempool = VmMemoryPool::new();
     let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
     let mut stack = mempool.get_stack(STACK_SIZE);
-    let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
+    let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; heap_max]);
 
     let mut regions = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
@@ -183,8 +203,8 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     };
 
     let mut vm = EbpfVm::new(
-        loader.clone(),
-        sbpf_version,
+        executable.get_loader().clone(),
+        executable.get_sbpf_version(),
         &mut context_obj,
         memory_mapping,
         STACK_SIZE,
@@ -211,24 +231,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix);
     mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix);
-
-    let mut executable =
-        Executable::from_text_bytes(&vm_ctx.rodata, loader, sbpf_version, function_registry)
-            .unwrap();
-
-    if executable.verify::<RequisiteVerifier>().is_err() {
-        return Some(SyscallEffects {
-            error: -2,
-            ..Default::default()
-        });
-    }
-
-    if executable.jit_compile().is_err() {
-        return Some(SyscallEffects {
-            error: -3,
-            ..Default::default()
-        });
-    }
 
     let (_, result) = vm.execute_program(
         &executable,
@@ -317,16 +319,21 @@ non-issue here, but require explicit handling in FD. This causes a slight
 difference in error checks in CALL_IMM, which we handle in process_result.
 
 [1](https://github.com/firedancer-io/firedancer/blob/93cea434dfe2f728f2ab4746590972644c06b863/src/ballet/sbpf/fd_sbpf_loader.h#L27). */
-fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
+fn setup_internal_fn_registry(
+    vm_ctx: &VmContext,
+    sbpf_version: SBPFVersion,
+) -> FunctionRegistry<usize> {
     let mut fn_reg = FunctionRegistry::default();
     let max_pc = vm_ctx.rodata.len() / 8;
 
     // register entry point
-    let _ = fn_reg.register_function(
-        ebpf::hash_symbol_name(b"entrypoint"),
-        b"entrypoint",
-        vm_ctx.entry_pc as usize,
-    );
+    let entry_pc = (vm_ctx.entry_pc as usize).min(max_pc.saturating_sub(1));
+    let hash = if sbpf_version.enable_stricter_elf_headers() {
+        entry_pc as u32
+    } else {
+        ebpf::hash_symbol_name(b"entrypoint")
+    };
+    let _ = fn_reg.register_function(hash, b"entrypoint", entry_pc);
 
     let call_whitelist = &vm_ctx.call_whitelist;
     for (byte_idx, byte) in call_whitelist.iter().enumerate() {
@@ -336,11 +343,12 @@ fn setup_internal_fn_registry(vm_ctx: &VmContext) -> FunctionRegistry<usize> {
                 // ignore invalid pc, i.e. assume the test was set up correctly.
                 // registering fn beyond max_pc segfaults inside the JIT.
                 if pc < max_pc {
-                    let _ = fn_reg.register_function(
-                        ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64)),
-                        b"fn",
-                        pc,
-                    );
+                    let hash = if sbpf_version.enable_stricter_elf_headers() {
+                        pc as u32
+                    } else {
+                        ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64))
+                    };
+                    let _ = fn_reg.register_function(hash, b"fn", pc);
                 }
             }
         }
@@ -367,13 +375,13 @@ fn process_result<C: ContextObject>(
             which hashes the PC of the target function into the instruction immediate.
             The interpreter fuzzer uses this. */
 
-            let pc = vm.registers[11];
-            let insn = ebpf::get_insn_unchecked(executable.get_text_bytes().1, pc as usize);
+            let bytes = executable.get_text_bytes().1;
+            let insn_sz = bytes.len() / ebpf::INSN_SIZE;
+            let pc = (vm.registers[11] as usize).min(insn_sz.saturating_sub(1));
+            let insn = ebpf::get_insn_unchecked(bytes, pc);
             if insn.opc == ebpf::CALL_IMM {
                 let pchash = insn.imm as u32;
-                if pchash_inverse(pchash)
-                    > (executable.get_text_bytes().1.len() / ebpf::INSN_SIZE) as u32
-                {
+                if pchash_inverse(pchash) > (insn_sz) as u32 {
                     // need to simulate pushing a stack frame
                     vm.call_depth += 1;
                     EbpfError::CallOutsideTextSegment

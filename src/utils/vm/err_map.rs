@@ -20,6 +20,7 @@ pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {
         /* FD_VM_ERR_SIGBUS (14) and FD_VM_ERR_SIGRDONLY (15) not used */
         EbpfError::ExceededMaxInstructions => 16, /* FD_VM_ERR_SIGCOST*/
         EbpfError::DivideByZero => 18,            /* FD_VM_ERR_SIGFPE */
+        EbpfError::DivideOverflow => 19,          /* FD_VM_ERR_SIGFPE_OP */
         /* EbpfError::DivideOverflow isn't possible in SBPFv1 bytecode,
         so we don't have a mapping.  */
         err => {
