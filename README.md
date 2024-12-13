@@ -6,6 +6,12 @@ Supported APIs:
 - sol_compat_instr_execute_v1
 - sol_compat_vm_syscall_execute_v1
 
+Install dependencies:
+```sh
+apt install libudev-dev protobuf-compiler pkg-config
+```
+
+
 Check and test:
 
 ```sh
