@@ -599,7 +599,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         // Only keep accounts that were passed in as account_keys or as ALUT accounts
         relevant_accounts.acct_states.retain(|account| {
             let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
-            loaded_account_keys.contains(&pubkey) && pubkey != sysvar::instructions::id()
+            loaded_account_keys.contains(&pubkey)
         });
 
         txn_result.resulting_state = Some(relevant_accounts.clone());
