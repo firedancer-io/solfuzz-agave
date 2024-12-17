@@ -193,6 +193,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     deprecate_unused_legacy_vote_plumbing,
     simplify_alt_bn128_syscall_error_codes,
     ed25519_precompile_verify_strict,
+    migrate_address_lookup_table_program_to_core_bpf,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -264,7 +265,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
     migrate_config_program_to_core_bpf,
-    migrate_address_lookup_table_program_to_core_bpf,
     enable_get_epoch_stake_syscall,
     disable_account_loader_special_case,
 ];
@@ -481,15 +481,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
-    cache.replenish(
-        solana_sdk::address_lookup_table::program::id(),
-        Arc::new(ProgramCacheEntry::new_builtin(
-            0u64,
-            0usize,
-            solana_address_lookup_table_program::processor::Entrypoint::vm,
-        )),
-    );
+fn load_builtins(cache: &mut ProgramCacheForTxBatch) {
     cache.replenish(
         solana_sdk::bpf_loader_deprecated::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
@@ -563,25 +555,11 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
         )),
     );
 
-    let mut builtins: HashSet<Pubkey> = HashSet::new();
-    builtins.insert(solana_sdk::address_lookup_table::program::id());
-    builtins.insert(solana_sdk::bpf_loader_deprecated::id());
-    builtins.insert(solana_sdk::bpf_loader::id());
-    builtins.insert(solana_sdk::bpf_loader_upgradeable::id());
-    builtins.insert(solana_sdk::compute_budget::id());
-    builtins.insert(solana_config_program::id());
-    builtins.insert(solana_stake_program::id());
-    builtins.insert(solana_system_program::id());
-    builtins.insert(solana_vote_program::id());
-    builtins.insert(solana_zk_sdk::zk_elgamal_proof_program::id());
-
     // If the `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables
     // are set, this macro will do the following:
     // * Replace the designated builtin program in the cache with a loaded ELF.
     // * Remove that builtin's program ID from the `builtins` set above.
     load_core_bpf_program!();
-
-    builtins
 }
 
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
@@ -756,15 +734,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     program_cache_for_tx_batch.environments = environments.clone();
     program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
-    let loaded_builtins = load_builtins(&mut program_cache_for_tx_batch);
-
-    // Skip if the program account is a native program and is not owned by the native loader
-    // (Would call the owner instead)
-    if loaded_builtins.contains(&transaction_accounts[program_idx].0)
-        && transaction_accounts[program_idx].1.owner() != &solana_sdk::native_loader::id()
-    {
-        return None;
-    }
+    load_builtins(&mut program_cache_for_tx_batch);
 
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache

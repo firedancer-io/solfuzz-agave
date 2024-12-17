@@ -23,7 +23,7 @@ else
 fi
 
 # temp disabled
-# find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_instr {} > $LOG_PATH/test_exec_instr.log 2>&1
+find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_instr {} > $LOG_PATH/test_exec_instr.log 2>&1
 # secp256r1 currently not working, agave has bugs
 # find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_txn {} > $LOG_PATH/test_exec_precompile.log 2>&1
 find dump/test-vectors/txn/fixtures/precompile/ed25519 -type f -name '*.fix' | xargs -P 32 -I {} ./target/release/test_exec_txn {} > $LOG_PATH/test_exec_precompile.log 2>&1
