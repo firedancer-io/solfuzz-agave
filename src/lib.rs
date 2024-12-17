@@ -263,7 +263,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
-    migrate_config_program_to_core_bpf,
+    // migrate_config_program_to_core_bpf,
     enable_get_epoch_stake_syscall,
     disable_account_loader_special_case,
 ];
@@ -480,7 +480,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn load_builtins(cache: &mut ProgramCacheForTxBatch) {
+fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     cache.replenish(
         solana_sdk::bpf_loader_deprecated::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
@@ -505,6 +505,16 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) {
             solana_bpf_loader_program::Entrypoint::vm,
         )),
     );
+    if feature_set.is_active(&enable_program_runtime_v2_and_loader_v4::id()) {
+        cache.replenish(
+            solana_sdk::loader_v4::id(),
+            Arc::new(ProgramCacheEntry::new_builtin(
+                0u64,
+                0usize,
+                solana_loader_v4_program::Entrypoint::vm,
+            )),
+        );
+    }
     cache.replenish(
         solana_sdk::compute_budget::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
@@ -545,14 +555,16 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) {
             solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
-    cache.replenish(
-        solana_zk_sdk::zk_elgamal_proof_program::id(),
-        Arc::new(ProgramCacheEntry::new_builtin(
-            0u64,
-            0usize,
-            solana_zk_elgamal_proof_program::Entrypoint::vm,
-        )),
-    );
+    if feature_set.is_active(&zk_elgamal_proof_program_enabled::id()) {
+        cache.replenish(
+            solana_zk_sdk::zk_elgamal_proof_program::id(),
+            Arc::new(ProgramCacheEntry::new_builtin(
+                0u64,
+                0usize,
+                solana_zk_elgamal_proof_program::Entrypoint::vm,
+            )),
+        );
+    }
 
     // If the `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables
     // are set, this macro will do the following:
@@ -733,7 +745,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     program_cache_for_tx_batch.environments = environments.clone();
     program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
-    load_builtins(&mut program_cache_for_tx_batch);
+    load_builtins(&mut program_cache_for_tx_batch, &input.feature_set);
 
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache

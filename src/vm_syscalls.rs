@@ -122,7 +122,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // sigh ... What is this mess?
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
-    load_builtins(&mut program_cache_for_tx_batch);
+    load_builtins(&mut program_cache_for_tx_batch, &feature_set);
 
     let mut sysvar_cache = SysvarCache::default();
 
