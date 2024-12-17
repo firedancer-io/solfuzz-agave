@@ -263,8 +263,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
-    migrate_config_program_to_core_bpf,
-    migrate_address_lookup_table_program_to_core_bpf,
+    // migrate_config_program_to_core_bpf,
+    // migrate_address_lookup_table_program_to_core_bpf,
     enable_get_epoch_stake_syscall,
     disable_account_loader_special_case,
 ];
