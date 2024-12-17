@@ -201,7 +201,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     pico_inflation,
     warp_timestamp_again,
     blake3_syscall_enabled,
-    zk_token_sdk_enabled,
     curve25519_syscall_enabled,
     enable_partitioned_epoch_reward,
     stake_raise_minimum_delegation_to_1_sol,
