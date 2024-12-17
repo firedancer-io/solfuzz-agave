@@ -481,7 +481,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
+fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) -> HashSet<Pubkey> {
     cache.replenish(
         solana_sdk::address_lookup_table::program::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
@@ -514,14 +514,17 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
             solana_bpf_loader_program::Entrypoint::vm,
         )),
     );
-    cache.replenish(
-        solana_sdk::loader_v4::id(),
-        Arc::new(ProgramCacheEntry::new_builtin(
-            0u64,
-            0usize,
-            solana_loader_v4_program::Entrypoint::vm,
-        )),
-    );
+    if feature_set.is_active(&enable_program_runtime_v2_and_loader_v4::id()) {
+        cache.replenish(
+            solana_sdk::loader_v4::id(),
+            Arc::new(ProgramCacheEntry::new_builtin(
+                0u64,
+                0usize,
+                solana_loader_v4_program::Entrypoint::vm,
+            )),
+        );
+    }
+
     cache.replenish(
         solana_sdk::compute_budget::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
@@ -562,27 +565,33 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch) -> HashSet<Pubkey> {
             solana_vote_program::vote_processor::Entrypoint::vm,
         )),
     );
-    cache.replenish(
-        solana_zk_sdk::zk_elgamal_proof_program::id(),
-        Arc::new(ProgramCacheEntry::new_builtin(
-            0u64,
-            0usize,
-            solana_zk_elgamal_proof_program::Entrypoint::vm,
-        )),
-    );
+    if feature_set.is_active(&zk_elgamal_proof_program_enabled::id()) {
+        cache.replenish(
+            solana_zk_sdk::zk_elgamal_proof_program::id(),
+            Arc::new(ProgramCacheEntry::new_builtin(
+                0u64,
+                0usize,
+                solana_zk_elgamal_proof_program::Entrypoint::vm,
+            )),
+        );
+    }
 
     let mut builtins: HashSet<Pubkey> = HashSet::new();
     builtins.insert(solana_sdk::address_lookup_table::program::id());
     builtins.insert(solana_sdk::bpf_loader_deprecated::id());
     builtins.insert(solana_sdk::bpf_loader::id());
     builtins.insert(solana_sdk::bpf_loader_upgradeable::id());
+    if feature_set.is_active(&enable_program_runtime_v2_and_loader_v4::id()) {
+        builtins.insert(solana_sdk::loader_v4::id());
+    }
     builtins.insert(solana_sdk::compute_budget::id());
-    builtins.insert(solana_sdk::loader_v4::id());
     builtins.insert(solana_config_program::id());
     builtins.insert(solana_stake_program::id());
     builtins.insert(solana_system_program::id());
     builtins.insert(solana_vote_program::id());
-    builtins.insert(solana_zk_sdk::zk_elgamal_proof_program::id());
+    if feature_set.is_active(&zk_elgamal_proof_program_enabled::id()) {
+        builtins.insert(solana_zk_sdk::zk_elgamal_proof_program::id());
+    }
 
     // If the `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables
     // are set, this macro will do the following:
@@ -765,7 +774,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     program_cache_for_tx_batch.environments = environments.clone();
     program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
-    let loaded_builtins = load_builtins(&mut program_cache_for_tx_batch);
+    let loaded_builtins = load_builtins(&mut program_cache_for_tx_batch, &input.feature_set.clone());
 
     // Skip if the program account is a native program and is not owned by the native loader
     // (Would call the owner instead)
