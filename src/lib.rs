@@ -774,7 +774,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     program_cache_for_tx_batch.environments = environments.clone();
     program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
-    let loaded_builtins = load_builtins(&mut program_cache_for_tx_batch, &input.feature_set.clone());
+    let loaded_builtins =
+        load_builtins(&mut program_cache_for_tx_batch, &input.feature_set.clone());
 
     // Skip if the program account is a native program and is not owned by the native loader
     // (Would call the owner instead)
