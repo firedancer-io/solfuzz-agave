@@ -194,6 +194,8 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     simplify_alt_bn128_syscall_error_codes,
     ed25519_precompile_verify_strict,
     migrate_address_lookup_table_program_to_core_bpf,
+    migrate_config_program_to_core_bpf,
+    get_sysvar_syscall_enabled,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -261,9 +263,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     deprecate_legacy_vote_ixs,
     partitioned_epoch_rewards_superfeature,
     enable_secp256r1_precompile,
-    get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
-    // migrate_config_program_to_core_bpf,
     enable_get_epoch_stake_syscall,
     disable_account_loader_special_case,
 ];
@@ -521,14 +521,6 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
             0u64,
             0usize,
             solana_compute_budget_program::Entrypoint::vm,
-        )),
-    );
-    cache.replenish(
-        solana_config_program::id(),
-        Arc::new(ProgramCacheEntry::new_builtin(
-            0u64,
-            0usize,
-            solana_config_program::config_processor::Entrypoint::vm,
         )),
     );
     cache.replenish(

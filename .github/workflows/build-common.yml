@@ -24,8 +24,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo dnf install protobuf-compiler
-          sudo dnf install systemd-devel
+          sudo dnf install -y protobuf-compiler
+          sudo dnf install -y systemd-devel
 
       - name: Clone protosol
         run: make fetch_proto
