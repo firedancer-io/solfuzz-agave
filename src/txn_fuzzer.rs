@@ -21,11 +21,11 @@ use solana_sdk::instruction::InstructionError;
 use solana_sdk::message::SanitizedMessage;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
+use solana_sdk::sysvar;
 use solana_sdk::transaction::{
     TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
-use solana_sdk::{address_lookup_table, sysvar};
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
