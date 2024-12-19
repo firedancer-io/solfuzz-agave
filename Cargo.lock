@@ -65,8 +65,7 @@ dependencies = [
 
 [[package]]
 name = "agave-cargo-registry"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "clap 2.34.0",
  "flate2",
@@ -85,7 +84,7 @@ dependencies = [
  "solana-remote-wallet",
  "solana-rpc-client",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-version",
  "tar",
  "tempfile",
@@ -95,21 +94,19 @@ dependencies = [
 
 [[package]]
 name = "agave-geyser-plugin-interface"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "agave-transaction-view"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm-transaction",
 ]
 
@@ -5550,21 +5547,19 @@ dependencies = [
 
 [[package]]
 name = "solana-account"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "serde",
  "serde_bytes",
  "serde_derive",
- "solana-instruction 2.1.3",
- "solana-program 2.1.3",
+ "solana-instruction 2.1.6",
+ "solana-program 2.1.6",
 ]
 
 [[package]]
 name = "solana-account-decoder"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "Inflector",
  "base64 0.22.1",
@@ -5577,7 +5572,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder-client-types",
  "solana-config-program",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "spl-token",
  "spl-token-2022",
  "spl-token-group-interface",
@@ -5588,16 +5583,15 @@ dependencies = [
 
 [[package]]
 name = "solana-account-decoder-client-types"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bs58",
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-account 2.1.6",
+ "solana-pubkey 2.1.6",
  "zstd",
 ]
 
@@ -5615,20 +5609,18 @@ dependencies = [
 
 [[package]]
 name = "solana-account-info"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "serde",
- "solana-program-error 2.1.3",
- "solana-program-memory 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-program-error 2.1.6",
+ "solana-program-memory 2.1.6",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
 name = "solana-accounts-db"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ahash 0.8.11",
  "bincode",
@@ -5662,7 +5654,7 @@ dependencies = [
  "solana-metrics",
  "solana-nohash-hasher",
  "solana-rayon-threadlimit",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm-transaction",
  "static_assertions",
  "tar",
@@ -5672,19 +5664,18 @@ dependencies = [
 
 [[package]]
 name = "solana-address-lookup-table-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "bytemuck",
  "log",
  "num-derive",
  "num-traits",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-log-collector",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
 ]
 
@@ -5698,22 +5689,20 @@ dependencies = [
 
 [[package]]
 name = "solana-atomic-u64"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "parking_lot 0.12.3",
 ]
 
 [[package]]
 name = "solana-banks-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "borsh 1.5.3",
  "futures 0.3.31",
  "solana-banks-interface",
- "solana-program 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-program 2.1.6",
+ "solana-sdk 2.1.6",
  "tarpc",
  "thiserror 1.0.69",
  "tokio",
@@ -5722,28 +5711,26 @@ dependencies = [
 
 [[package]]
 name = "solana-banks-interface"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "tarpc",
 ]
 
 [[package]]
 name = "solana-banks-server"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "crossbeam-channel",
  "futures 0.3.31",
  "solana-banks-interface",
  "solana-client",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-send-transaction-service",
  "solana-svm",
  "tarpc",
@@ -5753,8 +5740,7 @@ dependencies = [
 
 [[package]]
 name = "solana-bench-tps"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "chrono",
  "clap 2.34.0",
@@ -5784,7 +5770,7 @@ dependencies = [
  "solana-rpc-client-api",
  "solana-rpc-client-nonce-utils",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "solana-tps-client",
  "solana-tpu-client",
@@ -5806,18 +5792,16 @@ dependencies = [
 
 [[package]]
 name = "solana-bincode"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "serde",
- "solana-instruction 2.1.3",
+ "solana-instruction 2.1.6",
 ]
 
 [[package]]
 name = "solana-bloom"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bv",
  "fnv",
@@ -5825,8 +5809,8 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_derive",
- "solana-sanitize 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-sanitize 2.1.6",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
@@ -5845,15 +5829,14 @@ dependencies = [
 
 [[package]]
 name = "solana-bn254"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ark-bn254",
  "ark-ec",
  "ark-ff",
  "ark-serialize",
  "bytemuck",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "thiserror 1.0.69",
 ]
 
@@ -5868,8 +5851,7 @@ dependencies = [
 
 [[package]]
 name = "solana-borsh"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "borsh 0.10.4",
  "borsh 1.5.3",
@@ -5877,24 +5859,23 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-loader-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "byteorder",
  "libsecp256k1",
  "log",
  "scopeguard",
- "solana-bn254 2.1.3",
+ "solana-bn254 2.1.6",
  "solana-compute-budget",
  "solana-curve25519",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-log-collector",
  "solana-measure",
  "solana-poseidon",
- "solana-program-memory 2.1.3",
+ "solana-program-memory 2.1.6",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-timings",
  "solana-type-overrides",
  "solana_rbpf",
@@ -5903,8 +5884,7 @@ dependencies = [
 
 [[package]]
 name = "solana-bucket-map"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bv",
  "bytemuck",
@@ -5915,14 +5895,13 @@ dependencies = [
  "num_enum",
  "rand 0.8.5",
  "solana-measure",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "tempfile",
 ]
 
 [[package]]
 name = "solana-builtins-default-costs"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ahash 0.8.11",
  "lazy_static",
@@ -5932,7 +5911,7 @@ dependencies = [
  "solana-compute-budget-program",
  "solana-config-program",
  "solana-loader-v4-program",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-stake-program",
  "solana-system-program",
  "solana-vote-program",
@@ -5940,15 +5919,14 @@ dependencies = [
 
 [[package]]
 name = "solana-clap-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "chrono",
  "clap 2.34.0",
  "rpassword",
- "solana-derivation-path 2.1.3",
+ "solana-derivation-path 2.1.6",
  "solana-remote-wallet",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
  "tiny-bip39",
  "uriparse",
@@ -5957,15 +5935,14 @@ dependencies = [
 
 [[package]]
 name = "solana-clap-v3-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "chrono",
  "clap 3.2.25",
  "rpassword",
- "solana-derivation-path 2.1.3",
+ "solana-derivation-path 2.1.6",
  "solana-remote-wallet",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-zk-token-sdk",
  "thiserror 1.0.69",
  "tiny-bip39",
@@ -5975,8 +5952,7 @@ dependencies = [
 
 [[package]]
 name = "solana-cli"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "bs58",
@@ -6005,8 +5981,8 @@ dependencies = [
  "solana-compute-budget",
  "solana-config-program",
  "solana-connection-cache",
- "solana-decode-error 2.1.3",
- "solana-feature-set 2.1.3",
+ "solana-decode-error 2.1.6",
+ "solana-feature-set 2.1.6",
  "solana-loader-v4-program",
  "solana-logger",
  "solana-program-runtime",
@@ -6016,7 +5992,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-rpc-client-nonce-utils",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "solana-tps-client",
  "solana-tpu-client",
@@ -6032,8 +6008,7 @@ dependencies = [
 
 [[package]]
 name = "solana-cli-config"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "dirs-next",
  "lazy_static",
@@ -6041,14 +6016,13 @@ dependencies = [
  "serde_derive",
  "serde_yaml",
  "solana-clap-utils",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "url 2.5.4",
 ]
 
 [[package]]
 name = "solana-cli-output"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "Inflector",
  "base64 0.22.1",
@@ -6065,7 +6039,7 @@ dependencies = [
  "solana-clap-utils",
  "solana-cli-config",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status",
  "solana-vote-program",
  "spl-memo",
@@ -6073,8 +6047,7 @@ dependencies = [
 
 [[package]]
 name = "solana-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-trait",
  "bincode",
@@ -6093,7 +6066,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-rpc-client-nonce-utils",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "solana-thin-client",
  "solana-tpu-client",
@@ -6114,36 +6087,32 @@ dependencies = [
 
 [[package]]
 name = "solana-clock"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-sdk-macro 2.1.3",
+ "solana-sdk-macro 2.1.6",
  "solana-sysvar-id",
 ]
 
 [[package]]
 name = "solana-compute-budget"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-compute-budget-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-config-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "chrono",
@@ -6151,14 +6120,13 @@ dependencies = [
  "serde_derive",
  "solana-log-collector",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
- "solana-short-vec 2.1.3",
+ "solana-sdk 2.1.6",
+ "solana-short-vec 2.1.6",
 ]
 
 [[package]]
 name = "solana-connection-cache"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-trait",
  "bincode",
@@ -6170,15 +6138,14 @@ dependencies = [
  "rayon",
  "solana-measure",
  "solana-metrics",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
  "tokio",
 ]
 
 [[package]]
 name = "solana-core"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -6218,7 +6185,7 @@ dependencies = [
  "solana-connection-cache",
  "solana-cost-model",
  "solana-entry",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-fee",
  "solana-geyser-plugin-manager",
  "solana-gossip",
@@ -6234,10 +6201,10 @@ dependencies = [
  "solana-rpc-client-api",
  "solana-runtime",
  "solana-runtime-transaction",
- "solana-sanitize 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-sanitize 2.1.6",
+ "solana-sdk 2.1.6",
  "solana-send-transaction-service",
- "solana-short-vec 2.1.3",
+ "solana-short-vec 2.1.6",
  "solana-streamer",
  "solana-svm",
  "solana-svm-transaction",
@@ -6262,18 +6229,17 @@ dependencies = [
 
 [[package]]
 name = "solana-cost-model"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ahash 0.8.11",
  "lazy_static",
  "log",
  "solana-builtins-default-costs",
  "solana-compute-budget",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-metrics",
  "solana-runtime-transaction",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm-transaction",
  "solana-vote-program",
 ]
@@ -6293,26 +6259,24 @@ dependencies = [
 
 [[package]]
 name = "solana-cpi"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-account-info 2.1.3",
- "solana-define-syscall 2.1.3",
- "solana-instruction 2.1.3",
- "solana-program-error 2.1.3",
- "solana-pubkey 2.1.3",
- "solana-stable-layout 2.1.3",
+ "solana-account-info 2.1.6",
+ "solana-define-syscall 2.1.6",
+ "solana-instruction 2.1.6",
+ "solana-program-error 2.1.6",
+ "solana-pubkey 2.1.6",
+ "solana-stable-layout 2.1.6",
 ]
 
 [[package]]
 name = "solana-curve25519"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bytemuck",
  "bytemuck_derive",
  "curve25519-dalek 4.1.3",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "thiserror 1.0.69",
 ]
 
@@ -6326,8 +6290,7 @@ dependencies = [
 
 [[package]]
 name = "solana-decode-error"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "num-traits",
 ]
@@ -6339,8 +6302,7 @@ source = "git+https://github.com/firedancer-io/agave?rev=66ea0a11f2f77086d33253b
 
 [[package]]
 name = "solana-define-syscall"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 
 [[package]]
 name = "solana-derivation-path"
@@ -6354,8 +6316,7 @@ dependencies = [
 
 [[package]]
 name = "solana-derivation-path"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "derivation-path",
  "qstring",
@@ -6364,21 +6325,19 @@ dependencies = [
 
 [[package]]
 name = "solana-download-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "console",
  "indicatif",
  "log",
  "reqwest",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-entry"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -6393,7 +6352,7 @@ dependencies = [
  "solana-metrics",
  "solana-perf",
  "solana-rayon-threadlimit",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
@@ -6408,19 +6367,17 @@ dependencies = [
 
 [[package]]
 name = "solana-epoch-schedule"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-sdk-macro 2.1.3",
+ "solana-sdk-macro 2.1.6",
  "solana-sysvar-id",
 ]
 
 [[package]]
 name = "solana-faucet"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6433,7 +6390,7 @@ dependencies = [
  "solana-cli-config",
  "solana-logger",
  "solana-metrics",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-version",
  "spl-memo",
  "thiserror 1.0.69",
@@ -6455,23 +6412,21 @@ dependencies = [
 
 [[package]]
 name = "solana-feature-set"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "lazy_static",
- "solana-clock 2.1.3",
- "solana-epoch-schedule 2.1.3",
- "solana-hash 2.1.3",
- "solana-pubkey 2.1.3",
- "solana-sha256-hasher 2.1.3",
+ "solana-clock 2.1.6",
+ "solana-epoch-schedule 2.1.6",
+ "solana-hash 2.1.6",
+ "solana-pubkey 2.1.6",
+ "solana-sha256-hasher 2.1.6",
 ]
 
 [[package]]
 name = "solana-fee"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm-transaction",
 ]
 
@@ -6487,8 +6442,7 @@ dependencies = [
 
 [[package]]
 name = "solana-fee-calculator"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
  "serde",
@@ -6497,8 +6451,7 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bs58",
  "bv",
@@ -6516,8 +6469,7 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi-macro"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6526,8 +6478,7 @@ dependencies = [
 
 [[package]]
 name = "solana-genesis"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -6545,7 +6496,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-stake-program",
  "solana-version",
  "solana-vote-program",
@@ -6554,20 +6505,18 @@ dependencies = [
 
 [[package]]
 name = "solana-genesis-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
  "solana-accounts-db",
  "solana-download-utils",
  "solana-rpc-client",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-geyser-plugin-manager"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "agave-geyser-plugin-interface",
  "bs58",
@@ -6584,7 +6533,7 @@ dependencies = [
  "solana-metrics",
  "solana-rpc",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status",
  "thiserror 1.0.69",
  "tokio",
@@ -6592,8 +6541,7 @@ dependencies = [
 
 [[package]]
 name = "solana-gossip"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -6617,7 +6565,7 @@ dependencies = [
  "solana-client",
  "solana-connection-cache",
  "solana-entry",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-ledger",
  "solana-logger",
  "solana-measure",
@@ -6627,10 +6575,10 @@ dependencies = [
  "solana-rayon-threadlimit",
  "solana-rpc-client",
  "solana-runtime",
- "solana-sanitize 2.1.3",
- "solana-sdk 2.1.3",
- "solana-serde-varint 2.1.3",
- "solana-short-vec 2.1.3",
+ "solana-sanitize 2.1.6",
+ "solana-sdk 2.1.6",
+ "solana-serde-varint 2.1.6",
+ "solana-short-vec 2.1.6",
  "solana-streamer",
  "solana-tpu-client",
  "solana-version",
@@ -6659,8 +6607,7 @@ dependencies = [
 
 [[package]]
 name = "solana-hash"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "borsh 1.5.3",
  "bs58",
@@ -6669,8 +6616,8 @@ dependencies = [
  "js-sys",
  "serde",
  "serde_derive",
- "solana-atomic-u64 2.1.3",
- "solana-sanitize 2.1.3",
+ "solana-atomic-u64 2.1.6",
+ "solana-sanitize 2.1.6",
  "wasm-bindgen",
 ]
 
@@ -6685,8 +6632,7 @@ dependencies = [
 
 [[package]]
 name = "solana-inflation"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
@@ -6694,11 +6640,10 @@ dependencies = [
 
 [[package]]
 name = "solana-inline-spl"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bytemuck",
- "solana-pubkey 2.1.3",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
@@ -6720,8 +6665,7 @@ dependencies = [
 
 [[package]]
 name = "solana-instruction"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "borsh 1.5.3",
@@ -6730,8 +6674,8 @@ dependencies = [
  "num-traits",
  "serde",
  "serde_derive",
- "solana-define-syscall 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-define-syscall 2.1.6",
+ "solana-pubkey 2.1.6",
  "wasm-bindgen",
 ]
 
@@ -6747,19 +6691,17 @@ dependencies = [
 
 [[package]]
 name = "solana-last-restart-slot"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-sdk-macro 2.1.3",
+ "solana-sdk-macro 2.1.6",
  "solana-sysvar-id",
 ]
 
 [[package]]
 name = "solana-lattice-hash"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -6769,8 +6711,7 @@ dependencies = [
 
 [[package]]
 name = "solana-ledger"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -6809,14 +6750,14 @@ dependencies = [
  "solana-bpf-loader-program",
  "solana-cost-model",
  "solana-entry",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-measure",
  "solana-metrics",
  "solana-perf",
  "solana-program-runtime",
  "solana-rayon-threadlimit",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-stake-program",
  "solana-storage-bigtable",
  "solana-storage-proto",
@@ -6841,8 +6782,7 @@ dependencies = [
 
 [[package]]
 name = "solana-loader-v4-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
  "solana-bpf-loader-program",
@@ -6850,15 +6790,14 @@ dependencies = [
  "solana-log-collector",
  "solana-measure",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-type-overrides",
  "solana_rbpf",
 ]
 
 [[package]]
 name = "solana-local-cluster"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "crossbeam-channel",
  "itertools 0.12.1",
@@ -6878,7 +6817,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-stake-program",
  "solana-streamer",
  "solana-thin-client",
@@ -6894,16 +6833,14 @@ dependencies = [
 
 [[package]]
 name = "solana-log-collector"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "solana-logger"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -6912,30 +6849,27 @@ dependencies = [
 
 [[package]]
 name = "solana-measure"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 
 [[package]]
 name = "solana-merkle-tree"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "fast-math",
- "solana-hash 2.1.3",
- "solana-sha256-hasher 2.1.3",
+ "solana-hash 2.1.6",
+ "solana-sha256-hasher 2.1.6",
 ]
 
 [[package]]
 name = "solana-metrics"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
  "lazy_static",
  "log",
  "reqwest",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
 ]
 
@@ -6949,10 +6883,9 @@ dependencies = [
 
 [[package]]
 name = "solana-msg"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-define-syscall 2.1.3",
+ "solana-define-syscall 2.1.6",
 ]
 
 [[package]]
@@ -6962,13 +6895,11 @@ source = "git+https://github.com/firedancer-io/agave?rev=66ea0a11f2f77086d33253b
 
 [[package]]
 name = "solana-native-token"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 
 [[package]]
 name = "solana-net-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -6978,7 +6909,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "socket2",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "tokio",
  "url 2.5.4",
 ]
@@ -6991,28 +6922,25 @@ checksum = "8b8a731ed60e89177c8a7ab05fe0f1511cedd3e70e773f288f9de33a9cfdc21e"
 
 [[package]]
 name = "solana-notifier"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
  "reqwest",
  "serde_json",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-package-metadata"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "solana-package-metadata-macro",
- "solana-pubkey 2.1.3",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
 name = "solana-package-metadata-macro"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7035,8 +6963,7 @@ dependencies = [
 
 [[package]]
 name = "solana-packet"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "bitflags 2.6.0",
@@ -7048,8 +6975,7 @@ dependencies = [
 
 [[package]]
 name = "solana-perf"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ahash 0.8.11",
  "bincode",
@@ -7067,15 +6993,14 @@ dependencies = [
  "serde",
  "solana-metrics",
  "solana-rayon-threadlimit",
- "solana-sdk 2.1.3",
- "solana-short-vec 2.1.3",
+ "solana-sdk 2.1.6",
+ "solana-short-vec 2.1.6",
  "solana-vote-program",
 ]
 
 [[package]]
 name = "solana-poh"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "core_affinity",
  "crossbeam-channel",
@@ -7085,18 +7010,17 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "solana-poseidon"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ark-bn254",
  "light-poseidon",
- "solana-define-syscall 2.1.3",
+ "solana-define-syscall 2.1.6",
  "thiserror 1.0.69",
 ]
 
@@ -7111,11 +7035,10 @@ dependencies = [
 
 [[package]]
 name = "solana-precompile-error"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "num-traits",
- "solana-decode-error 2.1.3",
+ "solana-decode-error 2.1.6",
 ]
 
 [[package]]
@@ -7191,8 +7114,7 @@ dependencies = [
 
 [[package]]
 name = "solana-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -7223,40 +7145,40 @@ dependencies = [
  "serde_derive",
  "sha2 0.10.8",
  "sha3",
- "solana-account-info 2.1.3",
- "solana-atomic-u64 2.1.3",
- "solana-bincode 2.1.3",
- "solana-borsh 2.1.3",
- "solana-clock 2.1.3",
- "solana-cpi 2.1.3",
- "solana-decode-error 2.1.3",
- "solana-define-syscall 2.1.3",
- "solana-epoch-schedule 2.1.3",
- "solana-fee-calculator 2.1.3",
- "solana-hash 2.1.3",
- "solana-instruction 2.1.3",
- "solana-last-restart-slot 2.1.3",
- "solana-msg 2.1.3",
- "solana-native-token 2.1.3",
- "solana-program-entrypoint 2.1.3",
- "solana-program-error 2.1.3",
- "solana-program-memory 2.1.3",
- "solana-program-option 2.1.3",
- "solana-program-pack 2.1.3",
- "solana-pubkey 2.1.3",
- "solana-rent 2.1.3",
- "solana-sanitize 2.1.3",
- "solana-sdk-macro 2.1.3",
- "solana-secp256k1-recover 2.1.3",
- "solana-serde-varint 2.1.3",
- "solana-serialize-utils 2.1.3",
- "solana-sha256-hasher 2.1.3",
- "solana-short-vec 2.1.3",
- "solana-slot-hashes 2.1.3",
- "solana-slot-history 2.1.3",
- "solana-stable-layout 2.1.3",
+ "solana-account-info 2.1.6",
+ "solana-atomic-u64 2.1.6",
+ "solana-bincode 2.1.6",
+ "solana-borsh 2.1.6",
+ "solana-clock 2.1.6",
+ "solana-cpi 2.1.6",
+ "solana-decode-error 2.1.6",
+ "solana-define-syscall 2.1.6",
+ "solana-epoch-schedule 2.1.6",
+ "solana-fee-calculator 2.1.6",
+ "solana-hash 2.1.6",
+ "solana-instruction 2.1.6",
+ "solana-last-restart-slot 2.1.6",
+ "solana-msg 2.1.6",
+ "solana-native-token 2.1.6",
+ "solana-program-entrypoint 2.1.6",
+ "solana-program-error 2.1.6",
+ "solana-program-memory 2.1.6",
+ "solana-program-option 2.1.6",
+ "solana-program-pack 2.1.6",
+ "solana-pubkey 2.1.6",
+ "solana-rent 2.1.6",
+ "solana-sanitize 2.1.6",
+ "solana-sdk-macro 2.1.6",
+ "solana-secp256k1-recover 2.1.6",
+ "solana-serde-varint 2.1.6",
+ "solana-serialize-utils 2.1.6",
+ "solana-sha256-hasher 2.1.6",
+ "solana-short-vec 2.1.6",
+ "solana-slot-hashes 2.1.6",
+ "solana-slot-history 2.1.6",
+ "solana-stable-layout 2.1.6",
  "solana-sysvar-id",
- "solana-transaction-error 2.1.3",
+ "solana-transaction-error 2.1.6",
  "thiserror 1.0.69",
  "wasm-bindgen",
 ]
@@ -7274,13 +7196,12 @@ dependencies = [
 
 [[package]]
 name = "solana-program-entrypoint"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-account-info 2.1.3",
- "solana-msg 2.1.3",
- "solana-program-error 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-account-info 2.1.6",
+ "solana-msg 2.1.6",
+ "solana-program-error 2.1.6",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
@@ -7300,17 +7221,16 @@ dependencies = [
 
 [[package]]
 name = "solana-program-error"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "borsh 1.5.3",
  "num-traits",
  "serde",
  "serde_derive",
- "solana-decode-error 2.1.3",
- "solana-instruction 2.1.3",
- "solana-msg 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-decode-error 2.1.6",
+ "solana-instruction 2.1.6",
+ "solana-msg 2.1.6",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
@@ -7324,11 +7244,10 @@ dependencies = [
 
 [[package]]
 name = "solana-program-memory"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "num-traits",
- "solana-define-syscall 2.1.3",
+ "solana-define-syscall 2.1.6",
 ]
 
 [[package]]
@@ -7338,8 +7257,7 @@ source = "git+https://github.com/firedancer-io/agave?rev=66ea0a11f2f77086d33253b
 
 [[package]]
 name = "solana-program-option"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 
 [[package]]
 name = "solana-program-pack"
@@ -7351,16 +7269,14 @@ dependencies = [
 
 [[package]]
 name = "solana-program-pack"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-program-error 2.1.3",
+ "solana-program-error 2.1.6",
 ]
 
 [[package]]
 name = "solana-program-runtime"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -7374,11 +7290,11 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "solana-compute-budget",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-log-collector",
  "solana-measure",
  "solana-metrics",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-timings",
  "solana-type-overrides",
  "solana-vote",
@@ -7388,8 +7304,7 @@ dependencies = [
 
 [[package]]
 name = "solana-program-test"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -7405,14 +7320,14 @@ dependencies = [
  "solana-banks-server",
  "solana-bpf-loader-program",
  "solana-compute-budget",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-inline-spl",
- "solana-instruction 2.1.3",
+ "solana-instruction 2.1.6",
  "solana-log-collector",
  "solana-logger",
  "solana-program-runtime",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm",
  "solana-timings",
  "solana-vote-program",
@@ -7449,8 +7364,7 @@ dependencies = [
 
 [[package]]
 name = "solana-pubkey"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "borsh 0.10.4",
  "borsh 1.5.3",
@@ -7465,18 +7379,17 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_derive",
- "solana-atomic-u64 2.1.3",
- "solana-decode-error 2.1.3",
- "solana-define-syscall 2.1.3",
- "solana-sanitize 2.1.3",
- "solana-sha256-hasher 2.1.3",
+ "solana-atomic-u64 2.1.6",
+ "solana-decode-error 2.1.6",
+ "solana-define-syscall 2.1.6",
+ "solana-sanitize 2.1.6",
+ "solana-sha256-hasher 2.1.6",
  "wasm-bindgen",
 ]
 
 [[package]]
 name = "solana-pubsub-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -7488,7 +7401,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
@@ -7499,8 +7412,7 @@ dependencies = [
 
 [[package]]
 name = "solana-quic-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-lock",
  "async-trait",
@@ -7516,7 +7428,7 @@ dependencies = [
  "solana-metrics",
  "solana-net-utils",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "thiserror 1.0.69",
  "tokio",
@@ -7524,8 +7436,7 @@ dependencies = [
 
 [[package]]
 name = "solana-rayon-threadlimit"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "lazy_static",
  "num_cpus",
@@ -7533,8 +7444,7 @@ dependencies = [
 
 [[package]]
 name = "solana-remote-wallet"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "console",
  "dialoguer",
@@ -7545,8 +7455,8 @@ dependencies = [
  "parking_lot 0.12.3",
  "qstring",
  "semver",
- "solana-derivation-path 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-derivation-path 2.1.6",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
  "uriparse",
 ]
@@ -7563,19 +7473,17 @@ dependencies = [
 
 [[package]]
 name = "solana-rent"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-sdk-macro 2.1.3",
+ "solana-sdk-macro 2.1.6",
  "solana-sysvar-id",
 ]
 
 [[package]]
 name = "solana-rpc"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -7601,7 +7509,7 @@ dependencies = [
  "solana-client",
  "solana-entry",
  "solana-faucet",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-gossip",
  "solana-inline-spl",
  "solana-ledger",
@@ -7612,7 +7520,7 @@ dependencies = [
  "solana-rayon-threadlimit",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-send-transaction-service",
  "solana-stake-program",
  "solana-storage-bigtable",
@@ -7633,8 +7541,7 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -7650,7 +7557,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder-client-types",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status-client-types",
  "solana-version",
  "solana-vote-program",
@@ -7659,8 +7566,7 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-api"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -7674,7 +7580,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder-client-types",
  "solana-inline-spl",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status-client-types",
  "solana-version",
  "thiserror 1.0.69",
@@ -7682,20 +7588,18 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-nonce-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "clap 2.34.0",
  "solana-clap-utils",
  "solana-rpc-client",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "solana-runtime"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "ahash 0.8.11",
  "aquamarine",
@@ -7743,7 +7647,7 @@ dependencies = [
  "solana-compute-budget-program",
  "solana-config-program",
  "solana-cost-model",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-fee",
  "solana-inline-spl",
  "solana-lattice-hash",
@@ -7751,11 +7655,11 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-perf",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "solana-program-runtime",
  "solana-rayon-threadlimit",
  "solana-runtime-transaction",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-stake-program",
  "solana-svm",
  "solana-svm-rent-collector",
@@ -7782,15 +7686,14 @@ dependencies = [
 
 [[package]]
 name = "solana-runtime-transaction"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "agave-transaction-view",
  "log",
  "solana-builtins-default-costs",
  "solana-compute-budget",
- "solana-pubkey 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-pubkey 2.1.6",
+ "solana-sdk 2.1.6",
  "solana-svm-transaction",
  "thiserror 1.0.69",
 ]
@@ -7802,8 +7705,7 @@ source = "git+https://github.com/firedancer-io/agave?rev=66ea0a11f2f77086d33253b
 
 [[package]]
 name = "solana-sanitize"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 
 [[package]]
 name = "solana-sdk"
@@ -7869,8 +7771,7 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "bitflags 2.6.0",
@@ -7905,27 +7806,27 @@ dependencies = [
  "sha2 0.10.8",
  "sha3",
  "siphasher",
- "solana-account 2.1.3",
- "solana-bn254 2.1.3",
- "solana-decode-error 2.1.3",
- "solana-derivation-path 2.1.3",
- "solana-feature-set 2.1.3",
- "solana-inflation 2.1.3",
- "solana-instruction 2.1.3",
- "solana-native-token 2.1.3",
- "solana-packet 2.1.3",
- "solana-precompile-error 2.1.3",
- "solana-program 2.1.3",
- "solana-program-memory 2.1.3",
- "solana-pubkey 2.1.3",
- "solana-sanitize 2.1.3",
- "solana-sdk-macro 2.1.3",
- "solana-secp256k1-recover 2.1.3",
+ "solana-account 2.1.6",
+ "solana-bn254 2.1.6",
+ "solana-decode-error 2.1.6",
+ "solana-derivation-path 2.1.6",
+ "solana-feature-set 2.1.6",
+ "solana-inflation 2.1.6",
+ "solana-instruction 2.1.6",
+ "solana-native-token 2.1.6",
+ "solana-packet 2.1.6",
+ "solana-precompile-error 2.1.6",
+ "solana-program 2.1.6",
+ "solana-program-memory 2.1.6",
+ "solana-pubkey 2.1.6",
+ "solana-sanitize 2.1.6",
+ "solana-sdk-macro 2.1.6",
+ "solana-secp256k1-recover 2.1.6",
  "solana-secp256r1-program",
- "solana-serde-varint 2.1.3",
- "solana-short-vec 2.1.3",
- "solana-signature 2.1.3",
- "solana-transaction-error 2.1.3",
+ "solana-serde-varint 2.1.6",
+ "solana-short-vec 2.1.6",
+ "solana-signature 2.1.6",
+ "solana-transaction-error 2.1.6",
  "thiserror 1.0.69",
  "wasm-bindgen",
 ]
@@ -7943,8 +7844,7 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bs58",
  "proc-macro2",
@@ -7965,26 +7865,24 @@ dependencies = [
 
 [[package]]
 name = "solana-secp256k1-recover"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "borsh 1.5.3",
  "libsecp256k1",
- "solana-define-syscall 2.1.3",
+ "solana-define-syscall 2.1.6",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "solana-secp256r1-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bytemuck",
  "openssl",
- "solana-feature-set 2.1.3",
- "solana-instruction 2.1.3",
- "solana-precompile-error 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-feature-set 2.1.6",
+ "solana-instruction 2.1.6",
+ "solana-precompile-error 2.1.6",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
@@ -7995,8 +7893,7 @@ checksum = "468aa43b7edb1f9b7b7b686d5c3aeb6630dc1708e86e31343499dd5c4d775183"
 
 [[package]]
 name = "solana-send-transaction-service"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "crossbeam-channel",
  "log",
@@ -8005,7 +7902,7 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-tpu-client",
 ]
 
@@ -8019,8 +7916,7 @@ dependencies = [
 
 [[package]]
 name = "solana-serde-varint"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
 ]
@@ -8037,12 +7933,11 @@ dependencies = [
 
 [[package]]
 name = "solana-serialize-utils"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-instruction 2.1.3",
- "solana-pubkey 2.1.3",
- "solana-sanitize 2.1.3",
+ "solana-instruction 2.1.6",
+ "solana-pubkey 2.1.6",
+ "solana-sanitize 2.1.6",
 ]
 
 [[package]]
@@ -8057,12 +7952,11 @@ dependencies = [
 
 [[package]]
 name = "solana-sha256-hasher"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "sha2 0.10.8",
- "solana-define-syscall 2.1.3",
- "solana-hash 2.1.3",
+ "solana-define-syscall 2.1.6",
+ "solana-hash 2.1.6",
 ]
 
 [[package]]
@@ -8075,8 +7969,7 @@ dependencies = [
 
 [[package]]
 name = "solana-short-vec"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
 ]
@@ -8097,8 +7990,7 @@ dependencies = [
 
 [[package]]
 name = "solana-signature"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bs58",
  "ed25519-dalek",
@@ -8106,7 +7998,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_derive",
- "solana-sanitize 2.1.3",
+ "solana-sanitize 2.1.6",
 ]
 
 [[package]]
@@ -8121,12 +8013,11 @@ dependencies = [
 
 [[package]]
 name = "solana-slot-hashes"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-hash 2.1.3",
+ "solana-hash 2.1.6",
  "solana-sysvar-id",
 ]
 
@@ -8142,8 +8033,7 @@ dependencies = [
 
 [[package]]
 name = "solana-slot-history"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bv",
  "serde",
@@ -8162,33 +8052,30 @@ dependencies = [
 
 [[package]]
 name = "solana-stable-layout"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-instruction 2.1.3",
- "solana-pubkey 2.1.3",
+ "solana-instruction 2.1.6",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
 name = "solana-stake-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "log",
  "solana-config-program",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-log-collector",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-type-overrides",
  "solana-vote-program",
 ]
 
 [[package]]
 name = "solana-storage-bigtable"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "backoff",
  "bincode",
@@ -8209,7 +8096,7 @@ dependencies = [
  "serde_derive",
  "smpl_jwt",
  "solana-metrics",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-storage-proto",
  "solana-transaction-status",
  "thiserror 1.0.69",
@@ -8220,8 +8107,7 @@ dependencies = [
 
 [[package]]
 name = "solana-storage-proto"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "bs58",
@@ -8229,15 +8115,14 @@ dependencies = [
  "protobuf-src",
  "serde",
  "solana-account-decoder",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status",
  "tonic-build",
 ]
 
 [[package]]
 name = "solana-streamer"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-channel",
  "bytes",
@@ -8263,7 +8148,7 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-perf",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-metrics-tracker",
  "thiserror 1.0.69",
  "tokio",
@@ -8273,8 +8158,7 @@ dependencies = [
 
 [[package]]
 name = "solana-svm"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "itertools 0.12.1",
  "log",
@@ -8284,14 +8168,14 @@ dependencies = [
  "serde_derive",
  "solana-bpf-loader-program",
  "solana-compute-budget",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-fee",
  "solana-loader-v4-program",
  "solana-log-collector",
  "solana-measure",
  "solana-program-runtime",
  "solana-runtime-transaction",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm-rent-collector",
  "solana-svm-transaction",
  "solana-system-program",
@@ -8303,8 +8187,7 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-conformance"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "prost 0.11.9",
  "prost-build 0.11.9",
@@ -8313,15 +8196,14 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-example-paytube"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "solana-bpf-loader-program",
  "solana-client",
  "solana-compute-budget",
  "solana-logger",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-svm",
  "solana-system-program",
  "spl-associated-token-account",
@@ -8331,24 +8213,21 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-rent-collector"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-svm-transaction"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-system-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "log",
@@ -8356,22 +8235,20 @@ dependencies = [
  "serde_derive",
  "solana-log-collector",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-type-overrides",
 ]
 
 [[package]]
 name = "solana-sysvar-id"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
- "solana-pubkey 2.1.3",
+ "solana-pubkey 2.1.6",
 ]
 
 [[package]]
 name = "solana-test-validator"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -8383,7 +8260,7 @@ dependencies = [
  "solana-cli-output",
  "solana-compute-budget",
  "solana-core",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-geyser-plugin-manager",
  "solana-gossip",
  "solana-ledger",
@@ -8394,7 +8271,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "solana-tpu-client",
  "tokio",
@@ -8402,8 +8279,7 @@ dependencies = [
 
 [[package]]
 name = "solana-thin-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "log",
@@ -8411,23 +8287,21 @@ dependencies = [
  "solana-connection-cache",
  "solana-rpc-client",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-timings"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "eager",
  "enum-iterator",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
 ]
 
 [[package]]
 name = "solana-tps-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "log",
  "solana-client",
@@ -8436,7 +8310,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "solana-tpu-client",
  "solana-transaction-status",
@@ -8445,8 +8319,7 @@ dependencies = [
 
 [[package]]
 name = "solana-tpu-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-trait",
  "bincode",
@@ -8460,9 +8333,30 @@ dependencies = [
  "solana-pubsub-client",
  "solana-rpc-client",
  "solana-rpc-client-api",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "solana-tpu-client-next"
+version = "2.1.6"
+dependencies = [
+ "async-trait",
+ "log",
+ "lru",
+ "quinn",
+ "rustls 0.23.20",
+ "solana-connection-cache",
+ "solana-logger",
+ "solana-measure",
+ "solana-rpc-client",
+ "solana-sdk 2.1.6",
+ "solana-streamer",
+ "solana-tpu-client",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util 0.7.12",
 ]
 
 [[package]]
@@ -8478,19 +8372,17 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-error"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-instruction 2.1.3",
- "solana-sanitize 2.1.3",
+ "solana-instruction 2.1.6",
+ "solana-sanitize 2.1.6",
 ]
 
 [[package]]
 name = "solana-transaction-metrics-tracker"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -8498,14 +8390,13 @@ dependencies = [
  "log",
  "rand 0.8.5",
  "solana-perf",
- "solana-sdk 2.1.3",
- "solana-short-vec 2.1.3",
+ "solana-sdk 2.1.6",
+ "solana-short-vec 2.1.6",
 ]
 
 [[package]]
 name = "solana-transaction-status"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "Inflector",
  "base64 0.22.1",
@@ -8518,7 +8409,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "solana-account-decoder",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-transaction-status-client-types",
  "spl-associated-token-account",
  "spl-memo",
@@ -8531,8 +8422,7 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-status-client-types"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -8541,15 +8431,14 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "solana-account-decoder-client-types",
- "solana-sdk 2.1.3",
- "solana-signature 2.1.3",
+ "solana-sdk 2.1.6",
+ "solana-signature 2.1.6",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "solana-turbine"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "bytes",
@@ -8565,7 +8454,7 @@ dependencies = [
  "rayon",
  "rustls 0.23.20",
  "solana-entry",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-geyser-plugin-manager",
  "solana-gossip",
  "solana-ledger",
@@ -8578,7 +8467,7 @@ dependencies = [
  "solana-rpc",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "static_assertions",
  "thiserror 1.0.69",
@@ -8587,8 +8476,7 @@ dependencies = [
 
 [[package]]
 name = "solana-type-overrides"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "lazy_static",
  "rand 0.8.5",
@@ -8596,13 +8484,12 @@ dependencies = [
 
 [[package]]
 name = "solana-udp-client"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "async-trait",
  "solana-connection-cache",
  "solana-net-utils",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-streamer",
  "thiserror 1.0.69",
  "tokio",
@@ -8610,18 +8497,16 @@ dependencies = [
 
 [[package]]
 name = "solana-unified-scheduler-logic"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "assert_matches",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "static_assertions",
 ]
 
 [[package]]
 name = "solana-unified-scheduler-pool"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "assert_matches",
  "crossbeam-channel",
@@ -8632,7 +8517,7 @@ dependencies = [
  "scopeguard",
  "solana-ledger",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-timings",
  "solana-unified-scheduler-logic",
  "static_assertions",
@@ -8641,34 +8526,31 @@ dependencies = [
 
 [[package]]
 name = "solana-version"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "semver",
  "serde",
  "serde_derive",
- "solana-feature-set 2.1.3",
- "solana-sanitize 2.1.3",
- "solana-serde-varint 2.1.3",
+ "solana-feature-set 2.1.6",
+ "solana-sanitize 2.1.6",
+ "solana-serde-varint 2.1.6",
 ]
 
 [[package]]
 name = "solana-vote"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "itertools 0.12.1",
  "log",
  "serde",
  "serde_derive",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "solana-vote-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bincode",
  "log",
@@ -8676,18 +8558,17 @@ dependencies = [
  "num-traits",
  "serde",
  "serde_derive",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-metrics",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "solana-wen-restart"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "anyhow",
  "log",
@@ -8699,38 +8580,36 @@ dependencies = [
  "solana-entry",
  "solana-gossip",
  "solana-ledger",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "solana-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-timings",
  "solana-vote-program",
 ]
 
 [[package]]
 name = "solana-zk-elgamal-proof-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bytemuck",
  "num-derive",
  "num-traits",
  "solana-log-collector",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-zk-sdk",
 ]
 
 [[package]]
 name = "solana-zk-keygen"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bs58",
  "clap 3.2.25",
  "dirs-next",
  "solana-clap-v3-utils",
  "solana-remote-wallet",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-version",
  "solana-zk-token-sdk",
  "thiserror 1.0.69",
@@ -8739,8 +8618,7 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-sdk"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "aes-gcm-siv",
  "base64 0.22.1",
@@ -8759,9 +8637,9 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha3",
- "solana-derivation-path 2.1.3",
- "solana-program 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-derivation-path 2.1.6",
+ "solana-program 2.1.6",
+ "solana-sdk 2.1.6",
  "subtle",
  "thiserror 1.0.69",
  "wasm-bindgen",
@@ -8770,23 +8648,21 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-token-proof-program"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "bytemuck",
  "num-derive",
  "num-traits",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-log-collector",
  "solana-program-runtime",
- "solana-sdk 2.1.3",
+ "solana-sdk 2.1.6",
  "solana-zk-token-sdk",
 ]
 
 [[package]]
 name = "solana-zk-token-sdk"
-version = "2.1.3"
-source = "git+https://github.com/firedancer-io/agave?rev=a261605bc1ceb4025c607fe2c852fdb426561ad5#a261605bc1ceb4025c607fe2c852fdb426561ad5"
+version = "2.1.6"
 dependencies = [
  "aes-gcm-siv",
  "base64 0.22.1",
@@ -8806,9 +8682,9 @@ dependencies = [
  "serde_json",
  "sha3",
  "solana-curve25519",
- "solana-derivation-path 2.1.3",
- "solana-program 2.1.3",
- "solana-sdk 2.1.3",
+ "solana-derivation-path 2.1.6",
+ "solana-program 2.1.6",
+ "solana-sdk 2.1.6",
  "subtle",
  "thiserror 1.0.69",
  "zeroize",
@@ -9009,21 +8885,21 @@ dependencies = [
  "smpl_jwt",
  "socket2",
  "soketto",
- "solana-account 2.1.3",
+ "solana-account 2.1.6",
  "solana-account-decoder",
  "solana-account-decoder-client-types",
- "solana-account-info 2.1.3",
+ "solana-account-info 2.1.6",
  "solana-accounts-db",
  "solana-address-lookup-table-program",
- "solana-atomic-u64 2.1.3",
+ "solana-atomic-u64 2.1.6",
  "solana-banks-client",
  "solana-banks-interface",
  "solana-banks-server",
  "solana-bench-tps",
- "solana-bincode 2.1.3",
+ "solana-bincode 2.1.6",
  "solana-bloom",
- "solana-bn254 2.1.3",
- "solana-borsh 2.1.3",
+ "solana-bn254 2.1.6",
+ "solana-borsh 2.1.6",
  "solana-bpf-loader-program",
  "solana-bucket-map",
  "solana-builtins-default-costs",
@@ -9033,36 +8909,36 @@ dependencies = [
  "solana-cli-config",
  "solana-cli-output",
  "solana-client",
- "solana-clock 2.1.3",
+ "solana-clock 2.1.6",
  "solana-compute-budget",
  "solana-compute-budget-program",
  "solana-config-program",
  "solana-connection-cache",
  "solana-core",
  "solana-cost-model",
- "solana-cpi 2.1.3",
+ "solana-cpi 2.1.6",
  "solana-curve25519",
- "solana-decode-error 2.1.3",
- "solana-define-syscall 2.1.3",
- "solana-derivation-path 2.1.3",
+ "solana-decode-error 2.1.6",
+ "solana-define-syscall 2.1.6",
+ "solana-derivation-path 2.1.6",
  "solana-download-utils",
  "solana-entry",
- "solana-epoch-schedule 2.1.3",
+ "solana-epoch-schedule 2.1.6",
  "solana-faucet",
- "solana-feature-set 2.1.3",
+ "solana-feature-set 2.1.6",
  "solana-fee",
- "solana-fee-calculator 2.1.3",
+ "solana-fee-calculator 2.1.6",
  "solana-frozen-abi",
  "solana-frozen-abi-macro",
  "solana-genesis",
  "solana-genesis-utils",
  "solana-geyser-plugin-manager",
  "solana-gossip",
- "solana-hash 2.1.3",
- "solana-inflation 2.1.3",
+ "solana-hash 2.1.6",
+ "solana-inflation 2.1.6",
  "solana-inline-spl",
- "solana-instruction 2.1.3",
- "solana-last-restart-slot 2.1.3",
+ "solana-instruction 2.1.6",
+ "solana-last-restart-slot 2.1.6",
  "solana-lattice-hash",
  "solana-ledger",
  "solana-loader-v4-program",
@@ -9072,52 +8948,52 @@ dependencies = [
  "solana-measure",
  "solana-merkle-tree",
  "solana-metrics",
- "solana-msg 2.1.3",
- "solana-native-token 2.1.3",
+ "solana-msg 2.1.6",
+ "solana-native-token 2.1.6",
  "solana-net-utils",
  "solana-nohash-hasher",
  "solana-notifier",
  "solana-package-metadata",
  "solana-package-metadata-macro",
- "solana-packet 2.1.3",
+ "solana-packet 2.1.6",
  "solana-perf",
  "solana-poh",
  "solana-poseidon",
- "solana-precompile-error 2.1.3",
- "solana-program 2.1.3",
- "solana-program-entrypoint 2.1.3",
- "solana-program-error 2.1.3",
- "solana-program-memory 2.1.3",
- "solana-program-option 2.1.3",
- "solana-program-pack 2.1.3",
+ "solana-precompile-error 2.1.6",
+ "solana-program 2.1.6",
+ "solana-program-entrypoint 2.1.6",
+ "solana-program-error 2.1.6",
+ "solana-program-memory 2.1.6",
+ "solana-program-option 2.1.6",
+ "solana-program-pack 2.1.6",
  "solana-program-runtime",
  "solana-program-test",
- "solana-pubkey 2.1.3",
+ "solana-pubkey 2.1.6",
  "solana-pubsub-client",
  "solana-quic-client",
  "solana-rayon-threadlimit",
  "solana-remote-wallet",
- "solana-rent 2.1.3",
+ "solana-rent 2.1.6",
  "solana-rpc",
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-rpc-client-nonce-utils",
  "solana-runtime",
  "solana-runtime-transaction",
- "solana-sanitize 2.1.3",
- "solana-sdk 2.1.3",
- "solana-sdk-macro 2.1.3",
- "solana-secp256k1-recover 2.1.3",
+ "solana-sanitize 2.1.6",
+ "solana-sdk 2.1.6",
+ "solana-sdk-macro 2.1.6",
+ "solana-secp256k1-recover 2.1.6",
  "solana-secp256r1-program",
  "solana-send-transaction-service",
- "solana-serde-varint 2.1.3",
- "solana-serialize-utils 2.1.3",
- "solana-sha256-hasher 2.1.3",
- "solana-short-vec 2.1.3",
- "solana-signature 2.1.3",
- "solana-slot-hashes 2.1.3",
- "solana-slot-history 2.1.3",
- "solana-stable-layout 2.1.3",
+ "solana-serde-varint 2.1.6",
+ "solana-serialize-utils 2.1.6",
+ "solana-sha256-hasher 2.1.6",
+ "solana-short-vec 2.1.6",
+ "solana-signature 2.1.6",
+ "solana-slot-hashes 2.1.6",
+ "solana-slot-history 2.1.6",
+ "solana-stable-layout 2.1.6",
  "solana-stake-program",
  "solana-storage-bigtable",
  "solana-storage-proto",
@@ -9134,7 +9010,8 @@ dependencies = [
  "solana-timings",
  "solana-tps-client",
  "solana-tpu-client",
- "solana-transaction-error 2.1.3",
+ "solana-tpu-client-next",
+ "solana-transaction-error 2.1.6",
  "solana-transaction-metrics-tracker",
  "solana-transaction-status",
  "solana-transaction-status-client-types",
@@ -9234,7 +9111,7 @@ dependencies = [
  "borsh 1.5.3",
  "num-derive",
  "num-traits",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-token",
  "spl-token-2022",
  "thiserror 1.0.69",
@@ -9247,7 +9124,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a38ea8b6dedb7065887f12d62ed62c1743aa70749e8558f963609793f6fb12bc"
 dependencies = [
  "bytemuck",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-discriminator-derive",
 ]
 
@@ -9282,7 +9159,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8cdbcd2652240c5b04befd4807c2b0f9412c66b18db398ca955f236a8ff1c378"
 dependencies = [
  "num_enum",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
 ]
 
 [[package]]
@@ -9291,7 +9168,7 @@ version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0dba2f2bb6419523405d21c301a32c9f9568354d4742552e7972af801f4bdb3"
 dependencies = [
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
 ]
 
 [[package]]
@@ -9303,7 +9180,7 @@ dependencies = [
  "borsh 1.5.3",
  "bytemuck",
  "bytemuck_derive",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "solana-zk-token-sdk",
  "spl-program-error",
 ]
@@ -9316,7 +9193,7 @@ checksum = "d7b28bed65356558133751cc32b48a7a5ddfc59ac4e941314630bbed1ac10532"
 dependencies = [
  "num-derive",
  "num-traits",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-program-error-derive",
  "thiserror 1.0.69",
 ]
@@ -9340,7 +9217,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37a75a5f0fcc58126693ed78a17042e9dc53f07e357d6be91789f7d62aff61a4"
 dependencies = [
  "bytemuck",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -9358,7 +9235,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "thiserror 1.0.69",
 ]
 
@@ -9373,7 +9250,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "solana-security-txt",
  "solana-zk-token-sdk",
  "spl-memo",
@@ -9393,7 +9270,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df8752b85a5ecc1d9f3a43bce3dd9a6a053673aacf5deb513d1cbb88d3534ffd"
 dependencies = [
  "bytemuck",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -9406,7 +9283,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6c2318ddff97e006ed9b1291ebec0750a78547f870f62a69c56fe3b46a5d8fc"
 dependencies = [
  "borsh 1.5.3",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -9421,7 +9298,7 @@ checksum = "a110f33d941275d9f868b96daaa993f1e73b6806cc8836e43075b4d3ad8338a7"
 dependencies = [
  "arrayref",
  "bytemuck",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",
@@ -9436,7 +9313,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdcd73ec187bc409464c60759232e309f83b52a18a9c5610bf281c9c6432918c"
 dependencies = [
  "bytemuck",
- "solana-program 2.1.3",
+ "solana-program 2.1.6",
  "spl-discriminator",
  "spl-pod",
  "spl-program-error",

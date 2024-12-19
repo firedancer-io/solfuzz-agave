@@ -794,6 +794,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 &environments,
                 &acc.0,
                 clock.slot,
+                &mut ExecuteTimings::default(),
                 false,
             ) {
                 program_cache_for_tx_batch.replenish(acc.0, loaded_program);

@@ -21,11 +21,11 @@ use solana_sdk::instruction::InstructionError;
 use solana_sdk::message::SanitizedMessage;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
-use solana_sdk::sysvar;
 use solana_sdk::transaction::{
     TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
+use solana_sdk::{address_lookup_table, sysvar};
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
@@ -451,6 +451,14 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                 continue;
             }
         }
+
+        /* Don't save any builtins that have been migrated */
+        if builtin.program_id == solana_sdk::address_lookup_table::program::id()
+            || builtin.program_id == solana_sdk::config::program::id()
+        {
+            continue;
+        }
+
         let pubkey = builtin.program_id;
         stored_accounts.insert(pubkey);
     }
