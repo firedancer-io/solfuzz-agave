@@ -19,4 +19,4 @@ jobs:
           -H 'Accept: application/vnd.github.everest-preview+json' \
           -H "Authorization: Bearer ${{ secrets.PAT }}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          --data '{"event_type": "solfuzz_agave_v2.1.0"}'
+          --data '{"event_type": "solfuzz_agave"}'
