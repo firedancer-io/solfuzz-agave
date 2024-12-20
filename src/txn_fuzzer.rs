@@ -4,6 +4,9 @@ use prost::Message;
 use solana_accounts_db::accounts_db::AccountsDbConfig;
 use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
+use solana_feature_set::{
+    migrate_address_lookup_table_program_to_core_bpf, migrate_config_program_to_core_bpf,
+};
 use solana_program::hash::Hash;
 use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::MessageAddressTableLookup;
@@ -453,14 +456,44 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         }
 
         /* Don't save any builtins that have been migrated */
-        if builtin.program_id == solana_sdk::address_lookup_table::program::id()
-            || builtin.program_id == solana_sdk::config::program::id()
+        if bank
+            .feature_set
+            .is_active(&migrate_address_lookup_table_program_to_core_bpf::id())
+            && builtin.program_id == solana_sdk::address_lookup_table::program::id()
+        {
+            continue;
+        }
+
+        if bank
+            .feature_set
+            .is_active(&migrate_config_program_to_core_bpf::id())
+            && builtin.program_id == solana_sdk::config::program::id()
         {
             continue;
         }
 
         let pubkey = builtin.program_id;
         stored_accounts.insert(pubkey);
+    }
+
+    /* Remove the config and ALUT programs from the bank */
+    if bank
+        .feature_set
+        .is_active(&migrate_address_lookup_table_program_to_core_bpf::id())
+    {
+        bank.store_account(
+            &solana_sdk::address_lookup_table::program::id(),
+            &AccountSharedData::default(),
+        );
+    }
+    if bank
+        .feature_set
+        .is_active(&migrate_config_program_to_core_bpf::id())
+    {
+        bank.store_account(
+            &solana_sdk::config::program::id(),
+            &AccountSharedData::default(),
+        );
     }
 
     /* Load accounts + sysvars
