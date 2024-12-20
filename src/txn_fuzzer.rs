@@ -340,17 +340,16 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
 }
 
 fn get_dummy_bpf_native_program() -> Vec<(Pubkey, AccountSharedData)> {
-    let mut accounts = Vec::<(Pubkey, AccountSharedData)>::new();
-    accounts.push((
-        solana_sdk::address_lookup_table::program::id(),
-        AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
-    ));
-    accounts.push((
-        solana_sdk::config::program::id(),
-        AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
-    ));
-
-    accounts
+    vec![
+        (
+            solana_sdk::address_lookup_table::program::id(),
+            AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
+        ),
+        (
+            solana_sdk::config::program::id(),
+            AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
+        ),
+    ]
 }
 
 #[allow(deprecated)]
