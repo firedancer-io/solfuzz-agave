@@ -4,9 +4,6 @@ use prost::Message;
 use solana_accounts_db::accounts_db::AccountsDbConfig;
 use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
-use solana_feature_set::{
-    migrate_address_lookup_table_program_to_core_bpf, migrate_config_program_to_core_bpf,
-};
 use solana_program::hash::Hash;
 use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::MessageAddressTableLookup;
@@ -24,11 +21,11 @@ use solana_sdk::instruction::InstructionError;
 use solana_sdk::message::SanitizedMessage;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
-use solana_sdk::sysvar;
 use solana_sdk::transaction::{
     TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
+use solana_sdk::{bpf_loader_upgradeable, sysvar};
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
@@ -342,6 +339,20 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     }
 }
 
+fn get_dummy_bpf_native_program() -> Vec<(Pubkey, AccountSharedData)> {
+    let mut accounts = Vec::<(Pubkey, AccountSharedData)>::new();
+    accounts.push((
+        solana_sdk::address_lookup_table::program::id(),
+        AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
+    ));
+    accounts.push((
+        solana_sdk::config::program::id(),
+        AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
+    ));
+
+    accounts
+}
+
 #[allow(deprecated)]
 pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let fd_features = context
@@ -380,12 +391,20 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .unwrap_or_default()
         .unwrap_or_default();
 
-    let genesis_config = GenesisConfig {
+    /* HACK: Add dummy ALUT and config program accounts to genesis config so that their builtin versions don't get added to the program cache */
+    let mut genesis_config = GenesisConfig {
         creation_time: 0,
         rent,
         epoch_schedule,
         ..GenesisConfig::default()
     };
+
+    let bpf_native_program_accounts = get_dummy_bpf_native_program();
+    bpf_native_program_accounts
+        .iter()
+        .for_each(|(key, account)| {
+            genesis_config.add_account(*key, account.clone());
+        });
 
     let mut blockhash_queue = if context.blockhash_queue.is_empty() {
         vec![vec![0u8; 32]]
@@ -439,6 +458,16 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             .prune(slot, bank.epoch());
     }
 
+    /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */
+    bank.store_account(
+        &solana_sdk::address_lookup_table::program::id(),
+        &AccountSharedData::default(),
+    );
+    bank.store_account(
+        &solana_sdk::config::program::id(),
+        &AccountSharedData::default(),
+    );
+
     let account_keys = context
         .tx
         .as_ref()
@@ -455,45 +484,14 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
             }
         }
 
-        /* Don't save any builtins that have been migrated */
-        if bank
-            .feature_set
-            .is_active(&migrate_address_lookup_table_program_to_core_bpf::id())
-            && builtin.program_id == solana_sdk::address_lookup_table::program::id()
+        /* Ignore ALUT and Config program accounts so their BPF implementations can get loaded in later */
+        if builtin.program_id == solana_sdk::address_lookup_table::program::id()
+            || builtin.program_id == solana_sdk::config::program::id()
         {
             continue;
         }
-
-        if bank
-            .feature_set
-            .is_active(&migrate_config_program_to_core_bpf::id())
-            && builtin.program_id == solana_sdk::config::program::id()
-        {
-            continue;
-        }
-
         let pubkey = builtin.program_id;
         stored_accounts.insert(pubkey);
-    }
-
-    /* Remove the config and ALUT programs from the bank */
-    if bank
-        .feature_set
-        .is_active(&migrate_address_lookup_table_program_to_core_bpf::id())
-    {
-        bank.store_account(
-            &solana_sdk::address_lookup_table::program::id(),
-            &AccountSharedData::default(),
-        );
-    }
-    if bank
-        .feature_set
-        .is_active(&migrate_config_program_to_core_bpf::id())
-    {
-        bank.store_account(
-            &solana_sdk::config::program::id(),
-            &AccountSharedData::default(),
-        );
     }
 
     /* Load accounts + sysvars
