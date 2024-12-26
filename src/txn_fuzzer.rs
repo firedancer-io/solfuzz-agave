@@ -9,7 +9,6 @@ use solana_program::instruction::CompiledInstruction;
 use solana_program::message::v0::MessageAddressTableLookup;
 use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_program::pubkey::Pubkey;
-use solana_runtime::bank::builtins::BUILTINS;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
@@ -339,7 +338,7 @@ impl From<LoadAndExecuteTransactionsOutput> for TxnResult {
     }
 }
 
-fn get_dummy_bpf_native_program() -> Vec<(Pubkey, AccountSharedData)> {
+fn get_dummy_bpf_native_programs() -> Vec<(Pubkey, AccountSharedData)> {
     vec![
         (
             solana_sdk::address_lookup_table::program::id(),
@@ -398,7 +397,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         ..GenesisConfig::default()
     };
 
-    let bpf_native_program_accounts = get_dummy_bpf_native_program();
+    let bpf_native_program_accounts = get_dummy_bpf_native_programs();
     bpf_native_program_accounts
         .iter()
         .for_each(|(key, account)| {
@@ -474,34 +473,12 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
 
-    /* Save loaded builtins so we don't load them twice */
-    let mut stored_accounts = HashSet::<Pubkey>::default();
-    for builtin in BUILTINS.iter() {
-        if let Some(enable_feature_id) = builtin.enable_feature_id {
-            if !bank.feature_set.is_active(&enable_feature_id) {
-                continue;
-            }
-        }
-
-        /* Ignore ALUT and Config program accounts so their BPF implementations can get loaded in later */
-        if builtin.program_id == solana_sdk::address_lookup_table::program::id()
-            || builtin.program_id == solana_sdk::config::program::id()
-        {
-            continue;
-        }
-        let pubkey = builtin.program_id;
-        stored_accounts.insert(pubkey);
-    }
-
     /* Load accounts + sysvars
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
     pubkeys are ignored. */
     bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
-        if !stored_accounts.insert(pubkey) {
-            continue;
-        }
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
     }
