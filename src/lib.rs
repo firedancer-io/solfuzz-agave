@@ -680,8 +680,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         return None;
     };
 
-    let mut transaction_accounts =
-        Vec::<TransactionAccount>::with_capacity(input.accounts.len() + 1);
+    let mut transaction_accounts = Vec::<TransactionAccount>::with_capacity(input.accounts.len());
     #[allow(deprecated)]
     input
         .accounts
