@@ -79,9 +79,6 @@ pub fn load_core_bpf_program(_: TokenStream) -> TokenStream {
                     .unwrap(),
                 ),
             );
-
-            // Remove the builtin ID from the `builtins` hash set.
-            builtins.remove(&target_program_id);
         }
         .into();
     }

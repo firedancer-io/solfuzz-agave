@@ -559,9 +559,8 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     }
 
     // If the `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables
-    // are set, this macro will do the following:
-    // * Replace the designated builtin program in the cache with a loaded ELF.
-    // * Remove that builtin's program ID from the `builtins` set above.
+    // are set, this macro will replace the designated builtin program in the
+    // cache with a loaded ELF.
     load_core_bpf_program!();
 }
 
