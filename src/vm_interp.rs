@@ -1,9 +1,6 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
-    utils::{
-        pchash_inverse,
-        vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
-    },
+    utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
     InstrContext,
 };
 use bincode::Error;
@@ -241,11 +238,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
     }
 
-    let result = match result {
-        StableResult::Err(err) => StableResult::Err(process_result(&mut vm, &executable, err)),
-        StableResult::Ok(n) => StableResult::Ok(n),
-    };
-
     // When a program fails, the register in trace_log are not properly
     // captured (they represent the state at the end of the previous ix).
     // For simplicity, we ignore them.
@@ -355,43 +347,4 @@ fn setup_internal_fn_registry(
     }
 
     fn_reg
-}
-
-/* Look through errors, and map to something else if necessary */
-fn process_result<C: ContextObject>(
-    vm: &mut EbpfVm<C>,
-    executable: &Executable<C>,
-    err: EbpfError,
-) -> EbpfError {
-    match err {
-        EbpfError::UnsupportedInstruction => {
-            /* CALL_IMM throws UnsupportedInstruction iff the immediate
-            is not in executable's Function Registry. We want
-            to consider the case that the hash inverse is a PC(*) that is
-            OOB, since Firedancer reports the equivalent to
-            EbpfError::CallOutsideTextSegment.
-
-            (*) NOTE: this assumes a text section loaded by the FD sbpf loader,
-            which hashes the PC of the target function into the instruction immediate.
-            The interpreter fuzzer uses this. */
-
-            let bytes = executable.get_text_bytes().1;
-            let insn_sz = bytes.len() / ebpf::INSN_SIZE;
-            let pc = (vm.registers[11] as usize).min(insn_sz.saturating_sub(1));
-            let insn = ebpf::get_insn_unchecked(bytes, pc);
-            if insn.opc == ebpf::CALL_IMM {
-                let pchash = insn.imm as u32;
-                if pchash_inverse(pchash) > (insn_sz) as u32 {
-                    // need to simulate pushing a stack frame
-                    vm.call_depth += 1;
-                    EbpfError::CallOutsideTextSegment
-                } else {
-                    EbpfError::UnsupportedInstruction
-                }
-            } else {
-                EbpfError::UnsupportedInstruction
-            }
-        }
-        _ => err,
-    }
 }
