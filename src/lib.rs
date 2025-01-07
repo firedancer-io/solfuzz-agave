@@ -220,7 +220,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_turbine_fanout_experiments,
     disable_turbine_fanout_experiments,
     update_hashes_per_tick,
-    enable_big_mod_exp_syscall,
+    // enable_big_mod_exp_syscall, // NOT impl in fd
     apply_cost_tracker_during_replay,
     bpf_account_data_direct_mapping,
     switch_to_new_elf_parser,
@@ -240,7 +240,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     update_hashes_per_tick4,
     update_hashes_per_tick5,
     update_hashes_per_tick6,
-    enable_zk_transfer_with_fee,
+    // enable_zk_transfer_with_fee, // deprecated / old stuff
     drop_legacy_shreds,
     consume_blockstore_duplicate_proofs,
     index_erasure_conflict_duplicate_proofs,
