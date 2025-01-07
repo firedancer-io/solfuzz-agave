@@ -231,7 +231,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reduce_stake_warmup_cooldown,
     enable_poseidon_syscall,
     timely_vote_credits,
-    remaining_compute_units_syscall_enabled,
+    // remaining_compute_units_syscall_enabled, // NOT impl in fd
     enable_program_runtime_v2_and_loader_v4,
     better_error_codes_for_tx_lamport_check,
     enable_alt_bn128_compression_syscall,
