@@ -365,10 +365,6 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     /* HACK: Set the genesis config rent and epoch schedule from the "to-be" sysvars, if present */
     let rent: Rent = context
-        .tx
-        .as_ref()?
-        .message
-        .as_ref()?
         .account_shared_data
         .iter()
         .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref() && item.lamports > 0)
@@ -376,10 +372,6 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .unwrap_or_default()
         .unwrap_or_default();
     let epoch_schedule: EpochSchedule = context
-        .tx
-        .as_ref()?
-        .message
-        .as_ref()?
         .account_shared_data
         .iter()
         .find(|item| {
@@ -477,7 +469,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
     pubkeys are ignored. */
     bank.get_transaction_processor().reset_sysvar_cache();
-    for account in &context.tx.as_ref()?.message.as_ref()?.account_shared_data {
+    for account in &context.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
