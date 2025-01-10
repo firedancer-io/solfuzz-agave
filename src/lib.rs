@@ -24,8 +24,7 @@ use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::feature_set::*;
 use solana_sdk::instruction::AccountMeta;
-use solana_sdk::instruction::{CompiledInstruction, InstructionError};
-use solana_sdk::precompiles::{is_precompile, verify_if_precompile};
+use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent::Rent;
 use solana_sdk::rent_collector::RentCollector;
@@ -826,59 +825,6 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     let instruction_accounts =
         get_instr_accounts(&transaction_accounts, &input.instruction.accounts);
 
-    // Precompiles (ed25519, secp256k1)
-    // Precompiles are programs that run without the VM and without loading any account.
-    // They allow to verify signatures, either ed25519 or Ethereum-like secp256k1
-    // (note that precompiles can access data from other instructions as well, within
-    // the same transaction).
-    //
-    // They're not run as part of transaction execution, but instead they're run during
-    // transaction verification:
-    // https://github.com/anza-xyz/agave/blob/34b76ac/runtime/src/bank.rs#L5779
-    //
-    // During transaction execution, they're skipped (just accounted for CU)
-    // https://github.com/anza-xyz/agave/blob/34b76ac/svm/src/message_processor.rs#L93-L108
-    //
-    // Here we're testing a single instruction.
-    // Therefore, when the program is a precompile, we need to run the precompile
-    // instead of the regular process_instruction().
-    // https://github.com/anza-xyz/agave/blob/34b76ac/sdk/src/precompiles.rs#L107
-    //
-    // Note: while this test covers the functionality of the precompile, it doesn't
-    // cover the fact that the precompile can access data from other instructions.
-    // This will be covered in separated tests.
-    let program_id = &input.instruction.program_id;
-    let is_precompile = is_precompile(program_id, |id| {
-        invoke_context.environment_config.feature_set.is_active(id)
-    });
-    if is_precompile {
-        let compiled_instruction = CompiledInstruction {
-            program_id_index: 0,
-            accounts: vec![],
-            data: input.instruction.data.to_vec(),
-        };
-        let result = verify_if_precompile(
-            program_id,
-            &compiled_instruction,
-            &[compiled_instruction.clone()],
-            &invoke_context.environment_config.feature_set,
-        );
-        return Some(InstrEffects {
-            custom_err: None,
-            result: if result.is_err() {
-                // Precompiles return PrecompileError instead of InstructionError, and
-                // there's no from/into conversion to InstructionError nor to u32.
-                // For simplicity, we remap first-first, second-second, etc.
-                Some(InstructionError::GenericError)
-            } else {
-                None
-            },
-            modified_accounts: vec![],
-            cu_avail: input.cu_avail,
-            return_data: vec![],
-        });
-    }
-
     let result = invoke_context.process_instruction(
         &input.instruction.data,
         &instruction_accounts,
@@ -904,9 +850,12 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             #[cfg(feature = "core-bpf-conformance")]
             // See comment below under `result` for special-casing of custom
             // errors for Core BPF programs.
-            if program_id == &solana_sdk::address_lookup_table::program::id() && code == 10 {
+            if input.instruction.program_id == solana_sdk::address_lookup_table::program::id()
+                && code == 10
+            {
                 None
-            } else if program_id == &solana_sdk::config::program::id() && code == 0 {
+            } else if input.instruction.program_id == solana_sdk::config::program::id() && code == 0
+            {
                 None
             } else {
                 Some(code)
