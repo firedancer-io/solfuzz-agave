@@ -211,6 +211,18 @@ fn test_txn_execute_clock() {
             program_info[0].0.to_bytes().to_vec(),
         ],
         recent_blockhash: blockhash_queue[1].clone(),
+        instructions: vec![instr],
+        address_table_lookups: vec![],
+    };
+
+    let tx = SanitizedTransaction {
+        message: Some(message),
+        message_hash: Hash::new_unique().to_bytes().to_vec(),
+        signatures: vec![Signature::new_unique().as_ref().to_vec()],
+    };
+
+    let txn_input = TxnContext {
+        tx: Some(tx),
         account_shared_data: vec![
             fee_payer_data,
             p_acc,
@@ -219,19 +231,6 @@ fn test_txn_execute_clock() {
             epoch_schedule,
             rent,
         ],
-        instructions: vec![instr],
-        address_table_lookups: vec![],
-    };
-
-    let tx = SanitizedTransaction {
-        message: Some(message),
-        message_hash: Hash::new_unique().to_bytes().to_vec(),
-        is_simple_vote_tx: false,
-        signatures: vec![Signature::new_unique().as_ref().to_vec()],
-    };
-
-    let txn_input = TxnContext {
-        tx: Some(tx),
         blockhash_queue: blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
@@ -338,6 +337,22 @@ fn test_simple_transfer() {
             program_info[0].0.to_bytes().to_vec(),
             vec![0; 32],
         ],
+        instructions: vec![instr],
+        address_table_lookups: vec![],
+        recent_blockhash: blockhash_queue[1].clone(),
+    };
+
+    let tx = SanitizedTransaction {
+        message: Some(message),
+        message_hash: Hash::new_unique().to_bytes().to_vec(),
+        signatures: vec![
+            Signature::new_unique().as_ref().to_vec(),
+            Signature::new_unique().as_ref().to_vec(),
+        ],
+    };
+
+    let txn_input = TxnContext {
+        tx: Some(tx),
         account_shared_data: vec![
             fee_payer_data,
             recipient_data,
@@ -348,23 +363,6 @@ fn test_simple_transfer() {
             epoch_schedule,
             rent,
         ],
-        instructions: vec![instr],
-        address_table_lookups: vec![],
-        recent_blockhash: blockhash_queue[1].clone(),
-    };
-
-    let tx = SanitizedTransaction {
-        message: Some(message),
-        message_hash: Hash::new_unique().to_bytes().to_vec(),
-        is_simple_vote_tx: false,
-        signatures: vec![
-            Signature::new_unique().as_ref().to_vec(),
-            Signature::new_unique().as_ref().to_vec(),
-        ],
-    };
-
-    let txn_input = TxnContext {
-        tx: Some(tx),
         blockhash_queue: blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
@@ -513,6 +511,22 @@ fn test_lookup_table() {
             program_info[0].0.to_bytes().to_vec(),
             vec![0; 32],
         ],
+        instructions: vec![instr],
+        address_table_lookups: vec![table_lookup],
+        recent_blockhash: blockhash_queue[1].clone(),
+    };
+
+    let tx = SanitizedTransaction {
+        message: Some(message),
+        message_hash: Hash::new_unique().to_bytes().to_vec(),
+        signatures: vec![
+            Signature::new_unique().as_ref().to_vec(),
+            Signature::new_unique().as_ref().to_vec(),
+        ],
+    };
+
+    let txn_input = TxnContext {
+        tx: Some(tx),
         account_shared_data: vec![
             fee_payer_data,
             recipient_data,
@@ -525,23 +539,6 @@ fn test_lookup_table() {
             epoch_schedule,
             rent,
         ],
-        instructions: vec![instr],
-        address_table_lookups: vec![table_lookup],
-        recent_blockhash: blockhash_queue[1].clone(),
-    };
-
-    let tx = SanitizedTransaction {
-        message: Some(message),
-        message_hash: Hash::new_unique().to_bytes().to_vec(),
-        is_simple_vote_tx: false,
-        signatures: vec![
-            Signature::new_unique().as_ref().to_vec(),
-            Signature::new_unique().as_ref().to_vec(),
-        ],
-    };
-
-    let txn_input = TxnContext {
-        tx: Some(tx),
         blockhash_queue: blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
