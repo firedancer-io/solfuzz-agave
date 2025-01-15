@@ -7,8 +7,10 @@ use crate::{
     },
     InstrContext,
 };
-use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_bpf_loader_program::{serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1};
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_cpi::invoke;
+use solana_feature_set::bpf_account_data_direct_mapping;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{
     invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata},
@@ -72,6 +74,7 @@ pub unsafe extern "C" fn sol_compat_vm_cpi_syscall_v1(
 // TODO: unify with other syscall harness after CPI fuzzing is stable
 #[allow(dead_code)]
 pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
+
     let mut instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
 
     let existing_pubkeys: Vec<_> = instr_ctx
@@ -140,6 +143,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         &sysvar_cache,
     );
     let log_collector = LogCollector::new_ref();
+
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
