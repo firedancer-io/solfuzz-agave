@@ -5,9 +5,15 @@ use crate::{
 };
 use bincode::Error;
 use prost::Message;
-use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_account::AccountSharedData;
+use solana_bpf_loader_program::{
+    serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
+};
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_log_collector::LogCollector;
 use solana_program_runtime::{
+    invoke_context::{EnvironmentConfig, InvokeContext},
+    loaded_programs::ProgramCacheForTxBatch,
     mem_pool::VmMemoryPool,
     solana_rbpf::{
         aligned_memory::AlignedMemory,
@@ -20,9 +26,16 @@ use solana_program_runtime::{
         verifier::RequisiteVerifier,
         vm::{Config, ContextObject, EbpfVm, TestContextObject},
     },
+    sysvar_cache::SysvarCache,
 };
-use solana_sdk::feature_set::bpf_account_data_direct_mapping;
-use std::{borrow::Borrow, ffi::c_int};
+
+use solana_program_test::IndexOfAccount;
+use solana_rent::Rent;
+use solana_sdk::{
+    feature_set::bpf_account_data_direct_mapping,
+    transaction_context::{TransactionAccount, TransactionContext},
+};
+use std::{borrow::Borrow, cell::RefCell, ffi::c_int, sync::Arc};
 
 declare_builtin_function!(
     SyscallStub,
@@ -94,8 +107,119 @@ pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
 
 // We are actually executing the JIT-compiled program here
 pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
-    let instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
+    let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
     let mut feature_set = instr_ctx.feature_set;
+
+    let existing_pubkeys: Vec<_> = instr_ctx
+        .accounts
+        .iter()
+        .map(|(pubkey, _)| pubkey)
+        .collect();
+
+    if !existing_pubkeys.contains(&&instr_ctx.instruction.program_id) {
+        instr_ctx.accounts.push((
+            instr_ctx.instruction.program_id,
+            AccountSharedData::default().into(),
+        ));
+    }
+
+    // Setup here for the vm serialization step
+    let mut transaction_accounts =
+        Vec::<TransactionAccount>::with_capacity(instr_ctx.accounts.len() + 1);
+    #[allow(deprecated)]
+    instr_ctx
+        .accounts
+        .clone()
+        .into_iter()
+        .map(|(pubkey, account)| (pubkey, AccountSharedData::from(account)))
+        .for_each(|x| transaction_accounts.push(x));
+
+    let compute_budget = ComputeBudget {
+        compute_unit_limit: instr_ctx.cu_avail,
+        ..ComputeBudget::default()
+    };
+    let mut transaction_context = TransactionContext::new(
+        transaction_accounts.clone(),
+        Rent::default(),
+        compute_budget.max_instruction_stack_depth,
+        compute_budget.max_instruction_trace_length,
+    );
+
+    let sysvar_cache = SysvarCache::default();
+    #[allow(deprecated)]
+    let (blockhash, lamports_per_signature) = sysvar_cache
+        .get_recent_blockhashes()
+        .ok()
+        .and_then(|x| (*x).last().cloned())
+        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
+        .unwrap_or_default();
+
+    let environment_config = EnvironmentConfig::new(
+        blockhash,
+        None,
+        None,
+        Arc::new(feature_set.clone()),
+        lamports_per_signature,
+        &sysvar_cache,
+    );
+
+    let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
+    let log_collector = LogCollector::new_ref();
+    let invoke_context = RefCell::new(InvokeContext::new(
+        &mut transaction_context,
+        &mut program_cache_for_tx_batch,
+        environment_config,
+        Some(log_collector.clone()),
+        compute_budget,
+    ));
+
+    let instr = &instr_ctx.instruction;
+    let instr_accounts = crate::get_instr_accounts(&transaction_accounts, &instr.accounts);
+
+    let program_idx_in_txn = transaction_accounts
+        .iter()
+        .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
+        as IndexOfAccount;
+
+    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+    let direct_mapping = invoke_ctx
+        .get_feature_set()
+        .is_active(&bpf_account_data_direct_mapping::id());
+
+    invoke_ctx
+        .transaction_context
+        .get_next_instruction_context()
+        .unwrap()
+        .configure(
+            &[program_idx_in_txn],
+            instr_accounts.as_slice(),
+            &instr.data,
+        );
+    drop(invoke_ctx);
+
+    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+
+    match invoke_ctx.push() {
+        Ok(_) => (),
+        Err(_) => eprintln!("Failed to push invoke context"),
+    }
+    drop(invoke_ctx);
+
+    let invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+    let caller_instr_ctx = invoke_ctx
+        .transaction_context
+        .get_current_instruction_context()
+        .unwrap();
+    let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
+        invoke_ctx.transaction_context,
+        caller_instr_ctx,
+        !direct_mapping,
+    )
+    .unwrap();
+
+    drop(invoke_ctx);
+
+    /* END NEW CODE********************************************************** */
 
     // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
@@ -124,6 +248,15 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         enable_instruction_tracing: true,
         ..Config::default()
     };
+
+    let mut invoke_ctx = invoke_context.borrow_mut();
+    invoke_ctx
+        .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
+            allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
+            accounts_metadata: acc_metadatas, // TODO: accounts metadata for direct mapping support
+            trace_log: Vec::new(),
+        })
+        .unwrap();
 
     let mut loader = BuiltinProgram::new_loader_with_dense_registration(config.clone());
 
@@ -173,7 +306,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut stack = mempool.get_stack(STACK_SIZE);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; heap_max]);
 
-    let mut regions = vec![
+    let rodata_stack_heap = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
@@ -186,13 +319,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         ),
         MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
-
-    let mut aligned_regions = Vec::new();
-    mem_regions::setup_input_regions(
-        &mut regions,
-        &mut aligned_regions,
-        &vm_ctx.input_data_regions,
-    );
+    let regions = rodata_stack_heap
+        .into_iter()
+        .chain(input_memory_regions)
+        .collect();
 
     let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,

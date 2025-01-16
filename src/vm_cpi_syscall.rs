@@ -7,11 +7,14 @@ use crate::{
     },
     InstrContext,
 };
-use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_bpf_loader_program::{
+    serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
+};
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_feature_set::bpf_account_data_direct_mapping;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{
-    invoke_context::{BpfAllocator, EnvironmentConfig, InvokeContext, SerializedAccountMetadata},
+    invoke_context::{EnvironmentConfig, InvokeContext},
     loaded_programs::ProgramCacheForTxBatch,
     mem_pool::VmMemoryPool,
     solana_rbpf::{
@@ -33,7 +36,7 @@ use solana_sdk::{
         IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
     },
 };
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
 #[cfg(feature = "stub-agave")]
 use {prost::Message, std::ffi::c_int};
@@ -140,49 +143,73 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         &sysvar_cache,
     );
     let log_collector = LogCollector::new_ref();
-    let mut invoke_context = InvokeContext::new(
+
+    let invoke_context = RefCell::new(InvokeContext::new(
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
         environment_config,
         Some(log_collector.clone()),
         compute_budget,
-    );
+    ));
 
     // Setup the instruction context in the invoke context
     let instr = &instr_ctx.instruction;
     let instr_accounts = crate::get_instr_accounts(&transaction_accounts, &instr.accounts);
-
-    let caller_instr_ctx = invoke_context
-        .transaction_context
-        .get_next_instruction_context()
-        .unwrap();
 
     let program_idx_in_txn = transaction_accounts
         .iter()
         .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
         as IndexOfAccount;
 
-    caller_instr_ctx.configure(
-        &[program_idx_in_txn],
-        instr_accounts.as_slice(),
-        &instr.data,
-    );
+    let mut invoke_ctx = invoke_context.borrow_mut();
+    let direct_mapping = invoke_ctx
+        .get_feature_set()
+        .is_active(&bpf_account_data_direct_mapping::id());
+
+    invoke_ctx
+        .transaction_context
+        .get_next_instruction_context()
+        .unwrap()
+        .configure(
+            &[program_idx_in_txn],
+            instr_accounts.as_slice(),
+            &instr.data,
+        );
+    drop(invoke_ctx);
 
     // Push the invoke context. This sets up the instruction context trace, which is used in the CPI Syscall.
     // Also pushes empty syscall context, which we will setup later
-    match invoke_context.push() {
+    let mut invoke_ctx = invoke_context.borrow_mut();
+
+    match invoke_ctx.push() {
         Ok(_) => (),
         Err(_) => eprintln!("Failed to push invoke context"),
     }
+    drop(invoke_ctx);
+
+    let invoke_ctx = invoke_context.borrow_mut();
+    let caller_instr_ctx = invoke_ctx
+        .transaction_context
+        .get_current_instruction_context()
+        .unwrap();
+    let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
+        invoke_ctx.transaction_context,
+        caller_instr_ctx,
+        !direct_mapping,
+    )
+    .unwrap();
+
+    drop(invoke_ctx);
 
     // Setup syscall context in the invoke context
     let vm_ctx = input.vm_ctx.unwrap();
-    let instr_accounts_len = instr_accounts.len();
+
+    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
 
     // Setup the CPI callback if there are exec effects
     #[cfg(feature = "stub-agave")]
     if let Some(exec_effects) = input.exec_effects {
-        invoke_context.proc_instr_callback = Some(Box::new(
+        invoke_ctx.proc_instr_callback = Some(Box::new(
             move |txn_ctx: &mut TransactionContext,
                   instr_data: &[u8],
                   instr_accts: &[InstructionAccount],
@@ -198,19 +225,10 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ));
     }
 
-    invoke_context
+    invoke_ctx
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
-            allocator: BpfAllocator::new(vm_ctx.heap_max),
-            accounts_metadata: vec![
-                SerializedAccountMetadata {
-                    original_data_len: 0,
-                    vm_data_addr: 0,
-                    vm_key_addr: 0,
-                    vm_owner_addr: 0,
-                    vm_lamports_addr: 0,
-                };
-                instr_accounts_len
-            ], // TODO: accounts metadata for direct mapping support
+            allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
+            accounts_metadata: acc_metadatas, // TODO: accounts metadata for direct mapping support
             trace_log: Vec::new(),
         })
         .unwrap();
@@ -228,7 +246,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut stack = mempool.get_stack(STACK_SIZE);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
 
-    let mut regions = vec![
+    let rodata_stack_heap = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
@@ -241,12 +259,10 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ),
         MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
-    let mut aligned_regions = Vec::new();
-    mem_regions::setup_input_regions(
-        &mut regions,
-        &mut aligned_regions,
-        &vm_ctx.input_data_regions,
-    );
+    let regions = rodata_stack_heap
+        .into_iter()
+        .chain(input_memory_regions)
+        .collect();
 
     let sbpf_version = SBPFVersion::V0;
 
@@ -260,7 +276,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut vm = EbpfVm::new(
         loader,
         sbpf_version,
-        &mut invoke_context,
+        &mut *invoke_ctx,
         memory_mapping,
         STACK_SIZE,
     );
@@ -303,7 +319,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         rodata: rodata.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         frame_count: vm.call_depth,
-        log: invoke_context
+        log: invoke_ctx
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
