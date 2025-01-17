@@ -8,8 +8,11 @@ use crate::{
     InstrContext,
 };
 use prost::Message;
-use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_bpf_loader_program::{
+    serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
+};
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_feature_set::bpf_account_data_direct_mapping;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
@@ -35,7 +38,7 @@ use solana_sdk::{
     sysvar::{last_restart_slot, SysvarId},
 };
 use solana_sdk::{pubkey::Pubkey, transaction_context::IndexOfAccount};
-use std::{ffi::c_int, sync::Arc};
+use std::{cell::RefCell, ffi::c_int, sync::Arc};
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
@@ -175,47 +178,61 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         &sysvar_cache,
     );
     let log_collector = LogCollector::new_ref();
-    let mut invoke_context = InvokeContext::new(
+
+    let invoke_context = RefCell::new(InvokeContext::new(
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
         environment_config,
         Some(log_collector.clone()),
         compute_budget,
-    );
+    ));
 
     let instr = &instr_ctx.instruction;
     let instr_accounts = crate::get_instr_accounts(&transaction_accounts, &instr.accounts);
-
-    let caller_instr_ctx = invoke_context
-        .transaction_context
-        .get_next_instruction_context()
-        .unwrap();
 
     let program_idx_in_txn = transaction_accounts
         .iter()
         .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
         as IndexOfAccount;
 
-    caller_instr_ctx.configure(
-        &[program_idx_in_txn],
-        instr_accounts.as_slice(),
-        &instr.data,
-    );
+    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+    let direct_mapping = invoke_ctx
+        .get_feature_set()
+        .is_active(&bpf_account_data_direct_mapping::id());
 
-    match invoke_context.push() {
+    invoke_ctx
+        .transaction_context
+        .get_next_instruction_context()
+        .unwrap()
+        .configure(
+            &[program_idx_in_txn],
+            instr_accounts.as_slice(),
+            &instr.data,
+        );
+    drop(invoke_ctx);
+
+    let mut invoke_ctx = invoke_context.borrow_mut();
+
+    match invoke_ctx.push() {
         Ok(_) => (),
         Err(_) => eprintln!("Failed to push invoke context"),
     }
-    invoke_context
-        .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
-            allocator: solana_program_runtime::invoke_context::BpfAllocator::new(
-                input.vm_ctx.clone().unwrap().heap_max,
-            ),
-            accounts_metadata: vec![], // TODO: accounts metadata for direct mapping support
-            trace_log: Vec::new(),
-        })
+    drop(invoke_ctx);
+
+    let invoke_ctx = invoke_context.borrow_mut();
+    let caller_instr_ctx = invoke_ctx
+        .transaction_context
+        .get_current_instruction_context()
         .unwrap();
-    // TODO: support different versions
+    let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
+        invoke_ctx.transaction_context,
+        caller_instr_ctx,
+        !direct_mapping,
+    )
+    .unwrap();
+
+    drop(invoke_ctx);
+
     let sbpf_version = SBPFVersion::V0;
 
     // Set up memory mapping
@@ -248,7 +265,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut stack = mempool.get_stack(STACK_SIZE);
     // let mut heap = mempool.get_heap(heap_max); // this would force MIN_HEAP_FRAME_BYTES
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
-    let mut regions = vec![
+    let rodata_stack_heap = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
@@ -261,24 +278,32 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ),
         MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
     ];
-    let mut aligned_regions = Vec::new();
-    mem_regions::setup_input_regions(
-        &mut regions,
-        &mut aligned_regions,
-        &vm_ctx.input_data_regions,
-    );
+    let regions = rodata_stack_heap
+        .into_iter()
+        .chain(input_memory_regions)
+        .collect();
 
     let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
 
+    let mut invoke_ctx = invoke_context.borrow_mut();
+
+    invoke_ctx
+        .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
+            allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
+            accounts_metadata: acc_metadatas, // TODO: accounts metadata for direct mapping support
+            trace_log: Vec::new(),
+        })
+        .unwrap();
+
     // Set up the vm instance
     let loader = std::sync::Arc::new(BuiltinProgram::new_mock());
     let mut vm = EbpfVm::new(
         loader,
         sbpf_version,
-        &mut invoke_context,
+        &mut *invoke_ctx,
         memory_mapping,
         STACK_SIZE,
     );
@@ -337,7 +362,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         frame_count: vm.call_depth,
         error,
         error_kind: error_kind as i32,
-        log: invoke_context
+        log: invoke_ctx
             .get_log_collector()?
             .borrow()
             .get_recorded_content()
