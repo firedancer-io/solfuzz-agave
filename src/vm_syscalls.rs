@@ -31,15 +31,14 @@ use solana_program_runtime::{
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{
-    account::{AccountSharedData, WritableAccount},
+    account::AccountSharedData,
     clock::Clock,
-    entrypoint::MAX_PERMITTED_DATA_INCREASE,
     epoch_schedule::EpochSchedule,
     rent::Rent,
     sysvar::{last_restart_slot, SysvarId},
 };
 use solana_sdk::{pubkey::Pubkey, transaction_context::IndexOfAccount};
-use std::{cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
+use std::{cell::RefCell, ffi::c_int, sync::Arc};
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
@@ -284,21 +283,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .chain(input_memory_regions)
         .collect();
 
-    let cow_cb_accounts = Rc::clone(invoke_context.borrow_mut().transaction_context.accounts());
-    let cow_cb = Box::new(move |index_in_transaction| {
-        let mut account = cow_cb_accounts
-            .try_borrow_mut(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
-        cow_cb_accounts
-            .touch(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
-
-        if account.is_shared() {
-            account.reserve(MAX_PERMITTED_DATA_INCREASE);
-        }
-        Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
-    });
-    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, config, sbpf_version) {
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
