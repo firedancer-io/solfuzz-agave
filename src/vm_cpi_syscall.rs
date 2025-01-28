@@ -29,6 +29,7 @@ use solana_program_runtime::{
 };
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
+    entrypoint::MAX_PERMITTED_DATA_INCREASE,
     instruction::InstructionError,
     pubkey::Pubkey,
     rent::Rent,
@@ -36,7 +37,7 @@ use solana_sdk::{
         IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
     },
 };
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 #[cfg(feature = "stub-agave")]
 use {prost::Message, std::ffi::c_int};
@@ -266,7 +267,21 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let sbpf_version = SBPFVersion::V0;
 
-    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
+    let cow_cb_accounts = Rc::clone(invoke_ctx.transaction_context.accounts());
+    let cow_cb = Box::new(move |index_in_transaction| {
+        let mut account = cow_cb_accounts
+            .try_borrow_mut(index_in_transaction as IndexOfAccount)
+            .map_err(|_| ())?;
+        cow_cb_accounts
+            .touch(index_in_transaction as IndexOfAccount)
+            .map_err(|_| ())?;
+
+        if account.is_shared() {
+            account.reserve(MAX_PERMITTED_DATA_INCREASE);
+        }
+        Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
+    });
+    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
