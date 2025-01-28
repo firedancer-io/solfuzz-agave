@@ -48,9 +48,6 @@ fn mem_region_to_input_data_region(region: &MemoryRegion) -> InputDataRegion {
                 .to_vec()
         },
         offset: region.vm_addr - ebpf::MM_INPUT_START,
-        is_writable: matches!(
-            region.state.get(),
-            MemoryState::Writable | MemoryState::Cow(_)
-        ),
+        is_writable: region.state.get() == MemoryState::Writable,
     }
 }

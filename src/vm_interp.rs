@@ -32,12 +32,10 @@ use solana_program_runtime::{
 use solana_program_test::IndexOfAccount;
 use solana_rent::Rent;
 use solana_sdk::{
-    account::WritableAccount,
-    entrypoint::MAX_PERMITTED_DATA_INCREASE,
     feature_set::bpf_account_data_direct_mapping,
     transaction_context::{TransactionAccount, TransactionContext},
 };
-use std::{borrow::Borrow, cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
+use std::{borrow::Borrow, cell::RefCell, ffi::c_int, sync::Arc};
 
 declare_builtin_function!(
     SyscallStub,
@@ -326,21 +324,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .chain(input_memory_regions)
         .collect();
 
-    let cow_cb_accounts = Rc::clone(invoke_context.borrow_mut().transaction_context.accounts());
-    let cow_cb = Box::new(move |index_in_transaction| {
-        let mut account = cow_cb_accounts
-            .try_borrow_mut(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
-        cow_cb_accounts
-            .touch(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
-
-        if account.is_shared() {
-            account.reserve(MAX_PERMITTED_DATA_INCREASE);
-        }
-        Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
-    });
-    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, config, sbpf_version) {
+    let memory_mapping = match MemoryMapping::new(regions, config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };
