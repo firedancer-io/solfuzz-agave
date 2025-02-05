@@ -265,6 +265,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     migrate_feature_gate_program_to_core_bpf,
     enable_get_epoch_stake_syscall,
     disable_account_loader_special_case,
+    move_precompile_verification_to_svm,
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
