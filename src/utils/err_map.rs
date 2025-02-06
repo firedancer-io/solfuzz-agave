@@ -95,7 +95,7 @@ pub fn syscall_err_to_str(error: &SyscallError) -> String {
         SyscallError::MaxInstructionAccountInfosExceeded {
             num_account_infos: _,
             max_account_infos: _,
-        } => "Invoked an instruction with too many account info".to_string(),
+        } => "Invoked an instruction with too many account info's".to_string(),
         _ => error.to_string(),
     }
 }
