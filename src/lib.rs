@@ -265,7 +265,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
-    migrate_stake_program_to_core_bpf,
+    // migrate_stake_program_to_core_bpf, // NOT impl in fd
     enable_get_epoch_stake_syscall,
     move_precompile_verification_to_svm,
 ];
