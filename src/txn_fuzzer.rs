@@ -19,10 +19,11 @@ use solana_sdk::feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::message::SanitizedMessage;
+use solana_sdk::precompiles::get_precompile;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::transaction::{
-    SanitizedTransaction, TransactionError, TransactionVerificationMode, VersionedTransaction,
+    TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
 use solana_sdk::transaction_context::TransactionAccount;
 use solana_sdk::{bpf_loader_upgradeable, sysvar};
@@ -231,7 +232,7 @@ impl From<LoadedTransaction> for proto::ResultingState {
 
 fn output_txn_result_from_result(
     value: LoadAndExecuteTransactionsOutput,
-    sanitized_transaction: &SanitizedTransaction,
+    sanitized_message: &SanitizedMessage,
 ) -> TxnResult {
     let execution_results = &value.processing_results[0];
     let (
@@ -254,11 +255,29 @@ fn output_txn_result_from_result(
                 }
                 ProcessedTransaction::FeesOnly(_) => false,
             };
+
             let (status, instr_err, custom_err, instr_err_idx) =
                 match txn.status().as_ref().map_err(transaction_error_to_err_nums) {
                     Ok(_) => (0, 0, 0, 0),
                     Err((status, instr_err, custom_err, instr_err_idx)) => {
-                        (status, instr_err, custom_err, instr_err_idx)
+                        // Set custom err to 0 if the failing instruction is a precompile
+                        let custom_err_ret = sanitized_message
+                            .instructions()
+                            .get(instr_err_idx as usize)
+                            .and_then(|instr| {
+                                sanitized_message
+                                    .account_keys()
+                                    .get(instr.program_id_index as usize)
+                                    .map(|program_id| {
+                                        if get_precompile(program_id, |_| true).is_some() {
+                                            0
+                                        } else {
+                                            custom_err
+                                        }
+                                    })
+                            })
+                            .unwrap_or(custom_err);
+                        (status, instr_err, custom_err_ret, instr_err_idx)
                     }
                 };
             let rent = match txn {
@@ -274,7 +293,7 @@ fn output_txn_result_from_result(
                     collect_accounts_for_failed_tx(
                         &mut accounts,
                         &mut None,
-                        sanitized_transaction.message(),
+                        sanitized_message,
                         None,
                         &tx.rollback_accounts,
                     );
@@ -595,7 +614,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         configs,
     );
 
-    let mut txn_result = output_txn_result_from_result(result, &sanitized_transaction);
+    let mut txn_result = output_txn_result_from_result(result, sanitized_transaction.message());
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
         let mut loaded_account_keys = HashSet::<Pubkey>::new();
         loaded_account_keys.extend(
