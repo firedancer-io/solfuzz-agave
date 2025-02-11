@@ -48,6 +48,9 @@ fn exec(input: &PathBuf) -> bool {
 }
 
 fn main() {
+    unsafe {
+        solfuzz_agave::sol_compat_init(0);
+    }
     let cli = Cli::parse();
     let mut fail_cnt = 0;
     for input in cli.inputs {
