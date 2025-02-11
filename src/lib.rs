@@ -269,6 +269,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_get_epoch_stake_syscall,
     move_precompile_verification_to_svm,
     enable_transaction_loading_failure_fees,
+    reserve_minimal_cus_for_builtin_instructions,
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
