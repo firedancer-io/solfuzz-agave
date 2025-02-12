@@ -450,6 +450,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         index,
         storage_access: StorageAccess::File,
         skip_initial_hash_calc: true,
+        num_hash_threads: Some(NonZeroUsize::new(1).unwrap()),
         ..AccountsDbConfig::default()
     });
     let bank = Bank::new_with_paths(
