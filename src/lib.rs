@@ -230,7 +230,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     simplify_writable_program_account_check,
     clean_up_delegation_errors,
     reduce_stake_warmup_cooldown,
-    // revise_turbine_epoch_stakes (not pub but not used in either codebase),
+    revise_turbine_epoch_stakes,
     enable_poseidon_syscall,
     enable_alt_bn128_compression_syscall,
     update_hashes_per_tick2,
