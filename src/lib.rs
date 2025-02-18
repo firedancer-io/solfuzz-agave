@@ -63,6 +63,9 @@ macro_rules! feature_list {
     };
 }
 
+pub use full_inflation::mainnet::certusone::enable as full_inflation_enable;
+pub use full_inflation::mainnet::certusone::vote as full_inflation_vote;
+
 pub static HARDCODED_FEATURES: &[u64] = feature_list![
     secp256k1_program_enabled,
     spl_token_v2_multisig_fix,
@@ -208,58 +211,62 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_account_loader_special_case,
     migrate_config_program_to_core_bpf,
     migrate_address_lookup_table_program_to_core_bpf,
-];
-
-static SUPPORTED_FEATURES: &[u64] = feature_list![
     deprecate_rewards_sysvar,
     pico_inflation,
+    full_inflation_vote,
+    full_inflation_enable,
     warp_timestamp_again,
-    blake3_syscall_enabled,
-    // zk_token_sdk_enabled, // NOT supported in fd
     curve25519_syscall_enabled,
-    enable_partitioned_epoch_reward,
-    stake_raise_minimum_delegation_to_1_sol,
-    stake_minimum_delegation_for_rewards,
     disable_deploy_of_alloc_free_syscall,
     enable_bpf_loader_extend_program_ix,
-    skip_rent_rewrites,
     incremental_snapshot_only_incremental_hash_calculation,
     relax_authority_signer_check_for_lookup_table_creation,
-    increase_tx_account_lock_limit,
     enable_bpf_loader_set_authority_checked_ix,
     enable_alt_bn128_syscall,
     commission_updates_only_allowed_in_first_half_of_epoch,
     enable_turbine_fanout_experiments,
-    disable_turbine_fanout_experiments,
     update_hashes_per_tick,
-    // enable_big_mod_exp_syscall, // NOT impl in fd
-    apply_cost_tracker_during_replay,
-    bpf_account_data_direct_mapping,
     switch_to_new_elf_parser,
-    include_loaded_accounts_data_size_in_fee_calculation,
     simplify_writable_program_account_check,
     clean_up_delegation_errors,
     reduce_stake_warmup_cooldown,
+    // revise_turbine_epoch_stakes (not pub but not used in either codebase),
     enable_poseidon_syscall,
-    // remaining_compute_units_syscall_enabled, // NOT impl in fd
-    enable_program_runtime_v2_and_loader_v4,
-    better_error_codes_for_tx_lamport_check,
     enable_alt_bn128_compression_syscall,
     update_hashes_per_tick2,
     update_hashes_per_tick3,
     update_hashes_per_tick4,
     update_hashes_per_tick5,
     update_hashes_per_tick6,
-    // enable_zk_transfer_with_fee, // deprecated / old stuff
     drop_legacy_shreds,
-    consume_blockstore_duplicate_proofs,
     index_erasure_conflict_duplicate_proofs,
     disable_bpf_loader_instructions,
+    reward_full_priority_fee,
+    add_new_reserved_account_keys,
+];
+
+static SUPPORTED_FEATURES: &[u64] = feature_list![
+    blake3_syscall_enabled,
+    // zk_token_sdk_enabled, // NOT supported in fd
+    curve25519_syscall_enabled,
+    enable_partitioned_epoch_reward,
+    stake_raise_minimum_delegation_to_1_sol,
+    stake_minimum_delegation_for_rewards,
+    skip_rent_rewrites,
+    increase_tx_account_lock_limit,
+    disable_turbine_fanout_experiments,
+    // enable_big_mod_exp_syscall, // NOT impl in fd
+    apply_cost_tracker_during_replay,
+    bpf_account_data_direct_mapping,
+    include_loaded_accounts_data_size_in_fee_calculation,
+    // remaining_compute_units_syscall_enabled, // NOT impl in fd
+    enable_program_runtime_v2_and_loader_v4,
+    better_error_codes_for_tx_lamport_check,
+    // enable_zk_transfer_with_fee, // deprecated / old stuff
+    consume_blockstore_duplicate_proofs,
     enable_zk_proof_from_account,
     enable_tower_sync_ix,
-    reward_full_priority_fee,
     disable_rent_fees_collection,
-    add_new_reserved_account_keys,
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
     enable_secp256r1_precompile,
