@@ -12,7 +12,6 @@ use solana_program::pubkey::Pubkey;
 use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
-use solana_runtime::epoch_stakes::EpochStakes;
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::clock::MAX_PROCESSING_AGE;
 use solana_sdk::epoch_schedule::EpochSchedule;
@@ -37,7 +36,7 @@ use solana_svm::transaction_processing_result::{
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
 use std::cmp::max;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
@@ -473,14 +472,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     bank.rehash();
 
     if slot > 0 {
-        let mut new_bank = Bank::new_from_parent(bank.clone(), &fee_collector, slot);
-
-        /* Set the epoch stakes */
-        new_bank.set_epoch_stakes_for_test(
-            new_bank.epoch().saturating_add(1),
-            EpochStakes::new_for_tests(HashMap::new(), new_bank.epoch().saturating_add(1)),
-        );
-
+        let new_bank = Bank::new_from_parent(bank.clone(), &fee_collector, slot);
         bank = bank_forks
             .write()
             .unwrap()
