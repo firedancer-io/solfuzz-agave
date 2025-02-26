@@ -50,20 +50,17 @@ fn execute_pack_cbp(input: PackComputeBudgetContext) -> Option<PackComputeBudget
         svm_instrs.push((&program_id, svm_instr));
     }
 
-
-    let feature_set: FeatureSet = input.features
-                                    .as_ref()
-                                    .map(|fs| fs.into())
-                                    .unwrap_or_default();
+    let feature_set: FeatureSet = input
+        .features
+        .as_ref()
+        .map(|fs| fs.into())
+        .unwrap_or_default();
 
     /* Process SVM instructions, and convert the resulting ComputeBudgetLimits into FeeBudgetLimits
     before extracting the compute unit limit and prioritization fee.
     ComputeBudgetLimits to FeeBudgetLimits conversion is done in compute_budget_limits.rs
     https://github.com/anza-xyz/agave/blob/e7778eb1d6c8007a2240b3c1521f4a521d2aef4e/compute-budget/src/compute_budget_limits.rs#L53 */
-    match process_compute_budget_instructions(
-        svm_instrs.into_iter(),
-        &feature_set,
-    ) {
+    match process_compute_budget_instructions(svm_instrs.into_iter(), &feature_set) {
         Ok(cbp_limits) => {
             let fee_budget_limits: FeeBudgetLimits = cbp_limits.into();
             Some(PackComputeBudgetEffects {
