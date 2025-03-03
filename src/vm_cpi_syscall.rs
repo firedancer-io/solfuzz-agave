@@ -117,11 +117,25 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     load_builtins(&mut program_cache_for_tx_batch, &instr_ctx.feature_set);
 
+
+
+    let vm_ctx = input.vm_ctx.unwrap();
+    let sbpf_version = match vm_ctx.sbpf_version {
+      1 => SBPFVersion::V1,
+      2 => SBPFVersion::V2,
+      3 => SBPFVersion::V3,
+      _ => SBPFVersion::V0,
+    };
+
+    if sbpf_version >= SBPFVersion::V1 {
+      let _ = &instr_ctx.feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+    }
+
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
-        &instr_ctx.feature_set,
-        &ComputeBudget::default(),
-        true,
-        false,
+      &instr_ctx.feature_set,
+      &ComputeBudget::default(),
+      true,
+      false,
     )
     .unwrap();
     let config = program_runtime_environment_v1.get_config();
@@ -202,9 +216,6 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     drop(invoke_ctx);
 
-    // Setup syscall context in the invoke context
-    let vm_ctx = input.vm_ctx.unwrap();
-
     let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
 
     // Setup the CPI callback if there are exec effects
@@ -265,7 +276,6 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .chain(input_memory_regions)
         .collect();
 
-    let sbpf_version = SBPFVersion::V0;
 
     let cow_cb_accounts = Rc::clone(invoke_ctx.transaction_context.accounts());
     let cow_cb = Box::new(move |index_in_transaction| {

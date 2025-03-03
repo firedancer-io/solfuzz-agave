@@ -26,7 +26,7 @@ use solana_program_runtime::{
         ebpf::HOST_ALIGN,
         memory_region::{MemoryMapping, MemoryRegion},
         program::{BuiltinProgram, SBPFVersion},
-        vm::EbpfVm,
+        vm::EbpfVm
     },
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
@@ -85,7 +85,18 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ));
     }
 
-    let feature_set = instr_ctx.feature_set;
+    let mut feature_set = instr_ctx.feature_set;
+
+    let sbpf_version = match input.vm_ctx.clone().unwrap().sbpf_version {
+      1 => SBPFVersion::V1,
+      2 => SBPFVersion::V2,
+      3 => SBPFVersion::V3,
+      _ => SBPFVersion::V0,
+    };
+
+    if sbpf_version >= SBPFVersion::V1 {
+      feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+    }
 
     let program_runtime_environment_v1 =
         create_program_runtime_environment_v1(&feature_set, &ComputeBudget::default(), true, false)
@@ -115,7 +126,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         compute_budget.max_instruction_trace_length,
     );
 
-    if let Some(vm_ctx) = &input.vm_ctx {
+    if let Some(vm_ctx) = &input.vm_ctx.as_ref() {
         if let Some(return_data) = vm_ctx.return_data.clone() {
             let program_id = Pubkey::try_from(return_data.program_id).unwrap();
             transaction_context
@@ -233,8 +244,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     .unwrap();
 
     drop(invoke_ctx);
-
-    let sbpf_version = SBPFVersion::V0;
 
     // Set up memory mapping
     let vm_ctx = input.vm_ctx.unwrap();
