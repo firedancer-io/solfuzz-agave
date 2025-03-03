@@ -184,9 +184,23 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         as IndexOfAccount;
 
     let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
-    let direct_mapping = invoke_ctx
-        .get_feature_set()
-        .is_active(&bpf_account_data_direct_mapping::id());
+    let vm_ctx = syscall_context.vm_ctx.unwrap();
+    let sbpf_version = match vm_ctx.sbpf_version {
+        1 => SBPFVersion::V1,
+        2 => SBPFVersion::V2,
+        3 => SBPFVersion::V3,
+        _ => SBPFVersion::V0,
+    };
+
+    /* Enable direct_mapping for SBPF version >= v1 */
+    if sbpf_version >= SBPFVersion::V1 {
+        feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+    }
+
+    let direct_mapping = sbpf_version >= SBPFVersion::V1
+        || invoke_ctx
+            .get_feature_set()
+            .is_active(&bpf_account_data_direct_mapping::id());
 
     invoke_ctx
         .transaction_context
@@ -221,8 +235,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     drop(invoke_ctx);
 
-    /* END NEW CODE********************************************************** */
-
     // Load default syscalls, to be stubbed later
     let unstubbed_runtime = create_program_runtime_environment_v1(
         &feature_set,
@@ -232,21 +244,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     )
     .unwrap();
 
-    let vm_ctx = syscall_context.vm_ctx.unwrap();
-    let sbpf_version = match vm_ctx.sbpf_version {
-        1 => SBPFVersion::V1,
-        2 => SBPFVersion::V2,
-        3 => SBPFVersion::V3,
-        _ => SBPFVersion::V0,
-    };
-
-    /* Enable direct_mapping for SBPF version >= v1 */
-    if sbpf_version >= SBPFVersion::V1 {
-        feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
-    }
     let config = &Config {
         enabled_sbpf_versions: SBPFVersion::V0..=sbpf_version,
         enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
+        aligned_memory_mapping: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
         enable_instruction_tracing: true,
         ..Config::default()
     };
