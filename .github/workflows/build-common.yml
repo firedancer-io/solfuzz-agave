@@ -19,7 +19,7 @@ jobs:
         with:
           components: "clippy, rustfmt"
       - uses: Swatinem/rust-cache@v2
-        with: 
+        with:
           cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
 
       - name: Install dependencies
@@ -33,7 +33,7 @@ jobs:
       - name: Check lints and clippy
         run: |
           cargo fmt --all -- --check
-          cargo clippy --all -- -D warnings 
+          cargo clippy --all -- -D warnings
 
       - name: Run cargo check + test
         run: |
@@ -43,22 +43,35 @@ jobs:
       - name: Build shared objects
         run: make shared_obj
 
+      - name: Build cov-enabled shared objects
+        if: ${{ inputs.upload_artifacts }}
+        run: |
+          make shared_obj_cov
+          cp -r ./src/ ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
+
       - name: Make binaries
-        run: make binaries 
+        run: make binaries
 
       - name: Run test-vectors
         run: |
           ./scripts/run_test_vectors.sh
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload main so
         if: ${{ inputs.upload_artifacts }}
+        uses: actions/upload-artifact@v4
         with:
           name: libsolfuzz-agave.so
-          path: ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so
-      
+          path: |
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave+cov.so
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
+
       - name: Upload stubbed so
         uses: actions/upload-artifact@v4
         if: ${{ inputs.upload_artifacts }}
         with:
           name: libsolfuzz-agave-stubbed.so
-          path: ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed.so
+          path: |
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed.so
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed+cov.so
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/

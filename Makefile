@@ -37,6 +37,17 @@ shared_obj:
 	# to avoid conflicts when uploading as GH artifact
 	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed.so
 
+shared_obj_cov:
+	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) build --target x86_64-unknown-linux-gnu --release \
+	 --lib --target-dir target/cov
+
+	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) build --target x86_64-unknown-linux-gnu --release  \
+	--lib --features stub-agave --target-dir target/cov-stub-agave
+
+	# to avoid conflicts when uploading as GH artifact
+	cp target/cov-stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed+cov.so
+	cp            target/cov/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave+cov.so
+
 shared_obj_debug:
 	$(CARGO) build --lib
 
