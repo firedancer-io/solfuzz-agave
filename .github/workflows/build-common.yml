@@ -47,6 +47,7 @@ jobs:
         if: ${{ inputs.upload_artifacts }}
         run: |
           make shared_obj_cov
+          cd src && pwd > buildpwd && cd -
           cp -r ./src/ ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
 
       - name: Make binaries
