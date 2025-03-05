@@ -269,7 +269,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     disable_rent_fees_collection,
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
-    enable_secp256r1_precompile,
+    // enable_secp256r1_precompile, // incorrect agave impl
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
     // migrate_stake_program_to_core_bpf, // NOT impl in fd
