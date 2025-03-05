@@ -390,7 +390,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     // For simplicity, we ignore them.
     let out_registers = match result {
         StableResult::Err(_) => &[0; 12],
-        StableResult::Ok(_) => vm.context_object_pointer.trace_log.last()?,
+        StableResult::Ok(_)  => vm.context_object_pointer.trace_log.last()?,
     };
 
     if let StableResult::Err(err) = result.borrow() {
