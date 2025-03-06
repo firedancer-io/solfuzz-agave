@@ -1,0 +1,11 @@
+error: subscription 'hello'. Can't find unsubscribe method, expected a method annotated with `unsubscribe` e.g. `#[pubsub(subscription = "hello", unsubscribe, name = "hello_unsubscribe")]`
+  --> $DIR/missing-unsubscribe.rs:10:2
+   |
+10 |       /// Hello subscription
+   |  _____^
+11 | |     #[pubsub(subscription = "hello", subscribe, name = "hello_subscribe", alias("hello_sub"))]
+12 | |     fn subscribe(&self, _: Self::Metadata, _: typed::Subscriber<String>, _: u64);
+   | |_________________________________________________________________________________^
+
+error: aborting due to previous error
+

@@ -1,0 +1,11 @@
+[package]
+name = "symlink"
+version = "0.1.0"
+authors = ["Chris Morgan <me@chrismorgan.info>"]
+description = "Create symlinks in a cross-platform manner"
+documentation = "https://docs.rs/symlink"
+repository = "https://gitlab.com/chris-morgan/symlink"
+readme = "README.md"
+keywords = ["file", "fs"]
+categories = ["filesystem"]
+license = "MIT/Apache-2.0"
