@@ -1,0 +1,20 @@
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/firedancer-io/agave?rev=66ea0a11f2f77086d33253b4028f6ae7083d78e4"]
+git = "https://github.com/firedancer-io/agave"
+rev = "66ea0a11f2f77086d33253b4028f6ae7083d78e4"
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/firedancer-io/agave?rev=ecb241ca7f3a49e98958acc65b32611f0983eb64"]
+git = "https://github.com/firedancer-io/agave"
+rev = "ecb241ca7f3a49e98958acc65b32611f0983eb64"
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/solana-labs/rbpf?rev=410a627"]
+git = "https://github.com/solana-labs/rbpf"
+rev = "410a627"
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
