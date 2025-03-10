@@ -13,14 +13,16 @@ jobs:
   test:
     name: cargo check + test
     runs-on: [self-hosted]
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.80.1
         with:
           components: "clippy, rustfmt"
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.7
 
       - name: Install dependencies
         run: |
