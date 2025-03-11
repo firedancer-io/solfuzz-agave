@@ -11,21 +11,22 @@ use solana_bpf_loader_program::{
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
+use solana_sbpf::{
+    aligned_memory::AlignedMemory,
+    declare_builtin_function,
+    ebpf::{self, HOST_ALIGN},
+    elf::Executable,
+    error::{EbpfError, StableResult},
+    memory_region::{MemoryMapping, MemoryRegion},
+    program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
+    verifier::RequisiteVerifier,
+    vm::{Config, EbpfVm, ContextObject},
+    static_analysis::TraceLogEntry,
+};
 use solana_program_runtime::{
     invoke_context::{EnvironmentConfig, InvokeContext},
     loaded_programs::ProgramCacheForTxBatch,
     mem_pool::VmMemoryPool,
-    solana_rbpf::{
-        aligned_memory::AlignedMemory,
-        declare_builtin_function,
-        ebpf::{self, HOST_ALIGN},
-        elf::Executable,
-        error::{EbpfError, StableResult},
-        memory_region::{MemoryMapping, MemoryRegion},
-        program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
-        verifier::RequisiteVerifier,
-        vm::{Config, ContextObject, EbpfVm, TestContextObject},
-    },
     sysvar_cache::SysvarCache,
 };
 
@@ -54,6 +55,51 @@ declare_builtin_function!(
         Ok(0)
     }
 );
+
+/// Simple instruction meter for testing
+#[derive(Debug, Clone, Default)]
+pub struct TestContextObject {
+    /// Contains the register state at every instruction in order of execution
+    pub trace_log: Vec<TraceLogEntry>,
+    /// Maximal amount of instructions which still can be executed
+    pub remaining: u64,
+}
+
+impl ContextObject for TestContextObject {
+    fn trace(&mut self, state: [u64; 12]) {
+        self.trace_log.push(state);
+    }
+
+    fn consume(&mut self, amount: u64) {
+        self.remaining = self.remaining.saturating_sub(amount);
+    }
+
+    fn get_remaining(&self) -> u64 {
+        self.remaining
+    }
+}
+
+impl TestContextObject {
+    /// Initialize with instruction meter
+    pub fn new(remaining: u64) -> Self {
+        Self {
+            trace_log: Vec::new(),
+            remaining,
+        }
+    }
+
+    /// Compares an interpreter trace and a JIT trace.
+    ///
+    /// The log of the JIT can be longer because it only validates the instruction meter at branches.
+    pub fn compare_trace_log(interpreter: &Self, jit: &Self) -> bool {
+        let interpreter = interpreter.trace_log.as_slice();
+        let mut jit = jit.trace_log.as_slice();
+        if jit.len() > interpreter.len() {
+            jit = &jit[0..interpreter.len()];
+        }
+        interpreter == jit
+    }
+}
 
 /* Set to true to make debugging easier
 
@@ -158,10 +204,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     let environment_config = EnvironmentConfig::new(
         blockhash,
-        None,
-        None,
-        Arc::new(feature_set.clone()),
         lamports_per_signature,
+        0,
+        &|_| 0u64,
+        Arc::new(feature_set.clone()),
         &sysvar_cache,
     );
 
@@ -261,17 +307,16 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         })
         .unwrap();
 
-    let mut loader = BuiltinProgram::new_loader_with_dense_registration(config.clone());
+    let mut loader = BuiltinProgram::new_loader(config.clone());
 
     // Stub syscalls
     // Note: unstubbed_runtime is "v1", so syscalls are only registered for version < V3,
     //       i.e. unstubbed_runtime.get_function_registry(sbpf_version) does NOT work.
-    let syscall_reg = unstubbed_runtime.get_function_registry(SBPFVersion::V0);
-    for (j, (_key, (name, _func))) in syscall_reg.iter().enumerate() {
+    let syscall_reg = unstubbed_runtime.get_function_registry();
+    for (_j, (_key, (name, _func))) in syscall_reg.iter().enumerate() {
         loader
             .register_function(
                 std::str::from_utf8(name).unwrap(),
-                j as u32,
                 SyscallStub::vm,
             )
             .unwrap();
@@ -453,7 +498,7 @@ in vm_ctx.call_whitelist, and register the pc hash as an entry in the registry.
 
 This effectively behaves the same as the FD bit vector, but with some technical
 differences that may cause issues. Most notably, FunctionRegistry operates as
-a hashmap, while FD's bit vector is a simple array. Out of bounds queries are
+a AHashMap, while FD's bit vector is a simple array. Out of bounds queries are
 non-issue here, but require explicit handling in FD. This causes a slight
 difference in error checks in CALL_IMM, which we handle in process_result.
 

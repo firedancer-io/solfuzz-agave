@@ -13,18 +13,18 @@ use solana_bpf_loader_program::{
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_feature_set::bpf_account_data_direct_mapping;
 use solana_log_collector::LogCollector;
+use solana_sbpf::{
+    aligned_memory::AlignedMemory,
+    ebpf,
+    ebpf::HOST_ALIGN,
+    memory_region::{MemoryMapping, MemoryRegion},
+    program::{BuiltinProgram, SBPFVersion},
+    vm::{ContextObject, EbpfVm},
+};
 use solana_program_runtime::{
     invoke_context::{EnvironmentConfig, InvokeContext},
     loaded_programs::ProgramCacheForTxBatch,
     mem_pool::VmMemoryPool,
-    solana_rbpf::{
-        aligned_memory::AlignedMemory,
-        ebpf,
-        ebpf::HOST_ALIGN,
-        memory_region::{MemoryMapping, MemoryRegion},
-        program::{BuiltinProgram, SBPFVersion},
-        vm::{ContextObject, EbpfVm},
-    },
     sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
@@ -137,10 +137,10 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let environment_config = EnvironmentConfig::new(
         blockhash,
-        None,
-        None,
-        Arc::new(instr_ctx.feature_set.clone()),
         lamports_per_signature,
+        0,
+        &|_| 0u64,
+        Arc::new(instr_ctx.feature_set.clone()),
         &sysvar_cache,
     );
     let log_collector = LogCollector::new_ref();
@@ -313,7 +313,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
-        .get_function_registry(sbpf_version)
+        .get_function_registry()
         .lookup_by_name(syscall_fn_name.as_slice())?;
     vm.invoke_function(syscall_func);
 

@@ -1,4 +1,4 @@
-use solana_program_runtime::solana_rbpf::{
+use solana_sbpf::{
     ebpf,
     memory_region::{MemoryMapping, MemoryRegion, MemoryState},
 };

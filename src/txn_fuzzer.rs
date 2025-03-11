@@ -1,5 +1,6 @@
 use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TransactionMessage, TxnContext, TxnResult};
+use ahash::AHashSet;
 use prost::Message;
 use solana_accounts_db::accounts_db::AccountsDbConfig;
 use solana_accounts_db::accounts_file::StorageAccess;
@@ -36,7 +37,6 @@ use solana_svm::transaction_processing_result::{
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
 use std::cmp::max;
-use std::collections::HashSet;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
@@ -133,7 +133,7 @@ fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessag
         // Default: empty blockchash (this keeps tests simpler)
         Hash::new_from_array([0u8; 32])
     } else {
-        Hash::new(&value.recent_blockhash)
+        Hash::new_from_array(value.recent_blockhash.clone().try_into().unwrap())
     };
     let instructions = value
         .instructions
@@ -617,7 +617,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
 
     let mut txn_result = output_txn_result_from_result(result, sanitized_transaction.message());
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
-        let mut loaded_account_keys = HashSet::<Pubkey>::new();
+        let mut loaded_account_keys = AHashSet::<Pubkey>::new();
         loaded_account_keys.extend(
             account_keys
                 .iter()

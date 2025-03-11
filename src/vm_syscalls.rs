@@ -15,19 +15,19 @@ use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_feature_set::bpf_account_data_direct_mapping;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
-use solana_program_runtime::{invoke_context::EnvironmentConfig, solana_rbpf::vm::ContextObject};
+use solana_program_runtime::{invoke_context::EnvironmentConfig};
 use solana_program_runtime::{
     invoke_context::InvokeContext,
     loaded_programs::ProgramCacheForTxBatch,
     mem_pool::VmMemoryPool,
-    solana_rbpf::{
-        aligned_memory::AlignedMemory,
-        ebpf,
-        ebpf::HOST_ALIGN,
-        memory_region::{MemoryMapping, MemoryRegion},
-        program::{BuiltinProgram, SBPFVersion},
-        vm::EbpfVm,
-    },
+};
+use solana_sbpf::{
+    aligned_memory::AlignedMemory,
+    ebpf,
+    ebpf::HOST_ALIGN,
+    memory_region::{MemoryMapping, MemoryRegion},
+    program::{BuiltinProgram, SBPFVersion},
+    vm::{EbpfVm, ContextObject},
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{
@@ -172,10 +172,10 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let environment_config = EnvironmentConfig::new(
         blockhash,
-        None,
-        None,
-        Arc::new(feature_set.clone()),
         lamports_per_signature,
+        0,
+        &|_| 0u64,
+        Arc::new(feature_set.clone()),
         &sysvar_cache,
     );
     let log_collector = LogCollector::new_ref();
@@ -344,7 +344,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Invoke the syscall
     let (_, syscall_func) = program_runtime_environment_v1
-        .get_function_registry(sbpf_version)
+        .get_function_registry()
         .lookup_by_name(&input.syscall_invocation?.function_name)?;
     vm.invoke_function(syscall_func);
 

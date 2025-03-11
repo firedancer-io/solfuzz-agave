@@ -1,7 +1,7 @@
 /* DEPRECATED, use utils/err_map.rs instead. Saving this for vm_interp.rs, which will
 need more substantial changes to accomodate the newer err_map.rs */
-use solana_program_runtime::solana_rbpf::error::EbpfError;
-use solana_program_runtime::solana_rbpf::verifier::VerifierError;
+use solana_sbpf::error::EbpfError;
+use solana_sbpf::verifier::VerifierError;
 const TRUNCATE_ERROR_WORDS: usize = 7;
 
 pub fn get_fd_vm_err_code(ebpf_err: &EbpfError) -> i32 {

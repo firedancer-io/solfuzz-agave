@@ -1,11 +1,14 @@
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
+use ahash::{AHashMap, AHashSet};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_program_runtime::solana_rbpf::{ebpf, elf::Executable};
+use solana_sbpf::{ebpf, elf::Executable};
 use solana_sdk::{feature_set::*, pubkey::Pubkey};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet};
+
 use std::ffi::c_int;
+
 
 pub const ACTIVATE_FEATURES: &[Pubkey] = &[
     switch_to_new_elf_parser::id(),
@@ -15,8 +18,8 @@ pub const ACTIVATE_FEATURES: &[Pubkey] = &[
 
 pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffects> {
     let mut feature_set = FeatureSet {
-        active: HashMap::new(),
-        inactive: HashSet::new(),
+        active: AHashMap::new(),
+        inactive: AHashSet::new(),
     };
 
     for feature in ACTIVATE_FEATURES.iter() {

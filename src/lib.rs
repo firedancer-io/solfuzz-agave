@@ -230,7 +230,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     simplify_writable_program_account_check,
     clean_up_delegation_errors,
     reduce_stake_warmup_cooldown,
-    revise_turbine_epoch_stakes,
+    // revise_turbine_epoch_stakes, / WAIT FOR PUBLIC IN A TAG VERSION
     enable_poseidon_syscall,
     enable_alt_bn128_compression_syscall,
     update_hashes_per_tick2,
@@ -260,7 +260,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     bpf_account_data_direct_mapping,
     include_loaded_accounts_data_size_in_fee_calculation,
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
-    enable_program_runtime_v2_and_loader_v4,
+    enable_loader_v4,
     better_error_codes_for_tx_lamport_check,
     // enable_zk_transfer_with_fee, // deprecated / old stuff
     consume_blockstore_duplicate_proofs,
@@ -421,7 +421,7 @@ pub fn get_instr_accounts(
     txn_accounts: &[TransactionAccount],
     acct_metas: &StableVec<AccountMeta>,
 ) -> Vec<InstructionAccount> {
-    let mut instruction_accounts: Vec<InstructionAccount> = Vec::with_capacity(acct_metas.len());
+    let mut instruction_accounts: Vec<InstructionAccount> = Vec::with_capacity(acct_metas.len().try_into().unwrap());
     for (instruction_account_index, account_meta) in acct_metas.iter().enumerate() {
         let index_in_transaction = txn_accounts
             .iter()
@@ -516,7 +516,7 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
             solana_bpf_loader_program::Entrypoint::vm,
         )),
     );
-    if feature_set.is_active(&enable_program_runtime_v2_and_loader_v4::id()) {
+    if feature_set.is_active(&enable_loader_v4::id()) {
         cache.replenish(
             solana_sdk::loader_v4::id(),
             Arc::new(ProgramCacheEntry::new_builtin(
@@ -814,10 +814,10 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     let log_collector = LogCollector::new_ref();
     let env_config = EnvironmentConfig::new(
         blockhash,
-        None,
-        None,
-        Arc::new(input.feature_set.clone()),
         lamports_per_signature,
+        0,
+        &|_| 0u64,
+        Arc::new(input.feature_set.clone()),
         &sysvar_cache,
     );
     let mut invoke_context = InvokeContext::new(

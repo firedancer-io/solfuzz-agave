@@ -2,11 +2,11 @@ pub mod err_map;
 pub mod vm;
 use crate::proto;
 use crate::proto::AcctState;
+use ahash::AHashMap;
 use lazy_static::lazy_static;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::{AccountSharedData, WritableAccount};
 use solana_sdk::feature_set::{FeatureSet, FEATURE_NAMES};
-use std::collections::HashMap;
 
 pub const fn feature_u64(feature: &Pubkey) -> u64 {
     let feature_id = feature.to_bytes();
@@ -21,7 +21,7 @@ pub const fn feature_u64(feature: &Pubkey) -> u64 {
 }
 
 lazy_static! {
-    static ref INDEXED_FEATURES: HashMap<u64, Pubkey> = {
+    static ref INDEXED_FEATURES: AHashMap<u64, Pubkey> = {
         FEATURE_NAMES
             .iter()
             .map(|(pubkey, _)| (feature_u64(pubkey), *pubkey))

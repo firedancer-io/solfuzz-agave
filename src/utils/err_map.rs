@@ -3,9 +3,9 @@ use solana_bpf_loader_program::syscalls::SyscallError;
 use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{
     invoke_context::InvokeContext,
-    solana_rbpf::error::{EbpfError, StableResult},
     stable_log,
 };
+use solana_sbpf::error::{EbpfError, StableResult};
 
 use solana_sdk::{instruction::InstructionError, pubkey::Pubkey};
 
