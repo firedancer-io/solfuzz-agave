@@ -12,14 +12,12 @@ use solana_bpf_loader_program::{
     serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_feature_set::bpf_account_data_direct_mapping;
+use solana_feature_set::{bpf_account_data_direct_mapping, remove_accounts_executable_flag_checks};
 use solana_log_collector::LogCollector;
+use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::sysvar_cache::SysvarCache;
-use solana_program_runtime::{invoke_context::EnvironmentConfig};
 use solana_program_runtime::{
-    invoke_context::InvokeContext,
-    loaded_programs::ProgramCacheForTxBatch,
-    mem_pool::VmMemoryPool,
+    invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch, mem_pool::VmMemoryPool,
 };
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
@@ -27,7 +25,7 @@ use solana_sbpf::{
     ebpf::HOST_ALIGN,
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, SBPFVersion},
-    vm::{EbpfVm, ContextObject},
+    vm::{ContextObject, EbpfVm},
 };
 use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
 use solana_sdk::{
@@ -113,6 +111,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         Rent::default(),
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
+    );
+    transaction_context.set_remove_accounts_executable_flag_checks(
+        feature_set.is_active(&remove_accounts_executable_flag_checks::id()),
     );
 
     if let Some(vm_ctx) = &input.vm_ctx {

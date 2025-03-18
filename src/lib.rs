@@ -421,7 +421,8 @@ pub fn get_instr_accounts(
     txn_accounts: &[TransactionAccount],
     acct_metas: &StableVec<AccountMeta>,
 ) -> Vec<InstructionAccount> {
-    let mut instruction_accounts: Vec<InstructionAccount> = Vec::with_capacity(acct_metas.len().try_into().unwrap());
+    let mut instruction_accounts: Vec<InstructionAccount> =
+        Vec::with_capacity(acct_metas.len().try_into().unwrap());
     for (instruction_account_index, account_meta) in acct_metas.iter().enumerate() {
         let index_in_transaction = txn_accounts
             .iter()
@@ -725,6 +726,11 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         rent,
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
+    );
+    transaction_context.set_remove_accounts_executable_flag_checks(
+        input
+            .feature_set
+            .is_active(&remove_accounts_executable_flag_checks::id()),
     );
 
     // sigh ... What is this mess?

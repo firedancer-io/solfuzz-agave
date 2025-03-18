@@ -10,7 +10,14 @@ use solana_bpf_loader_program::{
     serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_feature_set::remove_accounts_executable_flag_checks;
 use solana_log_collector::LogCollector;
+use solana_program_runtime::{
+    invoke_context::{EnvironmentConfig, InvokeContext},
+    loaded_programs::ProgramCacheForTxBatch,
+    mem_pool::VmMemoryPool,
+    sysvar_cache::SysvarCache,
+};
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     declare_builtin_function,
@@ -19,15 +26,9 @@ use solana_sbpf::{
     error::{EbpfError, StableResult},
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
-    verifier::RequisiteVerifier,
-    vm::{Config, EbpfVm, ContextObject},
     static_analysis::TraceLogEntry,
-};
-use solana_program_runtime::{
-    invoke_context::{EnvironmentConfig, InvokeContext},
-    loaded_programs::ProgramCacheForTxBatch,
-    mem_pool::VmMemoryPool,
-    sysvar_cache::SysvarCache,
+    verifier::RequisiteVerifier,
+    vm::{Config, ContextObject, EbpfVm},
 };
 
 use solana_program_test::IndexOfAccount;
@@ -192,6 +193,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
     );
+    transaction_context.set_remove_accounts_executable_flag_checks(
+        feature_set.is_active(&remove_accounts_executable_flag_checks::id()),
+    );
 
     let sysvar_cache = SysvarCache::default();
     #[allow(deprecated)]
@@ -315,10 +319,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let syscall_reg = unstubbed_runtime.get_function_registry();
     for (_j, (_key, (name, _func))) in syscall_reg.iter().enumerate() {
         loader
-            .register_function(
-                std::str::from_utf8(name).unwrap(),
-                SyscallStub::vm,
-            )
+            .register_function(std::str::from_utf8(name).unwrap(), SyscallStub::vm)
             .unwrap();
     }
     let loader = std::sync::Arc::new(loader);

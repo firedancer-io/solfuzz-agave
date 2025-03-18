@@ -11,8 +11,14 @@ use solana_bpf_loader_program::{
     serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_feature_set::bpf_account_data_direct_mapping;
+use solana_feature_set::{bpf_account_data_direct_mapping, remove_accounts_executable_flag_checks};
 use solana_log_collector::LogCollector;
+use solana_program_runtime::{
+    invoke_context::{EnvironmentConfig, InvokeContext},
+    loaded_programs::ProgramCacheForTxBatch,
+    mem_pool::VmMemoryPool,
+    sysvar_cache::SysvarCache,
+};
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
@@ -20,12 +26,6 @@ use solana_sbpf::{
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
-};
-use solana_program_runtime::{
-    invoke_context::{EnvironmentConfig, InvokeContext},
-    loaded_programs::ProgramCacheForTxBatch,
-    mem_pool::VmMemoryPool,
-    sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
@@ -111,6 +111,11 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         Rent::default(),
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
+    );
+    transaction_context.set_remove_accounts_executable_flag_checks(
+        instr_ctx
+            .feature_set
+            .is_active(&remove_accounts_executable_flag_checks::id()),
     );
 
     // sigh ... What is this mess?
