@@ -164,10 +164,30 @@ fn test_txn_execute_clock() {
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
 
-    let slot_ctx = SlotContext { slot: 20 };
+    let slot_ctx = SlotContext {
+        slot: 20,
+        block_height: 0,
+        poh: vec![],
+        parent_bank_hash: vec![],
+        parent_lt_hash: vec![],
+        prev_slot: 0,
+        prev_lps: 0,
+        prev_epoch_capitalization: 0,
+    };
     let features = get_features();
     let epoch_ctx = EpochContext {
         features: Some(features),
+        hashes_per_tick: 1000,
+        ticks_per_slot: 64,
+        slots_per_year: 31_536_000.0,
+        inflation: None,
+        genesis_creation_time: 1_620_000_000,
+        new_stake_accounts: vec![],
+        stake_accounts: vec![],
+        new_vote_accounts: vec![],
+        vote_accounts_t: vec![],
+        vote_accounts_t_1: vec![],
+        vote_accounts_t_2: vec![],
     };
 
     let header = MessageHeader {
@@ -266,10 +286,30 @@ fn test_simple_transfer() {
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
 
-    let slot_ctx = SlotContext { slot: 20 };
+    let slot_ctx = SlotContext {
+        slot: 20,
+        block_height: 0,
+        poh: vec![],
+        parent_bank_hash: vec![],
+        parent_lt_hash: vec![],
+        prev_slot: 0,
+        prev_lps: 0,
+        prev_epoch_capitalization: 0,
+    };
     let features = get_features();
     let epoch_ctx = EpochContext {
         features: Some(features),
+        hashes_per_tick: 1000,
+        ticks_per_slot: 64,
+        slots_per_year: 31_536_000.0,
+        inflation: None,
+        genesis_creation_time: 1_620_000_000,
+        new_stake_accounts: vec![],
+        stake_accounts: vec![],
+        new_vote_accounts: vec![],
+        vote_accounts_t: vec![],
+        vote_accounts_t_1: vec![],
+        vote_accounts_t_2: vec![],
     };
 
     let header = MessageHeader {
@@ -406,10 +446,30 @@ fn test_lookup_table() {
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
 
-    let slot_ctx = SlotContext { slot: 20 };
+    let slot_ctx = SlotContext {
+        slot: 20,
+        block_height: 0,
+        poh: vec![],
+        parent_bank_hash: vec![],
+        parent_lt_hash: vec![],
+        prev_slot: 0,
+        prev_lps: 0,
+        prev_epoch_capitalization: 0,
+    };
     let features = get_features();
     let epoch_ctx = EpochContext {
         features: Some(features),
+        hashes_per_tick: 1000,
+        ticks_per_slot: 64,
+        slots_per_year: 31_536_000.0,
+        inflation: None,
+        genesis_creation_time: 1_620_000_000,
+        new_stake_accounts: vec![],
+        stake_accounts: vec![],
+        new_vote_accounts: vec![],
+        vote_accounts_t: vec![],
+        vote_accounts_t_1: vec![],
+        vote_accounts_t_2: vec![],
     };
 
     let header = MessageHeader {
