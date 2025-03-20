@@ -317,7 +317,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     // Note: unstubbed_runtime is "v1", so syscalls are only registered for version < V3,
     //       i.e. unstubbed_runtime.get_function_registry(sbpf_version) does NOT work.
     let syscall_reg = unstubbed_runtime.get_function_registry();
-    for (_j, (_key, (name, _func))) in syscall_reg.iter().enumerate() {
+    for (_key, (name, _func)) in syscall_reg.iter() {
         loader
             .register_function(std::str::from_utf8(name).unwrap(), SyscallStub::vm)
             .unwrap();

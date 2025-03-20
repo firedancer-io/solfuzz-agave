@@ -1,10 +1,7 @@
 use crate::proto::ErrKind;
 use solana_bpf_loader_program::syscalls::SyscallError;
 use solana_poseidon::PoseidonSyscallError;
-use solana_program_runtime::{
-    invoke_context::InvokeContext,
-    stable_log,
-};
+use solana_program_runtime::{invoke_context::InvokeContext, stable_log};
 use solana_sbpf::error::{EbpfError, StableResult};
 
 use solana_sdk::{instruction::InstructionError, pubkey::Pubkey};
