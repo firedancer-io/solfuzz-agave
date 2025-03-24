@@ -273,8 +273,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
     enable_secp256r1_precompile,
-    disable_sbpf_v0_execution,
-    reenable_sbpf_v0_execution,
+    // disable_sbpf_v0_execution, // test only (revist for vm v3)
+    // reenable_sbpf_v0_execution, // test only (revist for vm v3)
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
     enable_sbpf_v3_deployment_and_execution,
