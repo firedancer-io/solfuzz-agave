@@ -153,7 +153,6 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     max_tx_account_locks,
     merge_nonce_error_into_system_error,
     merkle_conflict_duplicate_proofs,
-    migrate_address_lookup_table_program_to_core_bpf,
     migrate_config_program_to_core_bpf,
     move_serialized_len_ptr_in_cpi,
     move_stake_and_move_lamports_ixs,
