@@ -18,9 +18,9 @@ CC:=clang
 
 CARGO?=cargo
 
-.PHONY: build clean binaries shared_obj fetch_proto
+.PHONY: build clean binaries shared_obj shared_obj_dm fetch_proto
 
-all: | fetch_proto shared_obj binaries
+all: | fetch_proto shared_obj shared_obj_dm binaries
 
 # Alias for backwards compatibility
 build: | fetch_proto shared_obj
@@ -36,6 +36,8 @@ shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --features stub-agave --target-dir target/stub-agave
 	# to avoid conflicts when uploading as GH artifact
 	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_stubbed.so
+	
+shared_obj_dm:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --features direct-mapping --target-dir target/direct-mapping
 	# to avoid conflicts when uploading as GH artifact
 	cp target/direct-mapping/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_direct_mapping.so
