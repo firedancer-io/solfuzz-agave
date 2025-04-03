@@ -824,7 +824,6 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 epoch_schedule: &EpochSchedule,
                 reload: bool,
             ) -> Option<Arc<ProgramCacheEntry>> { */
-            // TODO: Right here, use the P-Token binary.
             if let Some(loaded_program) = program_loader::load_program_with_pubkey(
                 &input,
                 &environments,

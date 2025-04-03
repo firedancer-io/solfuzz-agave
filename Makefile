@@ -56,13 +56,13 @@ shared_obj_core_bpf:
 	CARGO=$(CARGO) ./scripts/build_core_bpf.sh $(PROGRAM)
 
 shared_obj_p_token:
-	./scripts/fetch_spl_token.sh
+	./scripts/fetch_program.sh "token" "febo/new-instructions-feature"
 	# First build target for SPL-Token
-	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_token.sh spl
+	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_bpf.sh spl
 	cp target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_spl_token.so
 	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_spl_token_stubbed.so
 	# Now build target for P-Token
-	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_token.sh pinocchio
+	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_bpf.sh pinocchio
 	cp target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_p_token.so
 	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_p_token_stubbed.so
 

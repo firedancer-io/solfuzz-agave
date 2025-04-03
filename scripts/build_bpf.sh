@@ -1,6 +1,6 @@
 #!/bin/bash
 
-: "${SPL_PROGRAMS_DIR:=spl_programs}"
+: "${BPF_PROGRAMS_DIR:=bpf_programs}"
 : "${RUSTFLAGS:=}"
 : "${CARGO:=cargo}"
 
@@ -14,10 +14,10 @@ BPF_PROGRAM_ID="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 set_bpf_vars() {
     case "$1" in
         pinocchio)
-            BPF_TARGET="$SPL_PROGRAMS_DIR/lib/pinocchio_token_program.so"
+            BPF_TARGET="$BPF_PROGRAMS_DIR/lib/pinocchio_token_program.so"
             ;;
         spl)
-            BPF_TARGET="$SPL_PROGRAMS_DIR/lib/spl_token.so"
+            BPF_TARGET="$BPF_PROGRAMS_DIR/lib/spl_token.so"
             ;;
         *)
             echo "Invalid argument. Use 'pinocchio' or 'spl'."

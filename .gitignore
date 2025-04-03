@@ -1,6 +1,5 @@
 /bpf_programs
 /protosol
-/spl_programs
 /target*
 test/self_test
 .vscode/
