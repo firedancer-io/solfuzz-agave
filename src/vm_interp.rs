@@ -159,6 +159,19 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
     let mut feature_set = instr_ctx.feature_set;
 
+    #[cfg(feature = "direct-mapping")]
+    {
+        // Toggle the BPF direct mapping feature
+        if feature_set
+            .active
+            .contains_key(&bpf_account_data_direct_mapping::id())
+        {
+            feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+        } else {
+            feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+        }
+    }
+
     let existing_pubkeys: Vec<_> = instr_ctx
         .accounts
         .iter()

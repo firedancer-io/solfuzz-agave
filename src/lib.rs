@@ -588,6 +588,23 @@ fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
 }
 
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
+    #[cfg(feature = "direct-mapping")]
+    {
+        // Toggle the BPF direct mapping feature
+        if input
+            .feature_set
+            .active
+            .contains_key(&bpf_account_data_direct_mapping::id())
+        {
+            input
+                .feature_set
+                .deactivate(&bpf_account_data_direct_mapping::id());
+        } else {
+            input
+                .feature_set
+                .activate(&bpf_account_data_direct_mapping::id(), 0);
+        }
+    }
     #[cfg(feature = "core-bpf-conformance")]
     // The BPF version of some builtin programs are built with the assumption
     // that certain features will be active at the time of their deployment.

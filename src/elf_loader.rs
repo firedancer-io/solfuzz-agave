@@ -24,6 +24,18 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
     for feature in ACTIVATE_FEATURES.iter() {
         feature_set.activate(feature, 0);
     }
+    #[cfg(feature = "direct-mapping")]
+    {
+        // Toggle the BPF direct mapping feature
+        if feature_set
+            .active
+            .contains_key(&bpf_account_data_direct_mapping::id())
+        {
+            feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+        } else {
+            feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+        }
+    }
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set,
