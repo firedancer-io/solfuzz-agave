@@ -3,6 +3,7 @@ use crate::{
     utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
     InstrContext,
 };
+use agave_feature_set::remove_accounts_executable_flag_checks;
 use bincode::Error;
 use prost::Message;
 use solana_account::AccountSharedData;
@@ -10,7 +11,6 @@ use solana_bpf_loader_program::{
     serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
 };
 use solana_compute_budget::compute_budget::ComputeBudget;
-use agave_feature_set::remove_accounts_executable_flag_checks;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{
     invoke_context::{EnvironmentConfig, InvokeContext},

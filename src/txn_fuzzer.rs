@@ -1,5 +1,6 @@
 use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TransactionMessage, TxnContext, TxnResult};
+use agave_feature_set::FeatureSet;
 use ahash::AHashSet;
 use prost::Message;
 use solana_accounts_db::accounts_db::AccountsDbConfig;
@@ -16,7 +17,6 @@ use solana_runtime::bank_forks::BankForks;
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::clock::MAX_PROCESSING_AGE;
 use solana_sdk::epoch_schedule::EpochSchedule;
-use agave_feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::message::SanitizedMessage;

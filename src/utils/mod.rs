@@ -2,11 +2,11 @@ pub mod err_map;
 pub mod vm;
 use crate::proto;
 use crate::proto::AcctState;
+use agave_feature_set::{FeatureSet, FEATURE_NAMES};
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::{AccountSharedData, WritableAccount};
-use agave_feature_set::{FeatureSet, FEATURE_NAMES};
 
 pub const fn feature_u64(feature: &Pubkey) -> u64 {
     let feature_id = feature.to_bytes();
