@@ -16,7 +16,7 @@ use solana_runtime::bank_forks::BankForks;
 use solana_sdk::account::{AccountSharedData, ReadableAccount};
 use solana_sdk::clock::MAX_PROCESSING_AGE;
 use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::feature_set::FeatureSet;
+use agave_feature_set::FeatureSet;
 use solana_sdk::genesis_config::GenesisConfig;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::message::SanitizedMessage;

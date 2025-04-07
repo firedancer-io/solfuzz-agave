@@ -22,7 +22,7 @@ use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
 use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::feature_set::*;
+use agave_feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;
