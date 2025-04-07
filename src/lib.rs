@@ -9,6 +9,7 @@ pub mod vm_cpi_syscall;
 pub mod vm_interp;
 pub mod vm_syscalls;
 
+use agave_feature_set::*;
 use prost::Message;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_log_collector::LogCollector;
@@ -22,7 +23,6 @@ use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
 use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
-use agave_feature_set::*;
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::InstructionError;
 use solana_sdk::pubkey::Pubkey;

@@ -67,6 +67,9 @@ check-cfg = [
 Inflector = "0.11.4"
 axum = "0.7.9"
 agave-banking-stage-ingress-types = {path = "../agave/banking-stage-ingress-types"}
+agave-feature-set = {path = "../agave/feature-set"}
+agave-precompiles = {path = "../agave/precompiles"}
+agave-reserved-account-keys = {path = "../agave/reserved-account-keys"}
 agave-transaction-view = {path = "../agave/transaction-view"}
 aquamarine = "0.6.0"
 aes-gcm-siv = "0.11.1"
@@ -174,7 +177,7 @@ jsonrpc-ipc-server = "18.0.0"
 jsonrpc-pubsub = "18.0.0"
 lazy-lru = "0.1.3"
 lazy_static = "1.5.0"
-libc = "0.2.169"
+libc = "0.2.170"
 libloading = "0.7.4"
 libsecp256k1 = { version = "0.6.0", default-features = false, features = [
     "std",
@@ -234,7 +237,7 @@ serde = "1.0.217" # must match the serde_derive version, see https://github.com/
 serde-big-array = "0.5.1"
 serde_bytes = "0.11.15"
 serde_derive = "1.0.217" # must match the serde version, see https://github.com/serde-rs/serde/issues/2584#issuecomment-1685252251
-serde_json = "1.0.138"
+serde_json = "1.0.139"
 serde_with = { version = "3.12.0", default-features = false }
 serde_yaml = "0.9.34"
 serial_test = "2.0.0"
@@ -264,7 +267,7 @@ solana-big-mod-exp = "=2.2.1"
 solana-bincode = "=2.2.1"
 solana-blake3-hasher = "=2.2.1"
 solana-bloom = {path = "../agave/bloom"}
-solana-bn254 = "=2.2.1"
+solana-bn254 = "=2.2.2"
 solana-borsh = "=2.2.1"
 solana-bpf-loader-program = {path = "../agave/programs/bpf_loader"}
 solana-bucket-map = {path = "../agave/bucket_map"}
@@ -296,8 +299,9 @@ solana-decode-error = "=2.2.1"
 solana-define-syscall = "=2.2.1"
 solana-derivation-path = "=2.2.1"
 solana-download-utils = {path = "../agave/download-utils"}
-solana-ed25519-program = "=2.2.1"
+solana-ed25519-program = "=2.2.2"
 solana-entry = {path = "../agave/entry"}
+solana-feature-set-interface = "=4.0.0"
 solana-program-entrypoint = "=2.2.1"
 solana-epoch-info = "=2.2.1"
 solana-epoch-rewards = "=2.2.1"
@@ -307,7 +311,6 @@ solana-example-mocks = "=2.2.1"
 solana-faucet = {path = "../agave/faucet"}
 solana-feature-gate-client = "0.0.2"
 solana-feature-gate-interface = "=2.2.1"
-solana-feature-set = "=2.2.1"
 solana-fee-calculator = "=2.2.1"
 solana-fee = {path = "../agave/fee"}
 solana-fee-structure = "=2.2.1"
@@ -338,7 +341,7 @@ solana-loader-v4-interface = "=2.2.1"
 solana-loader-v4-program = {path = "../agave/programs/loader-v4"}
 solana-local-cluster = {path = "../agave/local-cluster"}
 solana-log-collector = {path = "../agave/log-collector"}
-solana-logger = "=2.2.1"
+solana-logger = "=2.3.1"
 solana-measure = {path = "../agave/measure"}
 solana-merkle-tree = {path = "../agave/merkle-tree"}
 solana-message = "=2.2.1"
@@ -359,16 +362,15 @@ solana-poh = {path = "../agave/poh"}
 solana-poh-config = "=2.2.1"
 solana-poseidon = {path = "../agave/poseidon"}
 solana-precompile-error = "=2.2.1"
-solana-precompiles = "=2.2.1"
 solana-presigner = "=2.2.1"
-solana-program = "=2.2.1"
+solana-program = { version = "=2.2.1", default-features = false }
 solana-program-error = "=2.2.1"
 solana-program-memory = "=2.2.1"
 solana-program-option = "=2.2.1"
 solana-program-pack = "=2.2.1"
 solana-program-runtime = {path = "../agave/program-runtime"}
 solana-program-test = {path = "../agave/program-test"}
-solana-pubkey = "=2.2.1"
+solana-pubkey = { version = "=2.2.1", default-features = false }
 solana-pubsub-client = {path = "../agave/pubsub-client"}
 solana-quic-client = {path = "../agave/quic-client"}
 solana-quic-definitions = "=2.2.1"
@@ -377,17 +379,16 @@ solana-remote-wallet = {path = "../agave/remote-wallet"}
 solana-rent = "=2.2.1"
 solana-rent-collector = "=2.2.1"
 solana-rent-debits = "=2.2.1"
-solana-reserved-account-keys = "=2.2.1"
 solana-reward-info = "=2.2.1"
 solana-sanitize = "=2.2.1"
-solana-secp256r1-program = "=2.2.1"
+solana-secp256r1-program = "=2.2.2"
 solana-seed-derivable = "=2.2.1"
 solana-seed-phrase = "=2.2.1"
 solana-serde = "=2.2.1"
 solana-serde-varint = "=2.2.1"
 solana-serialize-utils = "=2.2.1"
 solana-sha256-hasher = "=2.2.1"
-solana-signature = "=2.2.1"
+solana-signature = { version = "=2.2.1", default-features = false }
 solana-signer = "=2.2.1"
 solana-slot-hashes = "=2.2.1"
 solana-slot-history = "=2.2.1"
@@ -403,7 +404,7 @@ solana-rpc-client-nonce-utils = {path = "../agave/rpc-client-nonce-utils"}
 solana-runtime = {path = "../agave/runtime"}
 solana-runtime-transaction = {path = "../agave/runtime-transaction"}
 solana-sbpf = "=0.10.0"
-solana-sdk = "=2.2.1"
+solana-sdk = "=2.2.2"
 solana-sdk-ids = "=2.2.1"
 solana-sdk-macro = "=2.2.1"
 solana-secp256k1-program = "=2.2.1"
@@ -428,7 +429,7 @@ solana-sysvar = "=2.2.1"
 solana-sysvar-id = "=2.2.1"
 solana-test-validator = {path = "../agave/test-validator"}
 solana-thin-client = {path = "../agave/thin-client"}
-solana-transaction = "=2.2.1"
+solana-transaction = "=2.2.2"
 solana-transaction-error = "=2.2.1"
 solana-tpu-client = {path = "../agave/tpu-client"}
 solana-tpu-client-next = {path = "../agave/tpu-client-next"}
