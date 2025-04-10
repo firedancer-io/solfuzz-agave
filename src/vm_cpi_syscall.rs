@@ -1,5 +1,5 @@
 use crate::{
-    initialize_program_cache,
+    load_builtins,
     proto::{InstrEffects, SyscallContext, SyscallEffects},
     utils::{
         err_map::unpack_stable_result,
@@ -120,7 +120,7 @@ pub fn execute_vm_cpi_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // sigh ... What is this mess?
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
-    initialize_program_cache(&mut program_cache_for_tx_batch, &instr_ctx.feature_set);
+    load_builtins(&mut program_cache_for_tx_batch, &instr_ctx.feature_set);
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &instr_ctx.feature_set,

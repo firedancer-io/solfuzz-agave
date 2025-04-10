@@ -41,9 +41,7 @@ use solana_timings::ExecuteTimings;
 use crate::utils::err_map::instr_err_to_num;
 use crate::utils::feature_u64;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
-use solfuzz_agave_macro::{
-    declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
-};
+use solfuzz_agave_macro::{declare_core_bpf_default_compute_units, load_core_bpf_program};
 use std::collections::HashSet;
 use std::env;
 use std::ffi::c_int;
@@ -505,8 +503,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
     instr_effects.map(Into::into)
 }
 
-fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
-    // Load builtin programs into the cache.
+fn load_builtins(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     cache.replenish(
         solana_sdk::bpf_loader_deprecated::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
@@ -584,16 +581,10 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         );
     }
 
-    // If the `core-bpf` or `core-bpf-conformance` feature is enabled, and the
-    // `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables are
-    // set, this macro will replace the designated builtin program in the cache
-    // with a loaded ELF.
+    // If the `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables
+    // are set, this macro will replace the designated builtin program in the
+    // cache with a loaded ELF.
     load_core_bpf_program!();
-
-    // If the `bpf-program-conformance` feature is enabled, and the
-    // `BPF_PROGRAM_ID` and `BPF_TARGET` environment variables are set, this
-    // macro will load the provided ELF into the cache.
-    load_bpf_program!();
 }
 
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
@@ -772,7 +763,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     program_cache_for_tx_batch.environments = environments.clone();
     program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
-    initialize_program_cache(&mut program_cache_for_tx_batch, &input.feature_set);
+    load_builtins(&mut program_cache_for_tx_batch, &input.feature_set);
 
     #[allow(deprecated)]
     let (blockhash, lamports_per_signature) = sysvar_cache
