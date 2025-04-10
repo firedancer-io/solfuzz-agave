@@ -142,6 +142,62 @@ pub fn rename_nested_key(
     Err(())
 }
 
+fn yaml_to_string(value: &serde_yaml::Value) -> String {
+    let mut s = "".to_string();
+    eprintln!("value: {:?}", value);
+
+    match value {
+        serde_yaml::Value::Tagged(tagged_value) => {
+            let tag = tagged_value.tag.to_string().replace("!", "").to_lowercase();
+            s += &format!("{}: \n", tag);
+            s += &yaml_to_string(&tagged_value.value);
+        },
+        serde_yaml::Value::Mapping(map) => {
+            for (k, v) in map.iter() {
+                s += &format!("{}: ", k.as_str().unwrap());
+                if let serde_yaml::Value::Mapping(_) = v {
+                    s += "\n";
+                }
+                s += &yaml_to_string(v);;
+                if !s.ends_with("\n") {
+                    s += "\n";
+                }
+            }
+        },
+        serde_yaml::Value::Sequence(seq) => {
+            if seq.is_empty() {
+                s += "[]";
+            } else {
+                for v in seq {
+                    s += "- ";
+                    s += &yaml_to_string(v);
+                    s += "\n";
+                }
+            }
+        }
+        serde_yaml::Value::Number(num) => {
+            if num.is_u64() {
+                s += &format!("{}", num.as_u64().unwrap());
+            } else if num.is_i64() {
+                s += &format!("{}", num.as_i64().unwrap());
+            } else {
+                panic!("f64 should have been normalized: {:?}", value);
+            }
+        },
+        serde_yaml::Value::Bool(b) => {
+            s += &format!("{}", b);
+        },
+        serde_yaml::Value::String(s2) => {
+            s += &format!("{}\n", s2);
+        },
+        serde_yaml::Value::Null => {
+            s += "null\n";
+        },
+    }
+
+    s
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_type_execute_v1(
     out_yaml_ptr: *mut u8,
@@ -168,7 +224,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -185,7 +242,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -202,7 +260,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -219,7 +278,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -236,7 +296,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -253,7 +314,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -270,7 +332,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -287,7 +350,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -304,7 +368,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -321,7 +386,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -338,7 +404,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -356,7 +423,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
             rename_nested_key(&mut value, &["last_restart_slot"], "slot").unwrap();
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -373,7 +441,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -390,7 +459,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;
@@ -407,58 +477,8 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let mut value = serde_yaml::to_value(&typ).unwrap();
             convert_keys_to_snake_case(&mut value);
             yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
-            let sz = yaml_str.len();
-            unsafe {
-                *out_yaml_psz = sz as u64;
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_yaml_ptr, sz);
-            }
-        }
-        158 => {
-            let typ: FrozenHashVersioned = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-                h
-            } else {
-                return 0;
-            };
-
-            let mut value = serde_yaml::to_value(&typ).unwrap();
-            convert_keys_to_snake_case(&mut value);
-            yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
-            let sz = yaml_str.len();
-            unsafe {
-                *out_yaml_psz = sz as u64;
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_yaml_ptr, sz);
-            }
-        }
-        202 => {
-            let typ: CrdsValue = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-                h
-            } else {
-                return 0;
-            };
-
-            let mut value = serde_yaml::to_value(&typ).unwrap();
-            convert_keys_to_snake_case(&mut value);
-            yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
-            let sz = yaml_str.len();
-            unsafe {
-                *out_yaml_psz = sz as u64;
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_yaml_ptr, sz);
-            }
-        }
-        216 => {
-            let typ: RepairProtocol = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-                h
-            } else {
-                return 0;
-            };
-
-            let mut value = serde_yaml::to_value(&typ).unwrap();
-            convert_keys_to_snake_case(&mut value);
-            yaml_normalize_float(&mut value);
-            let yaml_str = serde_yaml::to_string(&value).unwrap();
+            let mut yaml_str = yaml_to_string(&value);
+            if !yaml_str.ends_with("\n") { yaml_str += "\n"; }
             let sz = yaml_str.len();
             unsafe {
                 *out_yaml_psz = sz as u64;

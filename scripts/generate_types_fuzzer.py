@@ -1,7 +1,7 @@
 import sys
 import json
 
-# unknown agave counterpart
+# unknown agave counterpart, names dont match 1:1
 blacklist = [
     "pubkey", # this is a macro in FD to fd_hash_t
     "gossip_ip4_addr",
@@ -224,18 +224,24 @@ blacklist = [
     "duplicate_slot_proof", # uchar instead of vec<uchar> in walk()
     "epoch_stakes", # OOM in agave
 
-    "crds_filter", # to fix
-    "config_keys",
-    "versioned_epoch_stakes",
-    "node_vote_accounts",
-#    "frozen_hash_versioned",
-    "hard_forks",
-    "vote_accounts",
-    "stake_history",
+    # bug where its discriminant is shown twice
+    "frozen_hash_versioned",
+    "crds_value",
+    "repair_protocol",
     "crds_data",
+    "versioned_epoch_stakes",
+    "stake_history", # sometimes twice the same field
+
+    # to fix
+    "crds_filter", 
+    "config_keys",
+    "node_vote_accounts",
+    "hard_forks", # Fd: Vec<Struct> vs Agave Seq<Seq<vals>> (inner Seq is actually a tuple)
+    "vote_accounts",
+    # "stake_history",
 ]
 
-# some types have different names in agave
+# map fd type names to agave names when necessary
 mapping = {
     "hash_age": "HashInfo",
     "sol_sysvar_clock": "Clock",
@@ -418,6 +424,63 @@ remove_tags_body="""fn remove_tags_in_place(value: &mut serde_yaml::Value) {
 }
 """
 
+print_yaml_body="""fn yaml_to_string(value: &serde_yaml::Value) -> String {
+    let mut s = "".to_string();
+    eprintln!("value: {:?}", value);
+
+    match value {
+        serde_yaml::Value::Tagged(tagged_value) => {
+            let tag = tagged_value.tag.to_string().replace("!", "").to_lowercase();
+            s += &format!("{}: \\n", tag);
+            s += &yaml_to_string(&tagged_value.value);
+        },
+        serde_yaml::Value::Mapping(map) => {
+            for (k, v) in map.iter() {
+                s += &format!("{}: ", k.as_str().unwrap());
+                if let serde_yaml::Value::Mapping(_) = v {
+                    s += "\\n";
+                }
+                s += &yaml_to_string(v);;
+                if !s.ends_with("\\n") {
+                    s += "\\n";
+                }
+            }
+        },
+        serde_yaml::Value::Sequence(seq) => {
+            if seq.is_empty() {
+                s += "[]";
+            } else {
+                for v in seq {
+                    s += "- ";
+                    s += &yaml_to_string(v);
+                    s += "\\n";
+                }
+            }
+        }
+        serde_yaml::Value::Number(num) => {
+            if num.is_u64() {
+                s += &format!("{}", num.as_u64().unwrap());
+            } else if num.is_i64() {
+                s += &format!("{}", num.as_i64().unwrap());
+            } else {
+                panic!("f64 should have been normalized: {:?}", value);
+            }
+        },
+        serde_yaml::Value::Bool(b) => {
+            s += &format!("{}", b);
+        },
+        serde_yaml::Value::String(s2) => {
+            s += &format!("{}\\n", s2);
+        },
+        serde_yaml::Value::Null => {
+            s += "null\\n";
+        },
+    }
+
+    s
+}
+"""
+
 def snake_to_camel(snake_str):
     components = snake_str.split('_')
     return ''.join(x.title() for x in components)
@@ -475,6 +538,7 @@ def main():
         print(yaml_normalize_float_body, file=body)
         print(rename_nested_key_body, file=body)
         # print(remove_tags_body, file=body)
+        print(print_yaml_body, file=body)
 
         print("#[no_mangle]", file=body)
         print("pub unsafe extern \"C\" fn sol_compat_type_execute_v1(", file=body)
@@ -497,6 +561,8 @@ def main():
             if entry['name'] in mapping:
                 name = mapping[entry['name']]
 
+            # .trim_end_matches('\n')
+
             if entry['name'] not in blacklist:
                 # map to the correct index
                 idx = find_line_number(type_names, '"fd_' + entry['name'] + '"')
@@ -513,9 +579,9 @@ def main():
                     print("            yaml_normalize_float(&mut value);", file=body)
                     # print("            remove_tags_in_place(&mut value);", file=body)
                     do_substitution(entry['name'], body)
-                    print("            let yaml_str = serde_yaml::to_string(&value).unwrap();", file=body)
-                    if entry['name'] == 'stake_history':
-                        print('            let yaml_str = format!("stake_history: stake_history: {}", yaml_str);', file=body)
+                    # print("            let yaml_str = serde_yaml::to_string(&value).unwrap();", file=body)
+                    print("            let mut yaml_str = yaml_to_string(&value);", file=body)
+                    print("            if !yaml_str.ends_with(\"\\n\") { yaml_str += \"\\n\"; }", file=body)
                     print("            let sz = yaml_str.len();", file=body)
                     print("            unsafe {", file=body)
                     print("                *out_yaml_psz = sz as u64;", file=body)
