@@ -60,11 +60,9 @@ shared_obj_p_token:
 	# First build target for SPL-Token
 	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_bpf.sh spl
 	cp target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_spl_token.so
-	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_spl_token_stubbed.so
 	# Now build target for P-Token
 	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_bpf.sh pinocchio
 	cp target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_p_token.so
-	cp target/stub-agave/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_p_token_stubbed.so
 
 binaries:
 	LLVM_PROFILE_FILE="compiler_artifacts.tmp" RUSTFLAGS="-Cinstrument-coverage" $(CARGO) build --bins --release

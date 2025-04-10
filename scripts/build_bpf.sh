@@ -28,15 +28,8 @@ set_bpf_vars() {
 
 set_bpf_vars "$1"
 
-BPF_PROGRAM_ID=$BPF_PROGRAM_ID BPF_TARGET=$BPF_TARGET FORCE_RECOMPILE=true $CARGO build \
+RUSTFLAGS=$RUSTFLAGS BPF_PROGRAM_ID=$BPF_PROGRAM_ID BPF_TARGET=$BPF_TARGET FORCE_RECOMPILE=true $CARGO build \
     --target x86_64-unknown-linux-gnu \
     --features bpf-program-conformance \
     --lib \
     --release
-
-BPF_PROGRAM_ID=$BPF_PROGRAM_ID BPF_TARGET=$BPF_TARGET FORCE_RECOMPILE=true $CARGO build \
-    --target x86_64-unknown-linux-gnu \
-    --features bpf-program-conformance,stub-agave \
-    --lib \
-    --release \
-    --target-dir target/stub-agave
