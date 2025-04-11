@@ -1,11 +1,11 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod elf_loader;
-pub mod types_fuzzer;
 pub mod pack;
 pub mod serializer;
 mod shred_parse;
 pub mod txn_fuzzer;
+pub mod types_fuzzer;
 pub mod utils;
 pub mod vm_cpi_syscall;
 pub mod vm_interp;

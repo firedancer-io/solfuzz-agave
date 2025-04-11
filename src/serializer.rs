@@ -1,4 +1,3 @@
-
 #[derive(Default)]
 pub struct CustomSerializer {
     pub output: String,
@@ -78,10 +77,7 @@ impl<'a> serde::ser::Serializer for &'a mut CustomSerializer {
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         let bytes = v.to_ne_bytes();
-        let hex_strings: Vec<String> = bytes
-                .iter()
-                .map(|b| format!("0x{:02X}", b))
-                .collect();
+        let hex_strings: Vec<String> = bytes.iter().map(|b| format!("0x{:02X}", b)).collect();
         self.output += &format!("{},", hex_strings.join(","));
         Ok(())
     }
@@ -97,9 +93,7 @@ impl<'a> serde::ser::Serializer for &'a mut CustomSerializer {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        let hex_strings: Vec<String> = v.iter()
-            .map(|b| format!("{}", b))
-            .collect();
+        let hex_strings: Vec<String> = v.iter().map(|b| format!("{}", b)).collect();
         self.output += &format!("{},", hex_strings.join(","));
         Ok(())
     }
