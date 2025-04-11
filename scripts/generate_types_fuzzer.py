@@ -2,6 +2,7 @@ import sys
 import json
 
 # unknown agave counterpart, names dont match 1:1
+# TODO: manually add them to the mapping
 blacklist = [
     "pubkey", # this is a macro in FD to fd_hash_t
     "gossip_ip4_addr",
@@ -215,33 +216,19 @@ blacklist = [
     "cost_tracker",
     "epoch_info", # same name different type
 
-    # known bugs
-    "stake_history_entry",
-    "rent",
-    "rent_collector",
-    "inflation",
-    "repair_request_header",
-    "duplicate_slot_proof", # uchar instead of vec<uchar> in walk()
-    "epoch_stakes", # OOM in agave
-
-    # bug where its discriminant is shown twice
-    "frozen_hash_versioned",
-    "crds_value",
-    "repair_protocol",
-    "crds_data",
-    "versioned_epoch_stakes",
-    "stake_history", # sometimes twice the same field
-
-    # to fix
-    "crds_filter", 
-    "config_keys",
-    "node_vote_accounts",
-    "hard_forks", # Fd: Vec<Struct> vs Agave Seq<Seq<vals>> (inner Seq is actually a tuple)
-    "vote_accounts",
-    # "stake_history",
+    # known mismatches
+    # "stake_history_entry",
+    # "repair_request_header",
+    # "duplicate_slot_proof", # uchar instead of vec<uchar> in walk()
+    # "epoch_stakes", # OOM in agave
+    # "crds_value",
+    # "crds_data",
+    # "config_keys",
+    # "versioned_epoch_stakes", # OOM in agave
+    # "crds_filter",
 ]
 
-# map fd type names to agave names when necessary
+# map fd type names to agave names
 mapping = {
     "hash_age": "HashInfo",
     "sol_sysvar_clock": "Clock",
@@ -252,31 +239,20 @@ mapping = {
 
 dependencies = [
     "bincode",
-    "heck::ToSnakeCase",
-    "serde_yaml",
+    "serde::Serialize",
     "solana_accounts_db::blockhash_queue::HashInfo",
     "solana_clock::Clock",
     "solana_config_program::ConfigKeys",
     "solana_core::repair::serve_repair::RepairProtocol",
-    "solana_core::repair::serve_repair::RepairRequestHeader",
-    "solana_cost_model::cost_tracker::CostTracker",
-    "solana_cost_model::transaction_cost::TransactionCost",
-    "solana_cost_model::transaction_cost::UsageCostDetails",
-    "solana_epoch_info::EpochInfo",
     "solana_epoch_rewards::EpochRewards",
     "solana_fee_calculator::FeeCalculator",
     "solana_fee_calculator::FeeRateGovernor",
-    "solana_gossip::crds_data::CrdsData",
-    "solana_gossip::crds_gossip_pull::CrdsFilter",
-    "solana_gossip::crds_value::CrdsValue",
     "solana_hard_forks::HardForks",
     "solana_hash::Hash",
     "solana_inflation::Inflation",
     "solana_last_restart_slot::LastRestartSlot",
-    "solana_ledger::blockstore_meta::DuplicateSlotProof",
     "solana_ledger::blockstore_meta::FrozenHashStatus",
     "solana_ledger::blockstore_meta::FrozenHashVersioned",
-    "solana_message::AccountKeys",
     "solana_poh_config::PohConfig",
     "solana_program::sysvar::epoch_schedule::EpochSchedule",
     "solana_program::sysvar::fees::Fees",
@@ -285,201 +261,20 @@ dependencies = [
     "solana_program::sysvar::stake_history::StakeHistoryEntry",
     "solana_rent_collector::RentCollector",
     "solana_runtime::bank::BankHashStats",
-    "solana_runtime::epoch_stakes::EpochStakes",
     "solana_runtime::epoch_stakes::NodeVoteAccounts",
-    "solana_runtime::epoch_stakes::VersionedEpochStakes",
     "solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence",
-    "solana_runtime::stakes::Stakes",
-    "solana_runtime::status_cache::SlotDelta",
     "solana_sdk::feature::Feature",
     "solana_sdk::signature::Signature",
-    "solana_svm_conformance::proto::TxnResult",
     "solana_vote::vote_account::VoteAccounts",
+    "solana_runtime::epoch_stakes::EpochStakes",
+    "solana_runtime::epoch_stakes::VersionedEpochStakes",
+    "solana_gossip::crds_data::CrdsData",
+    "solana_gossip::crds_gossip_pull::CrdsFilter",
+    "solana_gossip::crds_value::CrdsValue",
+    "solana_core::repair::serve_repair::RepairRequestHeader",
+    "solana_ledger::blockstore_meta::DuplicateSlotProof",
     "std::ffi::c_int",
 ]
-
-convert_keys_to_snake_case_body="""fn convert_keys_to_snake_case(value: &mut serde_yaml::Value) {
-    match value {
-        serde_yaml::Value::Mapping(map) => {
-            let mut new_map = serde_yaml::Mapping::new();
-            for (k, mut v) in std::mem::take(map) {
-                let new_key = match k {
-                    serde_yaml::Value::String(s) => serde_yaml::Value::String(s.to_snake_case()),
-                    _ => k,
-                };
-                convert_keys_to_snake_case(&mut v);
-                new_map.insert(new_key, v);
-            }
-            *value = serde_yaml::Value::Mapping(new_map);
-        }
-        serde_yaml::Value::Sequence(seq) => {
-            for v in seq {
-                convert_keys_to_snake_case(v);
-            }
-        }
-        _ => {}
-    }
-}
-"""
-
-f64_to_hex_string_body="""fn f64_to_hex_string(value: f64) -> String {
-    let bytes = value.to_ne_bytes();
-    let hex_strings: Vec<String> = bytes
-            .iter()
-            .map(|b| format!("0x{:02X}", b))
-            .collect();
-    format!("[{}]", hex_strings.join(","))
-}
-"""
-
-yaml_normalize_float_body="""fn yaml_normalize_float(value: &mut serde_yaml::Value) {
-    match value {
-        serde_yaml::Value::Mapping(map) => {
-            for (_k, v) in map.iter_mut() {
-                yaml_normalize_float(v);
-                
-                if let serde_yaml::Value::Number(num) = v {
-                    if num.is_f64() {
-                        let formatted = f64_to_hex_string(num.as_f64().unwrap());
-                        *v = serde_yaml::Value::String(formatted);
-                    }
-                }
-            }
-        }
-        serde_yaml::Value::Sequence(seq) => {
-            for item in seq.iter_mut() {
-                yaml_normalize_float(item);
-            }
-        }
-        _ => {}
-    }
-}
-"""
-
-rename_nested_key_body="""pub fn rename_nested_key(
-    value: &mut serde_yaml::Value,
-    key_path: &[&str],
-    new_key: &str,
-) -> Result<(), ()> {
-    if key_path.is_empty() {
-        return Err(());
-    }
-
-    if key_path.len() == 1 {
-        if let serde_yaml::Value::Mapping(old_map) = value {
-            let mut new_map = serde_yaml::Mapping::new();
-            let target_key = key_path[0];
-            let mut found = false;
-
-            for (k, v) in old_map.iter() {
-                if k.as_str() == Some(target_key) {
-                    new_map.insert(serde_yaml::Value::String(new_key.to_string()), v.clone());
-                    found = true;
-                } else {
-                    new_map.insert(k.clone(), v.clone());
-                }
-            }
-
-            if found {
-                *value = serde_yaml::Value::Mapping(new_map);
-                return Ok(());
-            }
-        }
-        return Err(());
-    }
-
-    if let serde_yaml::Value::Mapping(map) = value {
-        let current_key = key_path[0];
-        if let Some(next_value) = map.get_mut(&serde_yaml::Value::String(current_key.to_string())) {
-            return rename_nested_key(next_value, &key_path[1..], new_key);
-        }
-    }
-
-    Err(())
-}
-"""
-
-remove_tags_body="""fn remove_tags_in_place(value: &mut serde_yaml::Value) {
-    match value {
-        serde_yaml::Value::Tagged(tagged) => {
-            let inner_value = std::mem::replace(&mut tagged.value, serde_yaml::Value::Null);
-            *value = inner_value;
-            remove_tags_in_place(value);
-        },
-
-        serde_yaml::Value::Mapping(map) => {
-            for (_, v) in map.iter_mut() {
-                remove_tags_in_place(v);
-            }
-        },
-
-        serde_yaml::Value::Sequence(seq) => {
-            for v in seq.iter_mut() {
-                remove_tags_in_place(v);
-            }
-        },
-
-        _ => {},
-    }
-}
-"""
-
-print_yaml_body="""fn yaml_to_string(value: &serde_yaml::Value) -> String {
-    let mut s = "".to_string();
-    eprintln!("value: {:?}", value);
-
-    match value {
-        serde_yaml::Value::Tagged(tagged_value) => {
-            let tag = tagged_value.tag.to_string().replace("!", "").to_lowercase();
-            s += &format!("{}: \\n", tag);
-            s += &yaml_to_string(&tagged_value.value);
-        },
-        serde_yaml::Value::Mapping(map) => {
-            for (k, v) in map.iter() {
-                s += &format!("{}: ", k.as_str().unwrap());
-                if let serde_yaml::Value::Mapping(_) = v {
-                    s += "\\n";
-                }
-                s += &yaml_to_string(v);;
-                if !s.ends_with("\\n") {
-                    s += "\\n";
-                }
-            }
-        },
-        serde_yaml::Value::Sequence(seq) => {
-            if seq.is_empty() {
-                s += "[]";
-            } else {
-                for v in seq {
-                    s += "- ";
-                    s += &yaml_to_string(v);
-                    s += "\\n";
-                }
-            }
-        }
-        serde_yaml::Value::Number(num) => {
-            if num.is_u64() {
-                s += &format!("{}", num.as_u64().unwrap());
-            } else if num.is_i64() {
-                s += &format!("{}", num.as_i64().unwrap());
-            } else {
-                panic!("f64 should have been normalized: {:?}", value);
-            }
-        },
-        serde_yaml::Value::Bool(b) => {
-            s += &format!("{}", b);
-        },
-        serde_yaml::Value::String(s2) => {
-            s += &format!("{}\\n", s2);
-        },
-        serde_yaml::Value::Null => {
-            s += "null\\n";
-        },
-    }
-
-    s
-}
-"""
 
 def snake_to_camel(snake_str):
     components = snake_str.split('_')
@@ -491,29 +286,6 @@ def find_line_number(content, search_string):
         if search_string in line:
             return i-4
     return -1
-
-# FD uses a different names, map agave names to them
-def do_substitution(name, body):
-    if name == 'rent':
-        print('            rename_nested_key(&mut value, &["lamports_per_byte_year"], "lamports_per_uint8_year").unwrap();', file=body)
-    elif name == 'sol_sysvar_last_restart_slot':
-        print('            rename_nested_key(&mut value, &["last_restart_slot"], "slot").unwrap();', file=body)
-    elif name == 'rent_collector':
-        print('            rename_nested_key(&mut value, &["rent", "lamports_per_byte_year"], "lamports_per_uint8_year").unwrap();', file=body)
-
-def do_float_normalization(name, body):
-    if name == 'rent':
-        print("            yaml_normalize_float(&mut value, \"exemption_threshold\");", file=body)
-    elif name == 'inflation':
-        print("            yaml_normalize_float(&mut value, \"initial\");", file=body)
-        print("            yaml_normalize_float(&mut value, \"terminal\");", file=body)
-        print("            yaml_normalize_float(&mut value, \"taper\");", file=body)
-        print("            yaml_normalize_float(&mut value, \"foundation\");", file=body)
-        print("            yaml_normalize_float(&mut value, \"foundation_term\");", file=body)
-        print("            yaml_normalize_float(&mut value, \"unused\");", file=body)
-    elif name == 'rent_collector':
-        print("            yaml_normalize_float(&mut value, \"slots_per_year\");", file=body)
-        print("            yaml_normalize_float(&mut value, \"exemption_threshold\");", file=body)
 
 def main():
     if len(sys.argv) < 3:
@@ -533,17 +305,10 @@ def main():
             print(f"use {dependency};", file=body)
         print("", file=body)
 
-        print(convert_keys_to_snake_case_body, file=body)
-        print(f64_to_hex_string_body, file=body)
-        print(yaml_normalize_float_body, file=body)
-        print(rename_nested_key_body, file=body)
-        # print(remove_tags_body, file=body)
-        print(print_yaml_body, file=body)
-
         print("#[no_mangle]", file=body)
         print("pub unsafe extern \"C\" fn sol_compat_type_execute_v1(", file=body)
-        print("    out_yaml_ptr: *mut u8,", file=body)
-        print("    out_yaml_psz: *mut u64,", file=body)
+        print("    out_ptr: *mut u8,", file=body)
+        print("    out_psz: *mut u64,", file=body)
         print("    in_bincode_ptr: *mut u8,", file=body)
         print("    in_bincode_sz: u64,", file=body)
         print(") -> c_int {", file=body)
@@ -561,8 +326,6 @@ def main():
             if entry['name'] in mapping:
                 name = mapping[entry['name']]
 
-            # .trim_end_matches('\n')
-
             if entry['name'] not in blacklist:
                 # map to the correct index
                 idx = find_line_number(type_names, '"fd_' + entry['name'] + '"')
@@ -573,19 +336,16 @@ def main():
                     print("            } else {", file=body)
                     print("                return 0;", file=body)
                     print("            };\n", file=body)
-                    print("            let mut value = serde_yaml::to_value(&typ).unwrap();", file=body)
-                    # Agave has inner types not following naming convention, so normalize everything to snake case
-                    print("            convert_keys_to_snake_case(&mut value);", file=body)
-                    print("            yaml_normalize_float(&mut value);", file=body)
-                    # print("            remove_tags_in_place(&mut value);", file=body)
-                    do_substitution(entry['name'], body)
-                    # print("            let yaml_str = serde_yaml::to_string(&value).unwrap();", file=body)
-                    print("            let mut yaml_str = yaml_to_string(&value);", file=body)
-                    print("            if !yaml_str.ends_with(\"\\n\") { yaml_str += \"\\n\"; }", file=body)
-                    print("            let sz = yaml_str.len();", file=body)
+                    print("            let mut ser = super::CustomSerializer::new();", file=body)
+                    print("            typ.serialize(&mut ser).unwrap();", file=body)
+                    print("            let ser_sz = ser.output.len();", file=body)
+                    print("            let yaml_str = serde_yaml::to_string(&typ).unwrap();", file=body)
+                    print("            let yaml_sz = yaml_str.len();", file=body)
                     print("            unsafe {", file=body)
-                    print("                *out_yaml_psz = sz as u64;", file=body)
-                    print("                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_yaml_ptr, sz);", file=body)
+                    print("                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;", file=body)
+                    print("                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());", file=body)
+                    print("                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);", file=body)
+                    print("                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);", file=body)
                     print("            }", file=body)
                     print("        }", file=body)
                 else:
@@ -598,16 +358,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# Notes:
-# stake_history is a headache, type is different fd<->agave though the memory layout is the same
-# Agave: pub struct StakeHistory(Vec<(Epoch, StakeHistoryEntry)>);
-# []\n
-# FD: StaticVec<fd_stake_history_entry_t>, represented as a Mapping + Type array:
-# stake_history: stake_history: []\n
-# Solution: prepend with: `stake_history: stake_history: `
-#
-# TODOS:
-# serde-hashes get a newline after field-column like this `:\n` for non primitive types
-# for mapping in fd to be the same?
-# mapping transformed to [] instead of {} for serde
