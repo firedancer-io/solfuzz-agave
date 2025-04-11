@@ -2,7 +2,7 @@
 
 set -ex
 
-NUM_PROCESSES=${NUM_PROCESSES:-8}
+NUM_PROCESSES=${NUM_PROCESSES:-$(nproc)}
 
 if [ "$LOG_PATH" == "" ]; then
   LOG_PATH="`mktemp -d`"
