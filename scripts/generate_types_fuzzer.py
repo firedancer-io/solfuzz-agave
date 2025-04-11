@@ -230,6 +230,7 @@ blacklist = [
     "epoch_reward_status",
     "loader_v4_program_instruction_copy",
     "loader_v4_program_instruction_set_program_length",
+    "sysvar_fees",
 
     # known mismatches
     # "stake_history_entry",
@@ -248,7 +249,7 @@ mapping = {
     "hash_age": "HashInfo",
     "sol_sysvar_clock": "Clock",
     "sol_sysvar_last_restart_slot": "LastRestartSlot",
-    "sysvar_fees": "Fees",
+    # "sysvar_fees": "Fees",
     "sysvar_epoch_rewards": "EpochRewards",
 }
 
@@ -270,7 +271,6 @@ dependencies = [
     "solana_ledger::blockstore_meta::FrozenHashVersioned",
     "solana_poh_config::PohConfig",
     "solana_program::sysvar::epoch_schedule::EpochSchedule",
-    "solana_program::sysvar::fees::Fees",
     "solana_program::sysvar::rent::Rent",
     "solana_program::sysvar::stake_history::StakeHistory",
     "solana_program::sysvar::stake_history::StakeHistoryEntry",
@@ -358,9 +358,9 @@ def main():
                     print("            let yaml_sz = yaml_str.len();", file=body)
                     print("            unsafe {", file=body)
                     print("                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;", file=body)
-                    print("                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());", file=body)
-                    print("                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);", file=body)
-                    print("                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);", file=body)
+                    print("                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);", file=body)
+                    print("                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);", file=body)
+                    print("                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);", file=body)
                     print("            }", file=body)
                     print("        }", file=body)
                 else:

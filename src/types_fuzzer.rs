@@ -16,7 +16,6 @@ use solana_ledger::blockstore_meta::FrozenHashStatus;
 use solana_ledger::blockstore_meta::FrozenHashVersioned;
 use solana_poh_config::PohConfig;
 use solana_program::sysvar::epoch_schedule::EpochSchedule;
-use solana_program::sysvar::fees::Fees;
 use solana_program::sysvar::rent::Rent;
 use solana_program::sysvar::stake_history::StakeHistory;
 use solana_program::sysvar::stake_history::StakeHistoryEntry;
@@ -66,9 +65,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         2 => {
@@ -85,9 +84,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         5 => {
@@ -104,9 +103,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         6 => {
@@ -123,9 +122,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         7 => {
@@ -142,9 +141,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         11 => {
@@ -161,9 +160,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         13 => {
@@ -180,9 +179,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         14 => {
@@ -199,9 +198,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         15 => {
@@ -218,9 +217,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         16 => {
@@ -237,9 +236,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         17 => {
@@ -256,9 +255,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         18 => {
@@ -275,9 +274,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         19 => {
@@ -294,9 +293,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         22 => {
@@ -313,9 +312,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         33 => {
@@ -332,9 +331,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         34 => {
@@ -351,9 +350,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         37 => {
@@ -370,9 +369,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         42 => {
@@ -389,9 +388,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         50 => {
@@ -408,9 +407,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         56 => {
@@ -427,9 +426,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         60 => {
@@ -446,9 +445,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         61 => {
@@ -465,28 +464,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
-            }
-        }
-        93 => {
-            let typ: Fees = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-                h
-            } else {
-                return 0;
-            };
-
-            let mut ser = crate::serializer::CustomSerializer::new();
-            typ.serialize(&mut ser).unwrap();
-            let ser_sz = ser.output.len();
-            let yaml_str = serde_yaml::to_string(&typ).unwrap();
-            let yaml_sz = yaml_str.len();
-            unsafe {
-                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         94 => {
@@ -503,9 +483,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         155 => {
@@ -522,9 +502,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         171 => {
@@ -541,9 +521,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         172 => {
@@ -560,9 +540,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         213 => {
@@ -579,9 +559,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         215 => {
@@ -598,9 +578,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         216 => {
@@ -617,9 +597,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         225 => {
@@ -636,9 +616,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         230 => {
@@ -655,9 +635,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         245 => {
@@ -674,9 +654,9 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             let yaml_sz = yaml_str.len();
             unsafe {
                 *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, 1);
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.add(std::mem::size_of::<u64>()), ser_sz);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.add(std::mem::size_of::<u64>() + ser_sz), yaml_sz);
             }
         }
         _ => return 0,
