@@ -59,7 +59,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -78,7 +78,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -97,7 +97,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -116,7 +116,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -135,7 +135,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -154,7 +154,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -211,7 +211,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -230,7 +230,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -249,7 +249,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -268,7 +268,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -287,7 +287,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -306,7 +306,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -325,7 +325,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -344,7 +344,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -363,7 +363,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -382,7 +382,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -401,7 +401,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -420,7 +420,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -439,7 +439,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -458,7 +458,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -477,7 +477,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -496,7 +496,7 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -508,14 +508,14 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
             }
         }
-        142 => {
+        155 => {
             let typ: ConfigKeys = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -527,14 +527,14 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
             }
         }
-        157 => {
+        171 => {
             let typ: FrozenHashStatus = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -546,14 +546,14 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
             }
         }
-        158 => {
+        172 => {
             let typ: FrozenHashVersioned = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -565,14 +565,14 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
             }
         }
-        199 => {
+        213 => {
             let typ: CrdsData = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -584,52 +584,14 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
             }
         }
-        201 => {
+        215 => {
             let typ: CrdsFilter = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
-            typ.serialize(&mut ser).unwrap();
-            let ser_sz = ser.output.len();
-            let yaml_str = serde_yaml::to_string(&typ).unwrap();
-            let yaml_sz = yaml_str.len();
-            unsafe {
-                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
-            }
-        }
-        202 => {
-            let typ: CrdsValue = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-                h
-            } else {
-                return 0;
-            };
-
-            let mut ser = super::CustomSerializer::new();
-            typ.serialize(&mut ser).unwrap();
-            let ser_sz = ser.output.len();
-            let yaml_str = serde_yaml::to_string(&typ).unwrap();
-            let yaml_sz = yaml_str.len();
-            unsafe {
-                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
-                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
-                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
-                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
-            }
-        }
-        211 => {
-            let typ: RepairRequestHeader = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-                h
-            } else {
-                return 0;
-            };
-
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -642,13 +604,13 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
             }
         }
         216 => {
-            let typ: RepairProtocol = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
+            let typ: CrdsValue = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();
@@ -660,14 +622,52 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
                 std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
             }
         }
-        231 => {
+        225 => {
+            let typ: RepairRequestHeader = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
+                h
+            } else {
+                return 0;
+            };
+
+            let mut ser = crate::serializer::CustomSerializer::new();
+            typ.serialize(&mut ser).unwrap();
+            let ser_sz = ser.output.len();
+            let yaml_str = serde_yaml::to_string(&typ).unwrap();
+            let yaml_sz = yaml_str.len();
+            unsafe {
+                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+            }
+        }
+        230 => {
+            let typ: RepairProtocol = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
+                h
+            } else {
+                return 0;
+            };
+
+            let mut ser = crate::serializer::CustomSerializer::new();
+            typ.serialize(&mut ser).unwrap();
+            let ser_sz = ser.output.len();
+            let yaml_str = serde_yaml::to_string(&typ).unwrap();
+            let yaml_sz = yaml_str.len();
+            unsafe {
+                *out_psz = (std::mem::size_of::<u64>() + ser_sz + yaml_sz) as u64;
+                std::ptr::copy_nonoverlapping(&ser_sz as *const usize as *const u64, out_ptr as *mut u64, std::mem::size_of::<u64>());
+                std::ptr::copy_nonoverlapping(ser.output.as_ptr(), out_ptr.offset(std::mem::size_of::<u64>() as isize), ser_sz as usize);
+                std::ptr::copy_nonoverlapping(yaml_str.as_ptr(), out_ptr.offset((std::mem::size_of::<u64>() + ser_sz) as isize), yaml_sz as usize);
+            }
+        }
+        245 => {
             let typ: DuplicateSlotProof = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
                 h
             } else {
                 return 0;
             };
 
-            let mut ser = super::CustomSerializer::new();
+            let mut ser = crate::serializer::CustomSerializer::new();
             typ.serialize(&mut ser).unwrap();
             let ser_sz = ser.output.len();
             let yaml_str = serde_yaml::to_string(&typ).unwrap();

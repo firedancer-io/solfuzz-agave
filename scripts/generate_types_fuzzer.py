@@ -215,6 +215,21 @@ blacklist = [
     "txn_result",
     "cost_tracker",
     "epoch_info", # same name different type
+    "vote_reward",
+    "point_value",
+    "stake_reward",
+    "partitioned_stake_rewards",
+    "stake_reward_calculation_partitioned",
+    "stake_reward_calculation",
+    "calculate_stake_vote_rewards_result",
+    "calculate_validator_rewards_result",
+    "calculate_rewards_and_distribute_vote_rewards_result",
+    "partitioned_rewards_calculation",
+    "start_block_height_and_rewards",
+    "fd_epoch_reward_status_inner",
+    "epoch_reward_status",
+    "loader_v4_program_instruction_copy",
+    "loader_v4_program_instruction_set_program_length",
 
     # known mismatches
     # "stake_history_entry",
@@ -336,7 +351,7 @@ def main():
                     print("            } else {", file=body)
                     print("                return 0;", file=body)
                     print("            };\n", file=body)
-                    print("            let mut ser = super::CustomSerializer::new();", file=body)
+                    print("            let mut ser = crate::serializer::CustomSerializer::new();", file=body)
                     print("            typ.serialize(&mut ser).unwrap();", file=body)
                     print("            let ser_sz = ser.output.len();", file=body)
                     print("            let yaml_str = serde_yaml::to_string(&typ).unwrap();", file=body)
