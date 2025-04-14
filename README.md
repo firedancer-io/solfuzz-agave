@@ -82,3 +82,16 @@ Required variables:
 The overriding of a builtin is done via [macro](./macro/), which generates code only when either the `core-bpf` or `core-bpf-conformance` feature is enabled. This code will perform the override, as well as a few other related tasks.
 
 A convenience script is available to assist in building targets with Core BPF programs. It can be found at [`scripts/build_core_bpf.sh`](./scripts/build_core_bpf.sh) and supports a set of specific program IDs currently. Simply add your program ID t this list and the list defined in the macro (`SUPPORTED_BUILTINS`) to add it to the workflow.
+
+## Building Targets with BPF Programs
+
+Similar to Core BPF conformance testing, this harness can also build targets for BPF-BPF conformance testing. However, testing for conformance between two BPF programs, rather than a builtin and its BPF version, requires none of the special-casing mentioned in the above section. A similar mechanism to the above section can be used to build two targets for two versions of a BPF program.
+
+Again, this method keys on the contents of each target's compiled [program JIT cache](https://github.com/anza-xyz/agave/blob/6c6c26eec4317e06e334609ea686b0192a210092/program-runtime/src/loaded_programs.rs#L654).
+
+Available features:
+* `bpf-program-conformance`: Allows the developer to provide a program ID and a path to an ELF file via environment variables to manually load the program cache for a given program.
+
+Required variables:
+* `BPF_PROGRAM_ID`: The program ID of the program that should be loaded into the cache.
+* `BPF_TARGET`: The path to the program's ELF file (`.so` file) to load into the cache.

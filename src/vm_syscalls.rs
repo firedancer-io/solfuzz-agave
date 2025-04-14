@@ -1,5 +1,5 @@
 use crate::{
-    load_builtins,
+    initialize_program_cache,
     proto::{SyscallContext, SyscallEffects},
     utils::err_map::unpack_stable_result,
     utils::vm::mem_regions,
@@ -127,7 +127,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // sigh ... What is this mess?
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
-    load_builtins(&mut program_cache_for_tx_batch, &feature_set);
+    initialize_program_cache(&mut program_cache_for_tx_batch, &feature_set);
 
     let mut sysvar_cache = SysvarCache::default();
 
