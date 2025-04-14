@@ -103,10 +103,7 @@ pub fn execute_elf_loader(input: ElfLoaderCtx) -> Option<ElfLoaderEffects> {
         elf_bytes.resize(input.elf_sz as usize, 0);
     }
 
-    let elf_loader_effects = match load_elf(elf_bytes.as_slice(), input.deploy_checks) {
-        Some(v) => v,
-        None => return None,
-    };
+    let elf_loader_effects = load_elf(elf_bytes.as_slice(), input.deploy_checks)?;
 
     Some(elf_loader_effects)
 }

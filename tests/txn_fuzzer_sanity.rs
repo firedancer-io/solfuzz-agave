@@ -251,7 +251,7 @@ fn test_txn_execute_clock() {
             epoch_schedule,
             rent,
         ],
-        blockhash_queue: blockhash_queue,
+        blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
     };
@@ -403,7 +403,7 @@ fn test_simple_transfer() {
             epoch_schedule,
             rent,
         ],
-        blockhash_queue: blockhash_queue,
+        blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
     };
@@ -599,7 +599,7 @@ fn test_lookup_table() {
             epoch_schedule,
             rent,
         ],
-        blockhash_queue: blockhash_queue,
+        blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
         slot_ctx: Some(slot_ctx),
     };
