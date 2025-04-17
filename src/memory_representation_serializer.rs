@@ -1,9 +1,12 @@
+/* This is a custom serializer that serializers a type, in a way that we can
+compare the Agave internal representation with Firedancer's internal representation */
+
 #[derive(Default)]
-pub struct CustomSerializer {
+pub struct MemoryRepresentationSerializer {
     pub output: String,
 }
 
-impl CustomSerializer {
+impl MemoryRepresentationSerializer {
     pub fn new() -> Self {
         Self {
             output: String::new(),
@@ -11,7 +14,7 @@ impl CustomSerializer {
     }
 }
 
-impl serde::ser::Serializer for &mut CustomSerializer {
+impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
     type SerializeSeq = Self;
@@ -217,7 +220,7 @@ impl serde::ser::Serializer for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeSeq for &mut CustomSerializer {
+impl serde::ser::SerializeSeq for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
@@ -234,7 +237,7 @@ impl serde::ser::SerializeSeq for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeTuple for &mut CustomSerializer {
+impl serde::ser::SerializeTuple for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
@@ -250,7 +253,7 @@ impl serde::ser::SerializeTuple for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeTupleStruct for &mut CustomSerializer {
+impl serde::ser::SerializeTupleStruct for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
@@ -266,7 +269,7 @@ impl serde::ser::SerializeTupleStruct for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeTupleVariant for &mut CustomSerializer {
+impl serde::ser::SerializeTupleVariant for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
@@ -282,7 +285,7 @@ impl serde::ser::SerializeTupleVariant for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeMap for &mut CustomSerializer {
+impl serde::ser::SerializeMap for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
@@ -316,7 +319,7 @@ impl serde::ser::SerializeMap for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeStruct for &mut CustomSerializer {
+impl serde::ser::SerializeStruct for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
@@ -332,7 +335,7 @@ impl serde::ser::SerializeStruct for &mut CustomSerializer {
     }
 }
 
-impl serde::ser::SerializeStructVariant for &mut CustomSerializer {
+impl serde::ser::SerializeStructVariant for &mut MemoryRepresentationSerializer {
     type Ok = ();
     type Error = serde_yaml::Error;
 
