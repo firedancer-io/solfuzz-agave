@@ -56,7 +56,7 @@ shared_obj_core_bpf:
 	CARGO=$(CARGO) ./scripts/build_core_bpf.sh $(PROGRAM)
 
 shared_obj_bpf_conformance:
-	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" BPF_PROGRAM_ID=$(BPF_PROGRAM_ID) BPF_TARGET=$(BPF_TARGET) FORCE_RECOMPILE=true $(CARGO) build \
+	RUSTFLAGS="$(RUSTFLAGS)" BPF_PROGRAM_ID=$(BPF_PROGRAM_ID) BPF_TARGET=$(BPF_TARGET) FORCE_RECOMPILE=true $(CARGO) build \
 		--target x86_64-unknown-linux-gnu \
 		--features bpf-program-conformance \
 		--lib \
