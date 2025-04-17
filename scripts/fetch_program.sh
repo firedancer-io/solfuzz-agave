@@ -29,10 +29,10 @@ else
     git -C $BPF_PROGRAMS_DIR/$1 checkout $BRANCH_NAME;
 fi
 
-# If the argument is "token", don't include any features. Otherwise, build with
-# "bpf-entrypoint" feature.
+# If the argument is "token" or "token-2022", don't include any features.
+# Otherwise, build with "bpf-entrypoint" feature.
 FEATURES_OPTION="--features bpf-entrypoint"
-if [ "$1" == "token" ]; then
+if [[ "$1" == "token" || "$1" == "token-2022" ]]; then
     FEATURES_OPTION=""
 fi
 
