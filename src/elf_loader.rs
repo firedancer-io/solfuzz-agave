@@ -23,7 +23,7 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
         feature_set.activate(feature, 0);
     }
 
-    if std::env::var("TOGGLE_DIRECT_MAPPING").is_ok() {
+    if toggle_direct_mapping {
         {
             // Toggle the BPF direct mapping feature
             if feature_set

@@ -395,7 +395,19 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .map(|ctx| ctx.features.clone().unwrap_or_default())
         .unwrap_or_default();
 
-    let feature_set = FeatureSet::from(&fd_features);
+    let mut feature_set = FeatureSet::from(&fd_features);
+    if toggle_direct_mapping {
+        // Toggle the BPF direct mapping feature
+        if feature_set
+            .active()
+            .contains_key(&bpf_account_data_direct_mapping::id())
+        {
+            feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+        } else {
+            feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+        }
+    }
+
     let fee_collector = Pubkey::new_unique();
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
 

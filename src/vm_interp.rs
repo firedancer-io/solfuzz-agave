@@ -159,17 +159,15 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
     let mut feature_set = instr_ctx.feature_set;
 
-    if std::env::var("TOGGLE_DIRECT_MAPPING").is_ok() {
+    if toggle_direct_mapping {
+        // Toggle the BPF direct mapping feature
+        if feature_set
+            .active()
+            .contains_key(&bpf_account_data_direct_mapping::id())
         {
-            // Toggle the BPF direct mapping feature
-            if feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
-            {
-                feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
-            }
+            feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+        } else {
+            feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
         }
     }
 
