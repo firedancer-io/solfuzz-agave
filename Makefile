@@ -55,14 +55,27 @@ shared_obj_core_bpf:
 	./scripts/fetch_program.sh $(PROGRAM)
 	CARGO=$(CARGO) ./scripts/build_core_bpf.sh $(PROGRAM)
 
+shared_obj_bpf_conformance:
+	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" BPF_PROGRAM_ID=$(BPF_PROGRAM_ID) BPF_TARGET=$(BPF_TARGET) FORCE_RECOMPILE=true $(CARGO) build \
+		--target x86_64-unknown-linux-gnu \
+		--features bpf-program-conformance \
+		--lib \
+		--release \
+		--target-dir target/bpf-conformance
+	mv target/bpf-conformance/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/bpf-conformance/$(OUTPUT_TARGET_NAME)
+
 shared_obj_p_token:
 	./scripts/fetch_program.sh "token" "febo/new-instructions-feature"
 	# First build target for SPL-Token
-	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_bpf.sh spl
-	cp target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_spl_token.so
+	@$(MAKE) shared_obj_bpf_conformance \
+		BPF_PROGRAM_ID="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" \
+		BPF_TARGET="bpf_programs/lib/spl_token.so" \
+		OUTPUT_TARGET_NAME=ground_spl_token.so
 	# Now build target for P-Token
-	RUSTFLAGS="$(RUSTFLAGS)" CARGO=$(CARGO) ./scripts/build_bpf.sh pinocchio
-	cp target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/target_p_token.so
+	@$(MAKE) shared_obj_bpf_conformance \
+		BPF_PROGRAM_ID="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" \
+		BPF_TARGET="bpf_programs/lib/pinocchio_token_program.so" \
+		OUTPUT_TARGET_NAME=target_p_token.so
 
 binaries:
 	LLVM_PROFILE_FILE="compiler_artifacts.tmp" RUSTFLAGS="-Cinstrument-coverage" $(CARGO) build --bins --release
