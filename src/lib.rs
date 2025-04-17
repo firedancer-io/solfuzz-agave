@@ -603,21 +603,23 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
 }
 
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
-    if TOGGLE_DIRECT_MAPPING {
-        {
-            // Toggle the BPF direct mapping feature
-            if input
-                .feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
+    unsafe {
+        if TOGGLE_DIRECT_MAPPING {
             {
-                input
+                // Toggle the BPF direct mapping feature
+                if input
                     .feature_set
-                    .deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                input
-                    .feature_set
-                    .activate(&bpf_account_data_direct_mapping::id(), 0);
+                    .active()
+                    .contains_key(&bpf_account_data_direct_mapping::id())
+                {
+                    input
+                        .feature_set
+                        .deactivate(&bpf_account_data_direct_mapping::id());
+                } else {
+                    input
+                        .feature_set
+                        .activate(&bpf_account_data_direct_mapping::id(), 0);
+                }
             }
         }
     }

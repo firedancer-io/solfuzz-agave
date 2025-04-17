@@ -1,7 +1,7 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
     utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
-    InstrContext,
+    InstrContext, TOGGLE_DIRECT_MAPPING,
 };
 use agave_feature_set::remove_accounts_executable_flag_checks;
 use bincode::Error;
@@ -159,15 +159,17 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
     let mut feature_set = instr_ctx.feature_set;
 
-    if toggle_direct_mapping {
-        // Toggle the BPF direct mapping feature
-        if feature_set
-            .active()
-            .contains_key(&bpf_account_data_direct_mapping::id())
-        {
-            feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-        } else {
-            feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+    unsafe {
+        if TOGGLE_DIRECT_MAPPING {
+            // Toggle the BPF direct mapping feature
+            if feature_set
+                .active()
+                .contains_key(&bpf_account_data_direct_mapping::id())
+            {
+                feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+            } else {
+                feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+            }
         }
     }
 

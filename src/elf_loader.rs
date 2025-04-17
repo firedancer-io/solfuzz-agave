@@ -1,4 +1,5 @@
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
+use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use ahash::{AHashMap, AHashSet};
 use prost::Message;
@@ -23,16 +24,18 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
         feature_set.activate(feature, 0);
     }
 
-    if toggle_direct_mapping {
-        {
-            // Toggle the BPF direct mapping feature
-            if feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
+    unsafe {
+        if TOGGLE_DIRECT_MAPPING {
             {
-                feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+                // Toggle the BPF direct mapping feature
+                if feature_set
+                    .active()
+                    .contains_key(&bpf_account_data_direct_mapping::id())
+                {
+                    feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+                } else {
+                    feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+                }
             }
         }
     }
