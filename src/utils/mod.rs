@@ -37,6 +37,7 @@ impl From<&proto::FeatureSet> for FeatureSet {
                 feature_set.activate(pubkey, 0);
             }
         }
+        feature_set.activate(&agave_feature_set::bpf_account_data_direct_mapping::id(), 0);
         feature_set
     }
 }
