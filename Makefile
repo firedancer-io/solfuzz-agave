@@ -64,18 +64,13 @@ shared_obj_bpf_conformance:
 		--target-dir target/bpf-conformance
 	mv target/bpf-conformance/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/bpf-conformance/$(OUTPUT_TARGET_NAME)
 
-shared_obj_p_token:
-	./scripts/fetch_program.sh "token" "febo/new-instructions-feature"
-	# First build target for SPL-Token
-	@$(MAKE) shared_obj_bpf_conformance \
-		BPF_PROGRAM_ID="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" \
-		BPF_TARGET="bpf_programs/lib/spl_token.so" \
-		OUTPUT_TARGET_NAME=ground_spl_token.so
-	# Now build target for P-Token
-	@$(MAKE) shared_obj_bpf_conformance \
-		BPF_PROGRAM_ID="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" \
-		BPF_TARGET="bpf_programs/lib/pinocchio_token_program.so" \
-		OUTPUT_TARGET_NAME=target_p_token.so
+shared_obj_bpf_conformance_debug:
+	BPF_PROGRAM_ID=$(BPF_PROGRAM_ID) BPF_TARGET=$(BPF_TARGET) FORCE_RECOMPILE=true $(CARGO) build \
+                --target x86_64-unknown-linux-gnu \
+                --features bpf-program-conformance \
+                --lib \
+                --target-dir target/bpf-conformance
+	mv target/bpf-conformance/x86_64-unknown-linux-gnu/debug/libsolfuzz_agave.so target/bpf-conformance/$(OUTPUT_TARGET_NAME)
 
 binaries:
 	LLVM_PROFILE_FILE="compiler_artifacts.tmp" RUSTFLAGS="-Cinstrument-coverage" $(CARGO) build --bins --release
