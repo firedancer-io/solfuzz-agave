@@ -66,73 +66,94 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
     1
 }
 
-pub fn execute_type(input: TypeContext) -> Option<TypeEffects> {
-    if input.content.is_empty() {
-        return None;
-    }
+fn process_type<T: Serialize + serde::de::DeserializeOwned>(
+    bincode_slice: &[u8],
+) -> Option<TypeEffects> {
+    let typ: T = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
+        h
+    } else {
+        return Some(TypeEffects {
+            result: 1,
+            ..Default::default()
+        });
+    };
 
-    let bincode_slice: &[u8] =
-        unsafe { std::slice::from_raw_parts(input.content.as_ptr(), input.content.len()) };
-
-    fn process_type<T: Serialize + serde::de::DeserializeOwned>(
-        bincode_slice: &[u8],
-    ) -> Option<TypeEffects> {
-        let typ: T = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-            h
-        } else {
+    let mut ser = MemoryRepresentationSerializer::new();
+    let out = typ.serialize(&mut ser);
+    match out {
+        Ok(_) => {}
+        Err(_e) => {
             return Some(TypeEffects {
                 result: 1,
                 ..Default::default()
             });
-        };
-
-        let mut ser = MemoryRepresentationSerializer::new();
-        typ.serialize(&mut ser).unwrap();
-        let yaml_str = serde_yaml::to_string(&typ).unwrap();
-
-        Some(TypeEffects {
-            result: 0,
-            representation: ser.output.into_bytes(),
-            yaml: yaml_str.as_bytes().to_vec(),
-        })
+        }
     }
 
-    match bincode_slice[0] {
-        0 => process_type::<Hash>(bincode_slice),
-        2 => process_type::<Signature>(bincode_slice),
-        5 => process_type::<Feature>(bincode_slice),
-        6 => process_type::<FeeCalculator>(bincode_slice),
-        7 => process_type::<HashInfo>(bincode_slice),
-        11 => process_type::<FeeRateGovernor>(bincode_slice),
-        13 => process_type::<HardForks>(bincode_slice),
-        14 => process_type::<Inflation>(bincode_slice),
-        15 => process_type::<Rent>(bincode_slice),
-        16 => process_type::<EpochSchedule>(bincode_slice),
-        17 => process_type::<RentCollector>(bincode_slice),
-        18 => process_type::<StakeHistoryEntry>(bincode_slice),
-        19 => process_type::<StakeHistory>(bincode_slice),
-        22 => process_type::<VoteAccounts>(bincode_slice),
-        33 => process_type::<BankIncrementalSnapshotPersistence>(bincode_slice),
-        34 => process_type::<NodeVoteAccounts>(bincode_slice),
-        37 => process_type::<EpochStakes>(bincode_slice),
-        42 => process_type::<BankHashStats>(bincode_slice),
-        50 => process_type::<VersionedEpochStakes>(bincode_slice),
-        56 => process_type::<PohConfig>(bincode_slice),
-        60 => process_type::<Clock>(bincode_slice),
-        61 => process_type::<LastRestartSlot>(bincode_slice),
-        94 => process_type::<EpochRewards>(bincode_slice),
-        155 => process_type::<ConfigKeys>(bincode_slice),
-        171 => process_type::<FrozenHashStatus>(bincode_slice),
-        172 => process_type::<FrozenHashVersioned>(bincode_slice),
-        213 => process_type::<CrdsData>(bincode_slice),
-        215 => process_type::<CrdsFilter>(bincode_slice),
-        216 => process_type::<CrdsValue>(bincode_slice),
-        225 => process_type::<RepairRequestHeader>(bincode_slice),
-        230 => process_type::<RepairProtocol>(bincode_slice),
-        245 => process_type::<DuplicateSlotProof>(bincode_slice),
-        _ => {
-            eprintln!("Invalid type ID: {}", bincode_slice[0]);
-            None
+    let yaml_str = serde_yaml::to_string(&typ).unwrap_or_default();
+
+    Some(TypeEffects {
+        result: 0,
+        representation: ser.output.into_bytes(),
+        yaml: yaml_str.as_bytes().to_vec(),
+    })
+}
+
+pub fn execute_type(input: TypeContext) -> Option<TypeEffects> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        if input.content.is_empty() {
+            return None;
         }
+
+        let bincode_slice: &[u8] =
+            unsafe { std::slice::from_raw_parts(input.content.as_ptr(), input.content.len()) };
+
+        match bincode_slice[0] {
+            0 => process_type::<Hash>(bincode_slice),
+            2 => process_type::<Signature>(bincode_slice),
+            5 => process_type::<Feature>(bincode_slice),
+            6 => process_type::<FeeCalculator>(bincode_slice),
+            7 => process_type::<HashInfo>(bincode_slice),
+            11 => process_type::<FeeRateGovernor>(bincode_slice),
+            13 => process_type::<HardForks>(bincode_slice),
+            14 => process_type::<Inflation>(bincode_slice),
+            15 => process_type::<Rent>(bincode_slice),
+            16 => process_type::<EpochSchedule>(bincode_slice),
+            17 => process_type::<RentCollector>(bincode_slice),
+            18 => process_type::<StakeHistoryEntry>(bincode_slice),
+            19 => process_type::<StakeHistory>(bincode_slice),
+            22 => process_type::<VoteAccounts>(bincode_slice),
+            33 => process_type::<BankIncrementalSnapshotPersistence>(bincode_slice),
+            34 => process_type::<NodeVoteAccounts>(bincode_slice),
+            37 => process_type::<EpochStakes>(bincode_slice),
+            42 => process_type::<BankHashStats>(bincode_slice),
+            50 => process_type::<VersionedEpochStakes>(bincode_slice),
+            56 => process_type::<PohConfig>(bincode_slice),
+            60 => process_type::<Clock>(bincode_slice),
+            61 => process_type::<LastRestartSlot>(bincode_slice),
+            94 => process_type::<EpochRewards>(bincode_slice),
+            155 => process_type::<ConfigKeys>(bincode_slice),
+            171 => process_type::<FrozenHashStatus>(bincode_slice),
+            172 => process_type::<FrozenHashVersioned>(bincode_slice),
+            213 => process_type::<CrdsData>(bincode_slice),
+            215 => process_type::<CrdsFilter>(bincode_slice),
+            216 => process_type::<CrdsValue>(bincode_slice),
+            225 => process_type::<RepairRequestHeader>(bincode_slice),
+            230 => process_type::<RepairProtocol>(bincode_slice),
+            245 => process_type::<DuplicateSlotProof>(bincode_slice),
+            _ => {
+                eprintln!("Invalid type ID: {}", bincode_slice[0]);
+                None
+            }
+        }
+    }));
+
+    // Handle any panic that might have occurred
+    match result {
+        Ok(effects) => effects,
+        Err(_) => Some(TypeEffects {
+            result: 1,
+            ..Default::default()
+        }),
     }
 }
