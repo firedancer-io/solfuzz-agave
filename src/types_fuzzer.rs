@@ -2,6 +2,7 @@
 use crate::memory_representation_serializer::MemoryRepresentationSerializer;
 use crate::proto::{TypeContext, TypeEffects};
 use bincode;
+use bincode::Options;
 use prost::Message;
 use serde::Serialize;
 use solana_accounts_db::blockhash_queue::HashInfo;
@@ -38,6 +39,38 @@ use solana_sdk::signature::Signature;
 use solana_vote::vote_account::VoteAccounts;
 use std::ffi::c_int;
 
+use std::alloc::{GlobalAlloc, Layout, System};
+
+// Define a custom allocator that can detect and handle large allocations
+struct LimitedAllocator {
+    inner: System,
+}
+
+unsafe impl GlobalAlloc for LimitedAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // Set a reasonable maximum allocation size
+        const MAX_ALLOC: usize = 10 * 1024 * 1024; // 10 MB
+
+        if layout.size() > MAX_ALLOC {
+            panic!(
+                "Allocation of {} bytes exceeds limit of {} bytes",
+                layout.size(),
+                MAX_ALLOC
+            );
+        } else {
+            self.inner.alloc(layout)
+        }
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        self.inner.dealloc(ptr, layout)
+    }
+}
+
+// Install our custom allocator as the global allocator
+#[global_allocator]
+static ALLOCATOR: LimitedAllocator = LimitedAllocator { inner: System };
+
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_type_execute_v1(
     out_ptr: *mut u8,
@@ -69,7 +102,12 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
 fn process_type<T: Serialize + serde::de::DeserializeOwned>(
     bincode_slice: &[u8],
 ) -> Option<TypeEffects> {
-    let typ: T = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
+    // Create bincode configuration with size limits
+    let config = bincode::config::DefaultOptions::new()
+        .with_limit(10_000_000) // Limit to 10MB (adjust as needed)
+        .with_fixint_encoding();
+
+    let typ: T = if let Ok(h) = config.deserialize(&bincode_slice[1..]) {
         h
     } else {
         return Some(TypeEffects {
