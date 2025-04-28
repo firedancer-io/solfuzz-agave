@@ -52,6 +52,7 @@ unsafe impl GlobalAlloc for LimitedAllocator {
         const MAX_ALLOC: usize = 10 * 1024 * 1024; // 10 MB
 
         if layout.size() > MAX_ALLOC {
+            println!("ASDF ALLOCATION OF {} BYTES EXCEEDS LIMIT OF {} BYTES", layout.size(), MAX_ALLOC);
             panic!(
                 "Allocation of {} bytes exceeds limit of {} bytes",
                 layout.size(),
@@ -105,15 +106,19 @@ fn process_type<T: Serialize + serde::de::DeserializeOwned>(
     // Create bincode configuration with size limits
     let config = bincode::config::DefaultOptions::new()
         .with_limit(10_000_000) // Limit to 10MB (adjust as needed)
-        .with_fixint_encoding();
+        .with_fixint_encoding()
+        .allow_trailing_bytes();
 
-    let typ: T = if let Ok(h) = config.deserialize(&bincode_slice[1..]) {
-        h
-    } else {
-        return Some(TypeEffects {
-            result: 1,
-            ..Default::default()
-        });
+    let res = config.deserialize::<T>(&bincode_slice[1..]);
+    let typ = match res {
+        Ok(h) => { h }
+        Err(err) => {
+            println!("ASDF TYPE SERIALIZE FAILED: {}", err);
+            return Some(TypeEffects {
+                result: 1,
+                ..Default::default()
+            });
+        }
     };
 
     let mut ser = MemoryRepresentationSerializer::new();
@@ -146,6 +151,9 @@ pub fn execute_type(input: TypeContext) -> Option<TypeEffects> {
         let bincode_slice: &[u8] =
             unsafe { std::slice::from_raw_parts(input.content.as_ptr(), input.content.len()) };
 
+        println!("ASDF TYPE ID: {} {:?}", bincode_slice[0], bincode_slice.len());
+        /* FIXME: This type lookup table is AWFUL and needs to be
+           replaced with something that doesn't have hardcoded indices. */
         match bincode_slice[0] {
             0 => process_type::<Hash>(bincode_slice),
             2 => process_type::<Signature>(bincode_slice),
@@ -159,26 +167,26 @@ pub fn execute_type(input: TypeContext) -> Option<TypeEffects> {
             16 => process_type::<EpochSchedule>(bincode_slice),
             17 => process_type::<RentCollector>(bincode_slice),
             18 => process_type::<StakeHistoryEntry>(bincode_slice),
-            19 => process_type::<StakeHistory>(bincode_slice),
-            22 => process_type::<VoteAccounts>(bincode_slice),
-            33 => process_type::<BankIncrementalSnapshotPersistence>(bincode_slice),
-            34 => process_type::<NodeVoteAccounts>(bincode_slice),
-            37 => process_type::<EpochStakes>(bincode_slice),
-            42 => process_type::<BankHashStats>(bincode_slice),
-            50 => process_type::<VersionedEpochStakes>(bincode_slice),
-            56 => process_type::<PohConfig>(bincode_slice),
-            60 => process_type::<Clock>(bincode_slice),
-            61 => process_type::<LastRestartSlot>(bincode_slice),
-            94 => process_type::<EpochRewards>(bincode_slice),
-            155 => process_type::<ConfigKeys>(bincode_slice),
-            171 => process_type::<FrozenHashStatus>(bincode_slice),
-            172 => process_type::<FrozenHashVersioned>(bincode_slice),
-            213 => process_type::<CrdsData>(bincode_slice),
-            215 => process_type::<CrdsFilter>(bincode_slice),
-            216 => process_type::<CrdsValue>(bincode_slice),
-            225 => process_type::<RepairRequestHeader>(bincode_slice),
-            230 => process_type::<RepairProtocol>(bincode_slice),
-            245 => process_type::<DuplicateSlotProof>(bincode_slice),
+            20 => process_type::<StakeHistory>(bincode_slice),
+            21 => process_type::<VoteAccounts>(bincode_slice),
+            34 => process_type::<BankIncrementalSnapshotPersistence>(bincode_slice),
+            35 => process_type::<NodeVoteAccounts>(bincode_slice),
+            38 => process_type::<EpochStakes>(bincode_slice),
+            43 => process_type::<BankHashStats>(bincode_slice),
+            51 => process_type::<VersionedEpochStakes>(bincode_slice),
+            57 => process_type::<PohConfig>(bincode_slice),
+            61 => process_type::<Clock>(bincode_slice),
+            62 => process_type::<LastRestartSlot>(bincode_slice),
+            95 => process_type::<EpochRewards>(bincode_slice),
+            156 => process_type::<ConfigKeys>(bincode_slice),
+            172 => process_type::<FrozenHashStatus>(bincode_slice),
+            173 => process_type::<FrozenHashVersioned>(bincode_slice),
+            214 => process_type::<CrdsData>(bincode_slice),
+            216 => process_type::<CrdsFilter>(bincode_slice),
+            217 => process_type::<CrdsValue>(bincode_slice),
+            226 => process_type::<RepairRequestHeader>(bincode_slice),
+            231 => process_type::<RepairProtocol>(bincode_slice),
+            246 => process_type::<DuplicateSlotProof>(bincode_slice),
             _ => {
                 eprintln!("Invalid type ID: {}", bincode_slice[0]);
                 None
