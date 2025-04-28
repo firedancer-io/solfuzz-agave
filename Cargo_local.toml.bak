@@ -403,7 +403,7 @@ solana-rpc-client-api = {path = "../agave/rpc-client-api"}
 solana-rpc-client-nonce-utils = {path = "../agave/rpc-client-nonce-utils"}
 solana-runtime = {path = "../agave/runtime"}
 solana-runtime-transaction = {path = "../agave/runtime-transaction"}
-solana-sbpf = "=0.10.0"
+solana-sbpf = "=0.10.1"
 solana-sdk = "=2.2.2"
 solana-sdk-ids = "=2.2.1"
 solana-sdk-macro = "=2.2.1"
@@ -443,7 +443,7 @@ solana-udp-client = {path = "../agave/udp-client"}
 solana-validator-exit = "=2.2.1"
 solana-version = {path = "../agave/version"}
 solana-vote = {path = "../agave/vote"}
-solana-vote-interface = {path = "../agave/vote-interface"}
+solana-vote-interface = "=2.2.3"
 solana-vote-program = {path = "../agave/programs/vote"}
 solana-wen-restart = {path = "../agave/wen-restart"}
 solana-zk-elgamal-proof-program = {path = "../agave/programs/zk-elgamal-proof"}
