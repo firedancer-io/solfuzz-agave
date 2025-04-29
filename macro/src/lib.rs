@@ -30,6 +30,12 @@ const SUPPORTED_BUILTINS: [Pubkey; 4] = [
     solana_sdk::stake::program::id(),
 ];
 
+const SUPPORTED_LOADERS: [Pubkey; 3] = [
+    solana_sdk::bpf_loader_deprecated::id(),
+    solana_sdk::bpf_loader::id(),
+    solana_sdk::bpf_loader_upgradeable::id(),
+];
+
 fn read_file(path: &Path) -> Vec<u8> {
     let mut file = File::open(path)
         .unwrap_or_else(|err| panic!("Failed to open \"{}\": {}", path.display(), err));
@@ -40,10 +46,11 @@ fn read_file(path: &Path) -> Vec<u8> {
     file_data
 }
 
-fn generate_cache_load_tokens(program_id_bytes: &PubkeyBytes, elf: &ElfBytes) -> TokenStream {
+fn generate_cache_load_tokens(program_id_bytes: &PubkeyBytes, elf: &ElfBytes, loader_key_bytes: &PubkeyBytes) -> TokenStream {
     quote! {
         // Load the program ID and ELF from environment inputs.
         let target_program_id = Pubkey::new_from_array(#program_id_bytes);
+        let loader_key = Pubkey::new_from_array(#loader_key_bytes);
         let elf = #elf;
 
         // Load the provided ELF into the cache.
@@ -51,7 +58,7 @@ fn generate_cache_load_tokens(program_id_bytes: &PubkeyBytes, elf: &ElfBytes) ->
             target_program_id,
             Arc::new(
                 solana_program_runtime::loaded_programs::ProgramCacheEntry::new(
-                    &solana_sdk::bpf_loader_upgradeable::id(),
+                    &loader_key,
                     cache.environments.program_runtime_v1.clone(),
                     0,
                     0,
@@ -79,12 +86,15 @@ pub fn load_core_bpf_program(_: TokenStream) -> TokenStream {
         let elf_data = read_file(Path::new(&elf_path));
         let elf_bytes = ElfBytes(elf_data);
 
+        let loader_key = solana_sdk::bpf_loader_upgradeable::id();
+        let loader_key_bytes = PubkeyBytes(loader_key.to_bytes());
+
         println!(
             "    [SF_AGAVE]: Overriding builtin program with provided BPF target: {} at address: {}",
             &elf_path, &program_id
         );
 
-        return generate_cache_load_tokens(&program_id_bytes, &elf_bytes);
+        return generate_cache_load_tokens(&program_id_bytes, &elf_bytes, &loader_key_bytes);
     }
 
     quote!().into()
@@ -100,12 +110,23 @@ pub fn load_bpf_program(_: TokenStream) -> TokenStream {
         let elf_data = read_file(Path::new(&elf_path));
         let elf_bytes = ElfBytes(elf_data);
 
+        let loader_key = if let Ok(loader_key_str) = std::env::var("BPF_LOADER_KEY") {
+            let loader_key = Pubkey::from_str(&loader_key_str).expect("Invalid address");
+            if !SUPPORTED_LOADERS.contains(&loader_key) {
+                panic!("Unsupported loader key: {}", loader_key);
+            }
+            loader_key
+        } else {
+            solana_sdk::bpf_loader_upgradeable::id()
+        };
+        let loader_key_bytes = PubkeyBytes(loader_key.to_bytes());
+
         println!(
             "    [SF_AGAVE]: Adding provided BPF target: {} at address: {}",
             &elf_path, &program_id
         );
 
-        return generate_cache_load_tokens(&program_id_bytes, &elf_bytes);
+        return generate_cache_load_tokens(&program_id_bytes, &elf_bytes, &loader_key_bytes);
     }
 
     quote!().into()
