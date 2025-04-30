@@ -1,5 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
+pub mod block;
 pub mod elf_loader;
 pub mod memory_representation_serializer;
 pub mod pack;
