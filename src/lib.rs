@@ -8,7 +8,6 @@ mod shred_parse;
 pub mod txn_fuzzer;
 pub mod types_fuzzer;
 pub mod utils;
-pub mod vm_cpi_syscall;
 pub mod vm_interp;
 pub mod vm_syscalls;
 

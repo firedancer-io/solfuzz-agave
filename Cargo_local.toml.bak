@@ -519,4 +519,3 @@ prost-build = "0.13.1"
 [features]
 core-bpf = []
 core-bpf-conformance = []
-stub-agave = ["solana-program-runtime/stub-proc-instr"]
