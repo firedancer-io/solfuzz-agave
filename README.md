@@ -13,7 +13,6 @@ Supported APIs:
 - `sol_compat_pack_compute_budget_v1`
 - `sol_compat_shred_parse_v1`
 - `sol_compat_txn_execute_v1`
-- `sol_compat_vm_cpi_syscall_v1`
 - `sol_compat_vm_interp_v1`
 - `sol_compat_vm_syscall_execute_v1`
 

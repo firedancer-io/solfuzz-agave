@@ -20,5 +20,3 @@ core-bpf = []
 # Same as the `core-bpf` feature, but also includes special-casing required for
 # conformance testing a BPF program against a builtin.
 core-bpf-conformance = []
-# This feature is used to stub out certain parts of the agave runtime for fuzzing
-stub-agave = ["solana-program-runtime/stub-proc-instr"]
