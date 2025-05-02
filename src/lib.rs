@@ -52,9 +52,14 @@ use std::ffi::c_int;
 use std::sync::Arc;
 use thiserror::Error;
 
+#[cfg(any(
+    feature = "bpf-program-conformance",
+    feature = "core-bpf",
+    feature = "core-bpf-conformance",
+))]
+use solana_sdk::account::WritableAccount;
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
 use solana_sdk::{
-    account::WritableAccount,
     slot_hashes::{SlotHash, SlotHashes},
     sysvar::Sysvar,
 };
@@ -743,7 +748,11 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         .accounts
         .iter()
         .map(|(pubkey, account)| {
-            #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
+            #[cfg(any(
+                feature = "bpf-program-conformance",
+                feature = "core-bpf",
+                feature = "core-bpf-conformance",
+            ))]
             // Fixtures provide the program account as a builtin (owned by
             // native loader), but the program-runtime will expect the account
             // owner to match the cache entry.
@@ -817,7 +826,11 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     let mut newly_loaded_programs = HashSet::<Pubkey>::new();
 
     for acc in &input.accounts {
-        #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
+        #[cfg(any(
+            feature = "bpf-program-conformance",
+            feature = "core-bpf",
+            feature = "core-bpf-conformance",
+        ))]
         // The Core BPF program's ELF has already been added to the cache.
         // Its transaction account was stubbed out, so it can't be loaded via
         // callback (inputs), since the account doesn't contain the ELF.
