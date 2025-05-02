@@ -517,5 +517,6 @@ crate-type = ["cdylib", "rlib"]
 prost-build = "0.13.1"
 
 [features]
+bpf-program-conformance = []
 core-bpf = []
 core-bpf-conformance = []
