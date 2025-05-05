@@ -25,6 +25,10 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     type SerializeStruct = Self;
     type SerializeStructVariant = Self;
 
+    fn is_human_readable(&self) -> bool {
+        false
+    }
+
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         self.output += if v { "true," } else { "false," };
         Ok(())
@@ -126,10 +130,10 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     fn serialize_unit_variant(
         self,
         _name: &'static str,
-        _variant_index: u32,
-        variant: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        self.serialize_str(&variant.to_lowercase())
+        self.serialize_u32(variant_index)
     }
 
     // struct Millimeters(u8)
@@ -148,14 +152,14 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
-        _variant_index: u32,
-        variant: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        self.serialize_str(&variant.to_lowercase())?;
+        self.serialize_u32(variant_index)?;
         value.serialize(&mut *self)?;
         Ok(())
     }
@@ -184,11 +188,11 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     fn serialize_tuple_variant(
         self,
         _name: &'static str,
-        _variant_index: u32,
-        variant: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        self.serialize_str(&variant.to_lowercase())?;
+        self.serialize_u32(variant_index)?;
         Ok(self)
     }
 
@@ -211,11 +215,11 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     fn serialize_struct_variant(
         self,
         _name: &'static str,
-        _variant_index: u32,
-        variant: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        self.serialize_str(&variant.to_lowercase())?;
+        self.serialize_u32(variant_index)?;
         Ok(self)
     }
 }
