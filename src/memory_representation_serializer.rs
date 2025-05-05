@@ -24,13 +24,13 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     type SerializeMap = Self;
     type SerializeStruct = Self;
     type SerializeStructVariant = Self;
-    
-    /* This is true by default, which causes types
-       like `IpAddr` to take a custom path that's
-       non-deterministic.
 
-       Example:
-       https://doc.servo.org/src/serde/ser/impls.rs.html#787-808 */
+    /* This is true by default, which causes types
+    like `IpAddr` to take a custom path that's
+    non-deterministic.
+
+    Example:
+    https://doc.servo.org/src/serde/ser/impls.rs.html#787-808 */
     fn is_human_readable(&self) -> bool {
         false
     }
