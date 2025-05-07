@@ -34,11 +34,11 @@ use solana_sdk::stable_layout::stable_instruction::StableInstruction;
 use solana_sdk::stable_layout::stable_vec::StableVec;
 use solana_sdk::sysvar::last_restart_slot;
 use solana_sdk::sysvar::SysvarId;
-use solana_sdk::transaction_context::{
-    IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
-};
 use solana_svm::program_loader;
 use solana_timings::ExecuteTimings;
+use solana_transaction_context::{
+    IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
+};
 
 use crate::utils::err_map::instr_err_to_num;
 use crate::utils::feature_u64;
@@ -258,6 +258,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_account_loader_special_case,
     reserve_minimal_cus_for_builtin_instructions,
     enable_transaction_loading_failure_fees,
+    enable_loader_v4, // custom hardcoded feature
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -274,7 +275,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
     // bpf_account_data_direct_mapping, // Some day
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
-    enable_loader_v4,
     enable_zk_transfer_with_fee, // deprecated / old stuff
     enable_zk_proof_from_account,
     enable_tower_sync_ix,

@@ -118,7 +118,7 @@ const_format = "0.2.34"
 core_affinity = "0.5.10"
 criterion = "0.5.1"
 criterion-stats = "0.3.0"
-crossbeam-channel = "0.5.14"
+crossbeam-channel = "0.5.15"
 csv = "1.3.1"
 ctrlc = "3.4.5"
 curve25519-dalek = { version = "4.1.3", features = ["digest", "rand_core"] }
@@ -251,24 +251,24 @@ smallvec = "1.13.2"
 smpl_jwt = "0.7.1"
 socket2 = "0.5.8"
 soketto = "0.7"
-solana-account = "=2.2.1"
+solana-account = "2.2.1"
 solana-account-decoder = {path = "../agave/account-decoder"}
 solana-account-decoder-client-types = {path = "../agave/account-decoder-client-types"}
-solana-account-info = "=2.2.1"
+solana-account-info = "2.2.1"
 solana-accounts-db = {path = "../agave/accounts-db"}
-solana-address-lookup-table-interface = "=2.2.2"
+solana-address-lookup-table-interface = "2.2.2"
 solana-address-lookup-table-program = {path = "../agave/programs/address-lookup-table"}
-solana-atomic-u64 = "=2.2.1"
+solana-atomic-u64 = "2.2.1"
 solana-banks-client = {path = "../agave/banks-client"}
 solana-banks-interface = {path = "../agave/banks-interface"}
 solana-banks-server = {path = "../agave/banks-server"}
 solana-bench-tps = {path = "../agave/bench-tps"}
-solana-big-mod-exp = "=2.2.1"
-solana-bincode = "=2.2.1"
-solana-blake3-hasher = "=2.2.1"
+solana-big-mod-exp = "2.2.1"
+solana-bincode = "2.2.1"
+solana-blake3-hasher = "2.2.1"
 solana-bloom = {path = "../agave/bloom"}
-solana-bn254 = "=2.2.2"
-solana-borsh = "=2.2.1"
+solana-bn254 = "2.2.2"
+solana-borsh = "2.2.1"
 solana-bpf-loader-program = {path = "../agave/programs/bpf_loader"}
 solana-bucket-map = {path = "../agave/bucket_map"}
 solana-builtins = {path = "../agave/builtins"}
@@ -281,118 +281,117 @@ solana-cli = {path = "../agave/cli"}
 solana-cli-config = {path = "../agave/cli-config"}
 solana-cli-output = {path = "../agave/cli-output"}
 solana-client = {path = "../agave/client"}
-solana-client-traits = "=2.2.1"
-solana-clock = "=2.2.1"
-solana-cluster-type = "=2.2.1"
-solana-commitment-config = "=2.2.1"
+solana-client-traits = "2.2.1"
+solana-clock = "2.2.1"
+solana-cluster-type = "2.2.1"
+solana-commitment-config = "2.2.1"
 solana-compute-budget = {path = "../agave/compute-budget"}
 solana-compute-budget-instruction = {path = "../agave/compute-budget-instruction"}
-solana-compute-budget-interface = "=2.2.1"
+solana-compute-budget-interface = "2.2.1"
 solana-compute-budget-program = {path = "../agave/programs/compute-budget"}
 solana-config-program = {path = "../agave/programs/config"}
 solana-connection-cache = {path = "../agave/connection-cache"}
 solana-core = {path = "../agave/core"}
 solana-cost-model = {path = "../agave/cost-model"}
-solana-cpi = "=2.2.1"
+solana-cpi = "2.2.1"
 solana-curve25519 = {path = "../agave/curves/curve25519"}
-solana-decode-error = "=2.2.1"
-solana-define-syscall = "=2.2.1"
-solana-derivation-path = "=2.2.1"
+solana-decode-error = "2.2.1"
+solana-define-syscall = "2.2.1"
+solana-derivation-path = "2.2.1"
 solana-download-utils = {path = "../agave/download-utils"}
-solana-ed25519-program = "=2.2.2"
+solana-ed25519-program = "2.2.2"
 solana-entry = {path = "../agave/entry"}
-solana-feature-set-interface = "=4.0.0"
-solana-program-entrypoint = "=2.2.1"
-solana-epoch-info = "=2.2.1"
-solana-epoch-rewards = "=2.2.1"
-solana-epoch-rewards-hasher = "=2.2.1"
-solana-epoch-schedule = "=2.2.1"
-solana-example-mocks = "=2.2.1"
+solana-program-entrypoint = "2.2.1"
+solana-epoch-info = "2.2.1"
+solana-epoch-rewards = "2.2.1"
+solana-epoch-rewards-hasher = "2.2.1"
+solana-epoch-schedule = "2.2.1"
+solana-example-mocks = "2.2.1"
 solana-faucet = {path = "../agave/faucet"}
 solana-feature-gate-client = "0.0.2"
-solana-feature-gate-interface = "=2.2.1"
-solana-fee-calculator = "=2.2.1"
+solana-feature-gate-interface = "2.2.1"
+solana-fee-calculator = "2.2.1"
 solana-fee = {path = "../agave/fee"}
-solana-fee-structure = "=2.2.1"
-solana-frozen-abi = "=2.2.1"
-solana-frozen-abi-macro = "=2.2.1"
+solana-fee-structure = "2.2.1"
+solana-frozen-abi = "2.2.1"
+solana-frozen-abi-macro = "2.2.1"
 solana-tps-client = {path = "../agave/tps-client"}
-solana-file-download = "=2.2.1"
+solana-file-download = "2.2.1"
 solana-genesis = {path = "../agave/genesis"}
-solana-genesis-config = "=2.2.1"
+solana-genesis-config = "2.2.1"
 solana-genesis-utils = {path = "../agave/genesis-utils"}
 agave-geyser-plugin-interface = {path = "../agave/geyser-plugin-interface"}
 solana-geyser-plugin-manager = {path = "../agave/geyser-plugin-manager"}
 solana-gossip = {path = "../agave/gossip"}
-solana-hard-forks = "=2.2.1"
-solana-hash = "=2.2.1"
-solana-inflation = "=2.2.1"
+solana-hard-forks = "2.2.1"
+solana-hash = "2.2.1"
+solana-inflation = "2.2.1"
 solana-inline-spl = {path = "../agave/inline-spl"}
-solana-instruction = "=2.2.1"
-solana-instructions-sysvar = "=2.2.1"
-solana-keccak-hasher = "=2.2.1"
-solana-keypair = "=2.2.1"
-solana-last-restart-slot = "=2.2.1"
+solana-instruction = "2.2.1"
+solana-instructions-sysvar = "2.2.1"
+solana-keccak-hasher = "2.2.1"
+solana-keypair = "2.2.1"
+solana-last-restart-slot = "2.2.1"
 solana-lattice-hash = {path = "../agave/lattice-hash"}
 solana-ledger = {path = "../agave/ledger"}
-solana-loader-v2-interface = "=2.2.1"
-solana-loader-v3-interface = "=3.0.0"
-solana-loader-v4-interface = "=2.2.1"
+solana-loader-v2-interface = "2.2.1"
+solana-loader-v3-interface = "3.0.0"
+solana-loader-v4-interface = "2.2.1"
 solana-loader-v4-program = {path = "../agave/programs/loader-v4"}
 solana-local-cluster = {path = "../agave/local-cluster"}
 solana-log-collector = {path = "../agave/log-collector"}
-solana-logger = "=2.3.1"
+solana-logger = "2.3.1"
 solana-measure = {path = "../agave/measure"}
 solana-merkle-tree = {path = "../agave/merkle-tree"}
-solana-message = "=2.2.1"
+solana-message = "2.2.1"
 solana-metrics = {path = "../agave/metrics"}
-solana-msg = "=2.2.1"
-solana-native-token = "=2.2.1"
+solana-msg = "2.2.1"
+solana-native-token = "2.2.1"
 solana-net-utils = {path = "../agave/net-utils"}
 solana-nohash-hasher = "0.2.1"
-solana-nonce = "=2.2.1"
-solana-nonce-account = "=2.2.1"
+solana-nonce = "2.2.1"
+solana-nonce-account = "2.2.1"
 solana-notifier = {path = "../agave/notifier"}
-solana-offchain-message = "=2.2.1"
-solana-package-metadata = "=2.2.1"
-solana-package-metadata-macro = "=2.2.1"
-solana-packet = "=2.2.1"
+solana-offchain-message = "2.2.1"
+solana-package-metadata = "2.2.1"
+solana-package-metadata-macro = "2.2.1"
+solana-packet = "2.2.1"
 solana-perf = {path = "../agave/perf"}
 solana-poh = {path = "../agave/poh"}
-solana-poh-config = "=2.2.1"
+solana-poh-config = "2.2.1"
 solana-poseidon = {path = "../agave/poseidon"}
-solana-precompile-error = "=2.2.1"
-solana-presigner = "=2.2.1"
-solana-program = { version = "=2.2.1", default-features = false }
-solana-program-error = "=2.2.1"
-solana-program-memory = "=2.2.1"
-solana-program-option = "=2.2.1"
-solana-program-pack = "=2.2.1"
+solana-precompile-error = "2.2.1"
+solana-presigner = "2.2.1"
+solana-program = { version = "2.2.1", default-features = false }
+solana-program-error = "2.2.1"
+solana-program-memory = "2.2.1"
+solana-program-option = "2.2.1"
+solana-program-pack = "2.2.1"
 solana-program-runtime = {path = "../agave/program-runtime"}
 solana-program-test = {path = "../agave/program-test"}
-solana-pubkey = { version = "=2.2.1", default-features = false }
+solana-pubkey = { version = "2.2.1", default-features = false }
 solana-pubsub-client = {path = "../agave/pubsub-client"}
 solana-quic-client = {path = "../agave/quic-client"}
-solana-quic-definitions = "=2.2.1"
+solana-quic-definitions = "2.2.1"
 solana-rayon-threadlimit = {path = "../agave/rayon-threadlimit"}
 solana-remote-wallet = {path = "../agave/remote-wallet"}
-solana-rent = "=2.2.1"
-solana-rent-collector = "=2.2.1"
-solana-rent-debits = "=2.2.1"
-solana-reward-info = "=2.2.1"
-solana-sanitize = "=2.2.1"
-solana-secp256r1-program = "=2.2.2"
-solana-seed-derivable = "=2.2.1"
-solana-seed-phrase = "=2.2.1"
-solana-serde = "=2.2.1"
-solana-serde-varint = "=2.2.1"
-solana-serialize-utils = "=2.2.1"
-solana-sha256-hasher = "=2.2.1"
-solana-signature = { version = "=2.2.1", default-features = false }
-solana-signer = "=2.2.1"
-solana-slot-hashes = "=2.2.1"
-solana-slot-history = "=2.2.1"
-solana-time-utils = "=2.2.1"
+solana-rent = "2.2.1"
+solana-rent-collector = "2.2.1"
+solana-rent-debits = "2.2.1"
+solana-reward-info = "2.2.1"
+solana-sanitize = "2.2.1"
+solana-secp256r1-program = "2.2.2"
+solana-seed-derivable = "2.2.1"
+solana-seed-phrase = "2.2.1"
+solana-serde = "2.2.1"
+solana-serde-varint = "2.2.1"
+solana-serialize-utils = "2.2.1"
+solana-sha256-hasher = "2.2.1"
+solana-signature = { version = "2.2.1", default-features = false }
+solana-signer = "2.2.1"
+solana-slot-hashes = "2.2.1"
+solana-slot-history = "2.2.1"
+solana-time-utils = "2.2.1"
 solana-timings = {path = "../agave/timings"}
 solana-tls-utils = {path = "../agave/tls-utils"}
 solana-unified-scheduler-logic = {path = "../agave/unified-scheduler-logic"}
@@ -403,16 +402,16 @@ solana-rpc-client-api = {path = "../agave/rpc-client-api"}
 solana-rpc-client-nonce-utils = {path = "../agave/rpc-client-nonce-utils"}
 solana-runtime = {path = "../agave/runtime"}
 solana-runtime-transaction = {path = "../agave/runtime-transaction"}
-solana-sbpf = "=0.10.0"
-solana-sdk = "=2.2.2"
-solana-sdk-ids = "=2.2.1"
-solana-sdk-macro = "=2.2.1"
-solana-secp256k1-program = "=2.2.1"
-solana-secp256k1-recover = "=2.2.1"
+solana-sbpf = "=0.10.1"
+solana-sdk = "2.2.2"
+solana-sdk-ids = "2.2.1"
+solana-sdk-macro = "2.2.1"
+solana-secp256k1-program = "2.2.1"
+solana-secp256k1-recover = "2.2.1"
 solana-send-transaction-service = {path = "../agave/send-transaction-service"}
-solana-short-vec = "=2.2.1"
-solana-shred-version = "=2.2.1"
-solana-stable-layout = "=2.2.1"
+solana-short-vec = "2.2.1"
+solana-shred-version = "2.2.1"
+solana-stable-layout = "2.2.1"
 solana-stake-interface = { version = "1.2.1" }
 solana-stake-program = {path = "../agave/programs/stake"}
 solana-storage-bigtable = {path = "../agave/storage-bigtable"}
@@ -424,26 +423,26 @@ solana-svm-rent-collector = {path = "../agave/svm-rent-collector"}
 solana-svm-transaction = {path = "../agave/svm-transaction"}
 solana-system-interface = "1.0"
 solana-system-program = {path = "../agave/programs/system"}
-solana-system-transaction = "=2.2.1"
-solana-sysvar = "=2.2.1"
-solana-sysvar-id = "=2.2.1"
+solana-system-transaction = "2.2.1"
+solana-sysvar = "2.2.1"
+solana-sysvar-id = "2.2.1"
 solana-test-validator = {path = "../agave/test-validator"}
 solana-thin-client = {path = "../agave/thin-client"}
-solana-transaction = "=2.2.2"
-solana-transaction-error = "=2.2.1"
+solana-transaction = "2.2.2"
+solana-transaction-error = "2.2.1"
 solana-tpu-client = {path = "../agave/tpu-client"}
 solana-tpu-client-next = {path = "../agave/tpu-client-next"}
-solana-transaction-context = "=2.2.1"
+solana-transaction-context = {path = "../agave/transaction-context"}
 solana-transaction-status = {path = "../agave/transaction-status"}
 solana-transaction-status-client-types = {path = "../agave/transaction-status-client-types"}
 solana-transaction-metrics-tracker = {path = "../agave/transaction-metrics-tracker"}
 solana-turbine = {path = "../agave/turbine"}
 solana-type-overrides = {path = "../agave/type-overrides"}
 solana-udp-client = {path = "../agave/udp-client"}
-solana-validator-exit = "=2.2.1"
+solana-validator-exit = "2.2.1"
 solana-version = {path = "../agave/version"}
 solana-vote = {path = "../agave/vote"}
-solana-vote-interface = "=2.2.3"
+solana-vote-interface = "2.2.3"
 solana-vote-program = {path = "../agave/programs/vote"}
 solana-wen-restart = {path = "../agave/wen-restart"}
 solana-zk-elgamal-proof-program = {path = "../agave/programs/zk-elgamal-proof"}
@@ -451,15 +450,15 @@ solana-zk-keygen = {path = "../agave/zk-keygen"}
 solana-zk-sdk = {path = "../agave/zk-sdk"}
 solana-zk-token-proof-program = {path = "../agave/programs/zk-token-proof"}
 solana-zk-token-sdk = {path = "../agave/zk-token-sdk"}
-spl-associated-token-account = "=6.0.0"
+spl-associated-token-account = "6.0.0"
 spl-instruction-padding = "0.3"
-spl-memo = "=6.0.0"
-spl-pod = "=0.5.0"
-spl-token = "=7.0.0"
-spl-token-2022 = "=7.0.0"
+spl-memo = "6.0.0"
+spl-pod = "0.5.0"
+spl-token = "7.0.0"
+spl-token-2022 = "7.0.0"
 spl-token-confidential-transfer-proof-extraction = "0.2.1"
-spl-token-group-interface = "=0.5.0"
-spl-token-metadata-interface = "=0.6.0"
+spl-token-group-interface = "0.5.0"
+spl-token-metadata-interface = "0.6.0"
 static_assertions = "1.1.0"
 stream-cancel = "0.8.2"
 strum = "0.24"
@@ -519,3 +518,4 @@ prost-build = "0.13.1"
 [features]
 core-bpf = []
 core-bpf-conformance = []
+bpf-program-conformance = []
