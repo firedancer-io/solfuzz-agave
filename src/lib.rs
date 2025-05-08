@@ -6,11 +6,11 @@ pub mod memory_representation_serializer;
 pub mod pack;
 mod shred_parse;
 pub mod txn_fuzzer;
+mod types;
 pub mod types_fuzzer;
 pub mod utils;
 pub mod vm_interp;
 pub mod vm_syscalls;
-mod types;
 
 use agave_feature_set::*;
 use prost::Message;

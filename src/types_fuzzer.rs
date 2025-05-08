@@ -1,5 +1,5 @@
-use crate::types::types_map_generated::TYPE_PROCESSORS;
 use crate::proto::{TypeContext, TypeEffects};
+use crate::types::types_map_generated::TYPE_PROCESSORS;
 use prost::Message;
 
 use std::ffi::c_int;
@@ -45,7 +45,7 @@ pub fn execute_type(input: TypeContext) -> Option<TypeEffects> {
             .get(&bincode_slice[0])
             .map(|processor| processor(bincode_slice))
             .unwrap_or_else(|| {
-                eprintln!("Invalid type ID: {}", bincode_slice[0]);
+                // eprintln!("Invalid type ID: {}", bincode_slice[0]);
                 None
             })
     }));
