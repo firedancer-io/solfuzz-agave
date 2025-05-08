@@ -1,0 +1,87 @@
+use std::collections::HashMap;
+use crate::types::types_processor::process_type;
+use crate::proto::TypeEffects;
+use serde;
+
+/* Begin Type imports */
+use solana_accounts_db::blockhash_queue::HashInfo;
+use solana_clock::Clock;
+use solana_config_program::ConfigKeys;
+use solana_core::repair::serve_repair::RepairProtocol;
+use solana_core::repair::serve_repair::RepairRequestHeader;
+use solana_epoch_rewards::EpochRewards;
+use solana_fee_calculator::FeeCalculator;
+use solana_fee_calculator::FeeRateGovernor;
+use solana_gossip::crds_data::CrdsData;
+use solana_gossip::crds_gossip_pull::CrdsFilter;
+use solana_gossip::crds_value::CrdsValue;
+use solana_hard_forks::HardForks;
+use solana_hash::Hash;
+use solana_inflation::Inflation;
+use solana_last_restart_slot::LastRestartSlot;
+use solana_ledger::blockstore_meta::DuplicateSlotProof;
+use solana_ledger::blockstore_meta::FrozenHashStatus;
+use solana_ledger::blockstore_meta::FrozenHashVersioned;
+use solana_poh_config::PohConfig;
+use solana_program::sysvar::epoch_schedule::EpochSchedule;
+use solana_program::sysvar::rent::Rent;
+use solana_program::sysvar::stake_history::StakeHistory;
+use solana_program::sysvar::stake_history::StakeHistoryEntry;
+use solana_rent_collector::RentCollector;
+use solana_runtime::bank::BankHashStats;
+use solana_runtime::epoch_stakes::EpochStakes;
+use solana_runtime::epoch_stakes::NodeVoteAccounts;
+use solana_runtime::epoch_stakes::VersionedEpochStakes;
+use solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence;
+use solana_sdk::feature::Feature;
+use solana_sdk::signature::Signature;
+use solana_vote::vote_account::VoteAccounts;
+
+type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;
+
+fn wrap_process_type<T: serde::de::DeserializeOwned + serde::Serialize>(data: &[u8]) -> Option<TypeEffects> {
+  process_type::<T>(data)
+}
+
+fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
+  let mut map: HashMap<u8, TypeProcessorFn> = HashMap::new();
+
+  map.insert(0, wrap_process_type::<Hash>);
+  map.insert(2, wrap_process_type::<Signature>);
+  map.insert(5, wrap_process_type::<Feature>);
+  map.insert(6, wrap_process_type::<FeeCalculator>);
+  map.insert(7, wrap_process_type::<HashInfo>);
+  map.insert(11, wrap_process_type::<FeeRateGovernor>);
+  map.insert(13, wrap_process_type::<HardForks>);
+  map.insert(14, wrap_process_type::<Inflation>);
+  map.insert(15, wrap_process_type::<Rent>);
+  map.insert(16, wrap_process_type::<EpochSchedule>);
+  map.insert(17, wrap_process_type::<RentCollector>);
+  map.insert(18, wrap_process_type::<StakeHistoryEntry>);
+  map.insert(20, wrap_process_type::<StakeHistory>);
+  map.insert(23, wrap_process_type::<VoteAccounts>);
+  map.insert(34, wrap_process_type::<BankIncrementalSnapshotPersistence>);
+  map.insert(35, wrap_process_type::<NodeVoteAccounts>);
+  map.insert(38, wrap_process_type::<EpochStakes>);
+  map.insert(43, wrap_process_type::<BankHashStats>);
+  map.insert(51, wrap_process_type::<VersionedEpochStakes>);
+  map.insert(57, wrap_process_type::<PohConfig>);
+  map.insert(61, wrap_process_type::<Clock>);
+  map.insert(62, wrap_process_type::<LastRestartSlot>);
+  map.insert(93, wrap_process_type::<EpochRewards>);
+  map.insert(154, wrap_process_type::<ConfigKeys>);
+  map.insert(170, wrap_process_type::<FrozenHashStatus>);
+  map.insert(171, wrap_process_type::<FrozenHashVersioned>);
+  map.insert(206, wrap_process_type::<CrdsData>);
+  map.insert(208, wrap_process_type::<CrdsFilter>);
+  map.insert(209, wrap_process_type::<CrdsValue>);
+  map.insert(218, wrap_process_type::<RepairRequestHeader>);
+  map.insert(223, wrap_process_type::<RepairProtocol>);
+  map.insert(238, wrap_process_type::<DuplicateSlotProof>);
+
+  map
+}
+
+
+use once_cell::sync::Lazy;
+pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> = Lazy::new(build_type_processor_map);
