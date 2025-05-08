@@ -150,6 +150,7 @@ standard_deps = [
   "crate::types::types_processor::process_type",
   "crate::proto::TypeEffects",
 ]
+standard_deps.sort()
 
 def emit_dep( dep: str ) -> str:
     return f"use {dep};"
@@ -201,7 +202,10 @@ def main():
     map_inserts = ""
     for dep, insert in to_print:
         type_deps += f"{dep}\n"
-        map_inserts += f"  {insert}\n"
+        map_inserts += f"    {insert}\n"
+    
+    # Sort the dependencies (to make rustfmt happy)
+    type_deps = "\n".join(sorted(type_deps.splitlines()))
 
     # Emit the Rust code
     with open(args.out, 'w') as out:
@@ -212,7 +216,7 @@ def main():
         for dep in standard_deps:
             print(emit_dep(dep), file=out)
         print("", file=out)
-        print("// Type imports ", file=out)
+        print("// Type imports", file=out)
         print(type_deps, file=out)
 
         print("type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;", file=out)
@@ -220,17 +224,18 @@ def main():
         print(
 """
 fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
-  let mut map: HashMap<u8, TypeProcessorFn> = HashMap::new();
+    let mut map: HashMap<u8, TypeProcessorFn> = HashMap::new();
 """, file=out)
 
         print(map_inserts, file=out)
-        print("  map", file=out)
+        print("    map", file=out)
         print("}", file=out)
 
         print(
 """
 use once_cell::sync::Lazy;
-pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> = Lazy::new(build_type_processor_map);""", file=out)
+pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> =
+    Lazy::new(build_type_processor_map);""", file=out)
 
     if args.print_whitelist_idx:
         print("Whitelist indices:")
