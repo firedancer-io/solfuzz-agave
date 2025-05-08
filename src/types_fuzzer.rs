@@ -1,5 +1,4 @@
-// This is an auto-generated file. To add entries, edit fd_types.json
-use crate::types::types_generated::TYPE_PROCESSORS;
+use crate::types::types_map_generated::TYPE_PROCESSORS;
 use crate::proto::{TypeContext, TypeEffects};
 use prost::Message;
 

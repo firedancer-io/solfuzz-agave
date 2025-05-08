@@ -1,5 +1,5 @@
 # Example usage:
-# python3 scripts/generate_types_map.py fd_types.json fd_types_reflect_generated.c src/types/types_generated.rs
+# python3 scripts/generate_types_map.py fd_types.json fd_types_reflect_generated.c src/types/types_map_generated.rs
 
 import argparse
 import json
