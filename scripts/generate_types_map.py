@@ -14,132 +14,132 @@ class RustTypeInfo:
 # also serves as the whitelist for types supported by the harness
 fd_rust_types_map = {
   "hash": RustTypeInfo(
-    type_name="Hash",
-    dep_str="solana_hash::Hash"
+    type_name = "Hash",
+    dep_str   = "solana_hash::Hash"
   ),
   "signature": RustTypeInfo(
-    type_name="Signature",
-    dep_str="solana_sdk::signature::Signature"
+    type_name = "Signature",
+    dep_str   = "solana_sdk::signature::Signature"
   ),
   "feature": RustTypeInfo(
-    type_name="Feature",
-    dep_str="solana_sdk::feature::Feature"
+    type_name = "Feature",
+    dep_str   = "solana_sdk::feature::Feature"
   ),
   "fee_calculator": RustTypeInfo(
-      type_name="FeeCalculator",
-      dep_str="solana_fee_calculator::FeeCalculator"
+    type_name = "FeeCalculator",
+    dep_str   = "solana_fee_calculator::FeeCalculator"
   ),
   "hash_age": RustTypeInfo(
-      type_name="HashInfo",
-      dep_str="solana_accounts_db::blockhash_queue::HashInfo"
+    type_name = "HashInfo",
+    dep_str   = "solana_accounts_db::blockhash_queue::HashInfo"
   ),
   "fee_rate_governor": RustTypeInfo(
-      type_name="FeeRateGovernor",
-      dep_str="solana_fee_calculator::FeeRateGovernor"
+    type_name = "FeeRateGovernor",
+    dep_str   = "solana_fee_calculator::FeeRateGovernor"
   ),
   "hard_forks": RustTypeInfo(
-      type_name="HardForks",
-      dep_str="solana_hard_forks::HardForks"
+    type_name = "HardForks",
+    dep_str   = "solana_hard_forks::HardForks"
   ),
   "inflation": RustTypeInfo(
-      type_name="Inflation",
-      dep_str="solana_inflation::Inflation"
+    type_name = "Inflation",
+    dep_str   = "solana_inflation::Inflation"
   ),
   "rent": RustTypeInfo(
-      type_name="Rent",
-      dep_str="solana_program::sysvar::rent::Rent"
+    type_name = "Rent",
+    dep_str   = "solana_program::sysvar::rent::Rent"
   ),
   "epoch_schedule": RustTypeInfo(
-      type_name="EpochSchedule",
-      dep_str="solana_program::sysvar::epoch_schedule::EpochSchedule"
+    type_name = "EpochSchedule",
+    dep_str   = "solana_program::sysvar::epoch_schedule::EpochSchedule"
   ),
   "rent_collector": RustTypeInfo(
-      type_name="RentCollector",
-      dep_str="solana_rent_collector::RentCollector"
+    type_name = "RentCollector",
+    dep_str   = "solana_rent_collector::RentCollector"
   ),
   "stake_history_entry": RustTypeInfo(
-      type_name="StakeHistoryEntry",
-      dep_str="solana_program::sysvar::stake_history::StakeHistoryEntry"
+    type_name = "StakeHistoryEntry",
+    dep_str   = "solana_program::sysvar::stake_history::StakeHistoryEntry"
   ),
   "stake_history": RustTypeInfo(
-        type_name="StakeHistory",
-        dep_str="solana_program::sysvar::stake_history::StakeHistory"
+    type_name = "StakeHistory",
+    dep_str   = "solana_program::sysvar::stake_history::StakeHistory"
   ),
   "vote_accounts": RustTypeInfo(
-      type_name="VoteAccounts",
-      dep_str="solana_vote::vote_account::VoteAccounts"
+    type_name = "VoteAccounts",
+    dep_str   = "solana_vote::vote_account::VoteAccounts"
   ),
   "bank_incremental_snapshot_persistence": RustTypeInfo(
-      type_name="BankIncrementalSnapshotPersistence",
-      dep_str="solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence"
+    type_name = "BankIncrementalSnapshotPersistence",
+    dep_str   = "solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence"
   ),
   "node_vote_accounts": RustTypeInfo(
-      type_name="NodeVoteAccounts",
-      dep_str="solana_runtime::epoch_stakes::NodeVoteAccounts"
+    type_name = "NodeVoteAccounts",
+    dep_str   = "solana_runtime::epoch_stakes::NodeVoteAccounts"
   ),
   "epoch_stakes": RustTypeInfo(
-      type_name="EpochStakes",
-      dep_str="solana_runtime::epoch_stakes::EpochStakes"
+    type_name = "EpochStakes",
+    dep_str   = "solana_runtime::epoch_stakes::EpochStakes"
   ),
   "bank_hash_stats": RustTypeInfo(
-      type_name="BankHashStats",
-      dep_str="solana_runtime::bank::BankHashStats"
+    type_name = "BankHashStats",
+    dep_str   = "solana_runtime::bank::BankHashStats"
   ),
   "versioned_epoch_stakes": RustTypeInfo(
-      type_name="VersionedEpochStakes",
-      dep_str="solana_runtime::epoch_stakes::VersionedEpochStakes"
+    type_name = "VersionedEpochStakes",
+    dep_str   = "solana_runtime::epoch_stakes::VersionedEpochStakes"
   ),
   "poh_config": RustTypeInfo(
-      type_name="PohConfig",
-      dep_str="solana_poh_config::PohConfig"
+    type_name = "PohConfig",
+    dep_str   = "solana_poh_config::PohConfig"
   ),
   "sol_sysvar_clock": RustTypeInfo(
-      type_name="Clock",
-      dep_str="solana_clock::Clock"
+    type_name = "Clock",
+    dep_str   = "solana_clock::Clock"
   ),
   "sol_sysvar_last_restart_slot": RustTypeInfo(
-      type_name="LastRestartSlot",
-      dep_str="solana_last_restart_slot::LastRestartSlot"
+    type_name = "LastRestartSlot",
+    dep_str   = "solana_last_restart_slot::LastRestartSlot"
   ),
   "sysvar_epoch_rewards": RustTypeInfo(
-      type_name="EpochRewards",
-      dep_str="solana_epoch_rewards::EpochRewards"
+    type_name = "EpochRewards",
+    dep_str   = "solana_epoch_rewards::EpochRewards"
   ),
   "config_keys": RustTypeInfo(
-      type_name="ConfigKeys",
-      dep_str="solana_config_program::ConfigKeys"
+    type_name = "ConfigKeys",
+    dep_str   = "solana_config_program::ConfigKeys"
   ),
   "frozen_hash_status": RustTypeInfo(
-      type_name="FrozenHashStatus",
-      dep_str="solana_ledger::blockstore_meta::FrozenHashStatus"
+    type_name = "FrozenHashStatus",
+    dep_str   = "solana_ledger::blockstore_meta::FrozenHashStatus"
   ),
   "frozen_hash_versioned": RustTypeInfo(
-      type_name="FrozenHashVersioned",
-      dep_str="solana_ledger::blockstore_meta::FrozenHashVersioned"
+    type_name = "FrozenHashVersioned",
+    dep_str   = "solana_ledger::blockstore_meta::FrozenHashVersioned"
   ),
   "crds_data": RustTypeInfo(
-      type_name="CrdsData",
-      dep_str="solana_gossip::crds_data::CrdsData"
+    type_name = "CrdsData",
+    dep_str   = "solana_gossip::crds_data::CrdsData"
   ),
   "crds_filter": RustTypeInfo(
-      type_name="CrdsFilter",
-      dep_str="solana_gossip::crds_gossip_pull::CrdsFilter"
+    type_name = "CrdsFilter",
+    dep_str   = "solana_gossip::crds_gossip_pull::CrdsFilter"
   ),
   "crds_value": RustTypeInfo(
-      type_name="CrdsValue",
-      dep_str="solana_gossip::crds_value::CrdsValue"
+    type_name = "CrdsValue",
+    dep_str   = "solana_gossip::crds_value::CrdsValue"
   ),
   "repair_request_header": RustTypeInfo(
-      type_name="RepairRequestHeader",
-      dep_str="solana_core::repair::serve_repair::RepairRequestHeader"
+    type_name = "RepairRequestHeader",
+    dep_str   = "solana_core::repair::serve_repair::RepairRequestHeader"
   ),
   "repair_protocol": RustTypeInfo(
-      type_name="RepairProtocol",
-      dep_str="solana_core::repair::serve_repair::RepairProtocol"
+    type_name = "RepairProtocol",
+    dep_str   = "solana_core::repair::serve_repair::RepairProtocol"
   ),
   "duplicate_slot_proof": RustTypeInfo(
-      type_name="DuplicateSlotProof",
-      dep_str="solana_ledger::blockstore_meta::DuplicateSlotProof"
+    type_name = "DuplicateSlotProof",
+    dep_str   = "solana_ledger::blockstore_meta::DuplicateSlotProof"
   ),
 }
 
@@ -149,14 +149,13 @@ standard_deps = [
   "std::collections::HashMap",
   "crate::types::types_processor::process_type",
   "crate::proto::TypeEffects",
-  "serde"
 ]
 
 def emit_dep( dep: str ) -> str:
     return f"use {dep};"
 
 def emit_type_processor_map_insert( idx: int, type: str, map_name: str )-> str:
-    return f"{map_name}.insert({idx}, wrap_process_type::<{type}>);"
+    return f"{map_name}.insert({idx}, process_type::<{type}>);"
 
 def init_fd_types_index_map( type_names_source: str ):
     fd_types_index_map = {}
@@ -220,12 +219,6 @@ def main():
 
         print(
 """
-fn wrap_process_type<T: serde::de::DeserializeOwned + serde::Serialize>(data: &[u8]) -> Option<TypeEffects> {
-  process_type::<T>(data)
-}""", file=out)
-
-        print(
-"""
 fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
   let mut map: HashMap<u8, TypeProcessorFn> = HashMap::new();
 """, file=out)
@@ -234,12 +227,10 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
         print("  map", file=out)
         print("}", file=out)
 
-        print("\n", file=out)
         print(
 """
 use once_cell::sync::Lazy;
-pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> = Lazy::new(build_type_processor_map);
-""", file=out)
+pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> = Lazy::new(build_type_processor_map);""", file=out)
 
     if args.print_whitelist_idx:
         print("Whitelist indices:")
