@@ -27,7 +27,7 @@ use solana_sbpf::{
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
 };
-use solana_sdk::transaction_context::{TransactionAccount, TransactionContext};
+use solana_sdk::pubkey::Pubkey;
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
     clock::Clock,
@@ -36,7 +36,7 @@ use solana_sdk::{
     rent::Rent,
     sysvar::{last_restart_slot, SysvarId},
 };
-use solana_sdk::{pubkey::Pubkey, transaction_context::IndexOfAccount};
+use solana_transaction_context::{IndexOfAccount, TransactionAccount, TransactionContext};
 use std::{cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 
 #[no_mangle]
@@ -201,7 +201,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let direct_mapping = invoke_ctx
         .get_feature_set()
         .is_active(&bpf_account_data_direct_mapping::id());
-
+    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
+        .get_feature_set()
+        .is_active(&agave_feature_set::mask_out_rent_epoch_in_vm_serialization::id());
     invoke_ctx
         .transaction_context
         .get_next_instruction_context()
@@ -230,6 +232,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         invoke_ctx.transaction_context,
         caller_instr_ctx,
         !direct_mapping,
+        mask_out_rent_epoch_in_vm_serialization,
     )
     .unwrap();
 
@@ -290,8 +293,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let cow_cb_accounts = Rc::clone(invoke_ctx.transaction_context.accounts());
     let cow_cb = Box::new(move |index_in_transaction| {
         let mut account = cow_cb_accounts
-            .try_borrow_mut(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
+            .get(index_in_transaction as IndexOfAccount)
+            .unwrap()
+            .borrow_mut();
         cow_cb_accounts
             .touch(index_in_transaction as IndexOfAccount)
             .map_err(|_| ())?;

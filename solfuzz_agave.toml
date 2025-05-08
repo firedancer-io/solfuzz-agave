@@ -20,3 +20,4 @@ core-bpf = []
 # Same as the `core-bpf` feature, but also includes special-casing required for
 # conformance testing a BPF program against a builtin.
 core-bpf-conformance = []
+bpf-program-conformance = []

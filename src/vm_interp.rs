@@ -34,11 +34,10 @@ use solana_sbpf::{
 use solana_program_test::IndexOfAccount;
 use solana_rent::Rent;
 use solana_sdk::{
-    account::WritableAccount,
-    entrypoint::MAX_PERMITTED_DATA_INCREASE,
+    account::WritableAccount, entrypoint::MAX_PERMITTED_DATA_INCREASE,
     feature_set::bpf_account_data_direct_mapping,
-    transaction_context::{TransactionAccount, TransactionContext},
 };
+use solana_transaction_context::{TransactionAccount, TransactionContext};
 use std::{borrow::Borrow, cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 
 declare_builtin_function!(
@@ -275,6 +274,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             instr_accounts.as_slice(),
             &instr.data,
         );
+    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
+        .get_feature_set()
+        .is_active(&agave_feature_set::mask_out_rent_epoch_in_vm_serialization::id());
     drop(invoke_ctx);
 
     let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
@@ -294,6 +296,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         invoke_ctx.transaction_context,
         caller_instr_ctx,
         !direct_mapping,
+        mask_out_rent_epoch_in_vm_serialization,
     )
     .unwrap();
 
@@ -390,8 +393,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let cow_cb_accounts = Rc::clone(invoke_ctx.transaction_context.accounts());
     let cow_cb = Box::new(move |index_in_transaction| {
         let mut account = cow_cb_accounts
-            .try_borrow_mut(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
+            .get(index_in_transaction as IndexOfAccount)
+            .unwrap()
+            .borrow_mut();
         cow_cb_accounts
             .touch(index_in_transaction as IndexOfAccount)
             .map_err(|_| ())?;

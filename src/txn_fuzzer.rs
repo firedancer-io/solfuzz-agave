@@ -29,7 +29,6 @@ use solana_sdk::sysvar;
 use solana_sdk::transaction::{
     TransactionError, TransactionVerificationMode, VersionedTransaction,
 };
-use solana_sdk::transaction_context::TransactionAccount;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
@@ -38,6 +37,7 @@ use solana_svm::transaction_processing_result::{
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_timings::ExecuteTimings;
+use solana_transaction_context::TransactionAccount;
 use std::cmp::max;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
