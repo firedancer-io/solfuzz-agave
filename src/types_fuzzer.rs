@@ -11,6 +11,10 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
+    /* Need this check since solfuzz may feed empty inputs */
+    if in_ptr.is_null() || in_sz == 0 {
+        return 0;
+    }
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
     let type_ctx = match TypeContext::decode(in_slice) {
         Ok(context) => context,

@@ -240,7 +240,7 @@ pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> =
         print("Whitelist indices:")
         for entry in types_dict:
             if entry["name"] in fd_rust_types_map:
-                print(types_idx[f'fd_{entry["name"]}'])
+                print(str(types_idx[f'fd_{entry["name"]}']) + ',')
         print("Done printing whitelist indices")
 
 if __name__ == "__main__":
