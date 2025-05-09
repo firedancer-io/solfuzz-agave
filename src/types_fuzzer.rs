@@ -44,10 +44,7 @@ pub fn execute_type(input: TypeContext) -> Option<TypeEffects> {
         TYPE_PROCESSORS
             .get(&bincode_slice[0])
             .map(|processor| processor(bincode_slice))
-            .unwrap_or_else(|| {
-                // eprintln!("Invalid type ID: {}", bincode_slice[0]);
-                None
-            })
+            .unwrap_or_else(|| None)
     }));
 
     // Handle any panic that might have occurred

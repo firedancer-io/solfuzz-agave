@@ -2,7 +2,6 @@
 
 pub mod block;
 pub mod elf_loader;
-pub mod memory_representation_serializer;
 pub mod pack;
 mod shred_parse;
 pub mod txn_fuzzer;

@@ -15,7 +15,6 @@ crate-type = ["cdylib", "rlib"]
 prost-build = "0.13.1"
 
 [features]
-bpf-program-conformance = []
 # This feature is used to compile a target with a builtin replaced by a BPF program.
 # Requires the `CORE_BPF_PROGRAM_ID` and `CORE_BPF_TARGET` environment variables.
 core-bpf = []
