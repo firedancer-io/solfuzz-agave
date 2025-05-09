@@ -1,6 +1,6 @@
 use crate::proto::TypeEffects;
-use serde::Serialize;
 use crate::types::memory_representation_serializer::MemoryRepresentationSerializer;
+use serde::Serialize;
 
 #[allow(dead_code)]
 pub fn process_type<T: Serialize + serde::de::DeserializeOwned>(
