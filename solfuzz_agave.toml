@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.2", features = ["derive"] }
 solfuzz-agave-macro = { path = "macro" }
+once_cell = "1.21.3"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
