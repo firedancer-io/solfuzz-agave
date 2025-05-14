@@ -283,7 +283,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     match invoke_ctx.push() {
         Ok(_) => (),
-        Err(_) => eprintln!("Failed to push invoke context"),
+        Err(_) => return None,
     }
     drop(invoke_ctx);
 
