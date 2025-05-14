@@ -219,7 +219,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     match invoke_ctx.push() {
         Ok(_) => (),
-        Err(_) => eprintln!("Failed to push invoke context"),
+        Err(_) => return None,
     }
     drop(invoke_ctx);
 
