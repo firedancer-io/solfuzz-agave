@@ -193,6 +193,7 @@ fn output_txn_result_from_result(
         return_data,
         fee_details,
         rent,
+        loaded_accounts_data_size,
         resulting_state,
     ) = match execution_results {
         Ok(txn) => {
@@ -201,6 +202,15 @@ fn output_txn_result_from_result(
                     executed_tx.execution_details.status.is_ok()
                 }
                 ProcessedTransaction::FeesOnly(_) => false,
+            };
+
+            let loaded_accounts_data_size = match txn {
+                ProcessedTransaction::Executed(executed_tx) => {
+                    executed_tx.loaded_transaction.loaded_accounts_data_size
+                }
+                ProcessedTransaction::FeesOnly(fees_only_tx) => {
+                    fees_only_tx.rollback_accounts.data_size() as u32
+                }
             };
 
             let (status, instr_err, custom_err, instr_err_idx) =
@@ -280,6 +290,7 @@ fn output_txn_result_from_result(
                 return_data,
                 Some(txn.fee_details()),
                 rent,
+                loaded_accounts_data_size,
                 resulting_state,
             )
         }
@@ -296,6 +307,7 @@ fn output_txn_result_from_result(
                 0,
                 vec![],
                 None,
+                0,
                 0,
                 None,
             )
@@ -318,6 +330,7 @@ fn output_txn_result_from_result(
             transaction_fee: fees.transaction_fee(),
             prioritization_fee: fees.prioritization_fee(),
         }),
+        loaded_accounts_data_size: loaded_accounts_data_size as u64,
     }
 }
 
@@ -529,6 +542,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
                 return_data: vec![],
                 executed_units: 0,
                 fee_details: None,
+                loaded_accounts_data_size: 0,
             });
         }
     };
