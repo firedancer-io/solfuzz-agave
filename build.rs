@@ -29,6 +29,18 @@ fn main() -> Result<()> {
         .iter()
         .for_each(|proto| println!("cargo:rerun-if-changed={}", proto.display()));
 
+    for proto in protos {
+        if !proto.exists() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!(
+                    "Proto file does not exist: {}. Run ./scripts/fetch_proto.sh",
+                    proto.display()
+                ),
+            ));
+        }
+    }
+
     prost_build::compile_protos(protos, &[proto_base_path])?;
 
     Ok(())
