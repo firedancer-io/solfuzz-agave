@@ -259,11 +259,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .map(|blockhash| blockhash.fee_calculator.lamports_per_signature)
         .unwrap_or(5000u64);
 
+let mut ctx_blockhash_queue = if context.blockhash_queue.is_empty() {
+        vec![vec![0u8; 32]]
+    } else {
+        context.blockhash_queue
+    };
+
     let mut blockhash_queue = BlockhashQueue::default();
-    context.blockhash_queue.iter().for_each(|blockhash| {
-        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
+    for blockhash in ctx_blockhash_queue.iter_mut() {
+        let blockhash_hash = Hash::new_from_array(std::mem::take(blockhash).try_into().unwrap());
         blockhash_queue.register_hash(&blockhash_hash, lamports_per_signature);
-    });
+    }
 
     let mut ancestors = AncestorsForSerialization::default();
     ancestors.insert(slot - 1, 1);
