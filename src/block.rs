@@ -244,7 +244,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .unwrap();
     let genesis_config = GenesisConfig {
         creation_time: epoch_ctx.genesis_creation_time as i64,
-        inflation: epoch_ctx.inflation.unwrap().into(),
+        inflation: epoch_ctx.inflation.unwrap_or_default().into(),
         epoch_schedule: epoch_schedule.clone(),
         cluster_type: ClusterType::Development,
         poh_config: PohConfig {
@@ -405,7 +405,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             rent,
         },
         epoch_schedule,
-        inflation: epoch_ctx.inflation.unwrap().into(),
+        inflation: epoch_ctx.inflation.unwrap_or_default().into(),
         stakes: stakes_t,
         epoch_stakes,
         ..BankFieldsToDeserialize::default()
