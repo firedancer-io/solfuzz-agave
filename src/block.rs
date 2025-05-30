@@ -231,54 +231,85 @@ let mut ctx_blockhash_queue = if context.blockhash_queue.is_empty() {
     /* Build the stakes separately */
     let stakes_t = build_stake_delegations(&epoch_ctx.vote_accounts_t);
 
-    let stakes_t_1 = build_stake_delegations(&epoch_ctx.vote_accounts_t_1);
-    let stake_accounts_t_1 = Stakes::new(&stakes_t_1, |pubkey| {
-        let account = epoch_ctx
-            .vote_accounts_t_1
-            .iter()
-            .find(|vote_account| {
-                Pubkey::new_from_array(
-                    vote_account
-                        .vote_account
-                        .as_ref()
-                        .unwrap()
-                        .address
-                        .clone()
-                        .try_into()
-                        .unwrap(),
-                ) == *pubkey
-            })
-            .map(|vote_account| vote_account.vote_account.as_ref().unwrap().clone())
-            .unwrap();
-        Some(AccountSharedData::from(&account))
-    })
-    .unwrap();
-
-    let stakes_t_2 = build_stake_delegations(&epoch_ctx.vote_accounts_t_2);
-    let stake_accounts_t_2 = Stakes::new(&stakes_t_2, |pubkey| {
-        let account = epoch_ctx
-            .vote_accounts_t_2
-            .iter()
-            .find(|vote_account| {
-                Pubkey::new_from_array(
-                    vote_account
-                        .vote_account
-                        .as_ref()
-                        .unwrap()
-                        .address
-                        .clone()
-                        .try_into()
-                        .unwrap(),
-                ) == *pubkey
-            })
-            .map(|vote_account| vote_account.vote_account.as_ref().unwrap().clone())
-            .unwrap();
-        Some(AccountSharedData::from(&account))
-    })
-    .unwrap();
+    let vote_accounts_to_store = epoch_ctx
+        .vote_accounts_t
+        .iter()
+        .map(|vote_account| {
+            let (pubkey, account) = vote_account
+                .vote_account
+                .clone()
+                .unwrap()
+                .try_into()
+                .unwrap();
+            (pubkey, AccountSharedData::from(account))
+        })
+        .collect::<Vec<_>>();
+    accounts.store_cached((slot, &vote_accounts_to_store[..]), None);
 
     let mut epoch_stakes: HashMap<Epoch, EpochStakes> = HashMap::new();
-    let epoch = epoch_schedule.get_epoch(slot);
+
+    let slot_t_1 = epoch_schedule.get_first_slot_in_epoch(epoch.saturating_sub(1));
+    if prev_slot > slot_t_1 {
+        println!("slot_t_1: {}", slot_t_1);
+        let vote_accounts_to_store_1 = epoch_ctx
+            .vote_accounts_t_1
+            .iter()
+            .map(|vote_account| {
+                let (pubkey, account) = vote_account
+                        .vote_account
+                        .clone()
+                        .unwrap()
+                                                .try_into()
+                        .unwrap();
+
+                (pubkey, AccountSharedData::from(account))
+            })
+            .collect::<Vec<_>>();
+
+        accounts.store_cached((slot_t_1, &vote_accounts_to_store_1[..]), None);
+
+        let stakes_t_1 = build_stake_delegations(&epoch_ctx.vote_accounts_t_1);
+        let stake_accounts_t_1 = Stakes::new(&stakes_t_1, |pubkey_a| {
+            vote_accounts_to_store_1
+                .iter()
+                .find(|(pubkey_b, _)| *pubkey_a == *pubkey_b)
+                .map(|(_, account)| account.clone())
+    })
+    .unwrap();
+
+        epoch_stakes.insert(
+            epoch.saturating_sub(1),
+            EpochStakes::new(
+                Arc::new(StakesEnum::from(stake_accounts_t_1)),
+                epoch.saturating_sub(1),
+            ),
+        );
+    }
+    let slot_t_2 = epoch_schedule.get_first_slot_in_epoch(epoch.saturating_sub(2));
+        println!("slot_t_2: {}", slot_t_2);
+    let vote_accounts_to_store_2 = epoch_ctx
+            .vote_accounts_t_2
+            .iter()
+            .map(|vote_account| {
+                let (pubkey, account) = vote_account
+                        .vote_account
+                        .clone()
+                        .unwrap()
+                                                .try_into()
+                        .unwrap();
+                (pubkey, AccountSharedData::from(account))
+            })
+            .collect::<Vec<_>>();
+
+        accounts.store_cached((slot_t_2, &vote_accounts_to_store_2[..]), None);
+        let stakes_t_2 = build_stake_delegations(&epoch_ctx.vote_accounts_t_2);
+        let stake_accounts_t_2 = Stakes::new(&stakes_t_2, |pubkey_a| {
+            vote_accounts_to_store_2
+                .iter()
+                .find(|(pubkey_b, _)| *pubkey_a == *pubkey_b)
+                .map(|(_, account)| account.clone())
+    })
+    .unwrap();
     epoch_stakes.insert(
         epoch.saturating_sub(2),
         EpochStakes::new(
@@ -286,19 +317,14 @@ let mut ctx_blockhash_queue = if context.blockhash_queue.is_empty() {
             epoch.saturating_sub(2),
         ),
     );
-    epoch_stakes.insert(
-        epoch.saturating_sub(1),
-        EpochStakes::new(
-            Arc::new(StakesEnum::from(stake_accounts_t_1)),
-            epoch.saturating_sub(1),
-        ),
-    );
+    }
     epoch_stakes.insert(
         epoch,
         EpochStakes::new(Arc::new(StakesEnum::from(stakes_t.clone())), epoch),
     );
 
     /* TODO: Restore this from the input */
+// Current epoch
     epoch_stakes.insert(
         epoch + 1,
         EpochStakes::new(Arc::new(StakesEnum::from(stakes_t.clone())), epoch + 1),
