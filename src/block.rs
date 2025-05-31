@@ -10,6 +10,7 @@ use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
 use solana_accounts_db::ancestors::AncestorsForSerialization;
 use solana_accounts_db::blockhash_queue::BlockhashQueue;
+use solana_accounts_db::epoch_accounts_hash::EpochAccountsHash;
 use solana_clock::Epoch;
 use solana_cluster_type::ClusterType;
 use solana_entry::entry::{Entry, VerifyRecyclers};
@@ -135,6 +136,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     }
 
     let slot = slot_ctx.slot;
+    let prev_slot = slot_ctx.prev_slot;
+
     let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap());
 
     /* HACK: Because there are three different schedules and rent instances, we need to find and deserialize
@@ -335,7 +338,7 @@ let mut ctx_blockhash_queue = if context.blockhash_queue.is_empty() {
         ancestors,
         hash: Hash::default(),
         parent_hash: Hash::new_from_array(slot_ctx.parent_bank_hash.try_into().unwrap()),
-        parent_slot: slot_ctx.prev_slot,
+        parent_slot: prev_slot,
         capitalization: slot_ctx.prev_epoch_capitalization,
         tick_height: 64u64 * slot,
         max_tick_height: 64u64 * (slot + 1u64),
@@ -379,21 +382,28 @@ let mut ctx_blockhash_queue = if context.blockhash_queue.is_empty() {
         0,
     );
 
+    // EAH must be set to valid before the bank is frozen by `warp_from_parent`
+    bank.accounts()
+    .accounts_db
+    .epoch_accounts_hash_manager
+    .set_valid(
+    EpochAccountsHash::new(Hash::new_unique()), prev_slot);
+
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
     let leader = leader_schedule
         .slot_leader_at(slot, None)
         .unwrap_or_default();
-    bank.set_collector_id_for_tests(leader);
+        let bank_forks = BankForks::new_rw_arc(bank);
+    let mut bank = bank_forks.read().unwrap().root_bank();
 
-    let bank_forks = BankForks::new_rw_arc(bank);
-    let bank = bank_forks.write().unwrap().root_bank();
-
-    bank.get_transaction_processor().reset_sysvar_cache();
-    bank.update_slot_hashes();
-    bank.update_clock(None);
-    bank.update_recent_blockhashes();
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
+    let bank = Arc::new(Bank::warp_from_parent(
+        bank,
+        &Pubkey::default(),
+        prev_slot,
+        // some warping tests cannot use the append vecs because of the sequence of adding roots and flushing
+        solana_accounts_db::accounts_db::CalcAccountsHashDataSource::IndexForTests,
+    ));
+    bank.rehash();
 
     let mut entries = vec![Entry::new_tick(1, &poh); 64];
     entries.extend(
