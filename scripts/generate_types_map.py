@@ -232,9 +232,9 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
 
         print(
 """
-use once_cell::sync::Lazy;
-pub static TYPE_PROCESSORS: Lazy<HashMap<u8, TypeProcessorFn>> =
-    Lazy::new(build_type_processor_map);""", file=out)
+use std::sync::LazyLock;
+pub static TYPE_PROCESSORS: LazyLock<HashMap<u8, TypeProcessorFn>> =
+    LazyLock::new(build_type_processor_map);""", file=out)
 
     if args.print_whitelist_idx:
         print("Whitelist indices:")
