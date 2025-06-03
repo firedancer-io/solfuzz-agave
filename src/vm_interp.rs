@@ -3,20 +3,14 @@ use crate::{
     utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
     InstrContext, TOGGLE_DIRECT_MAPPING,
 };
-use agave_feature_set::remove_accounts_executable_flag_checks;
+use agave_feature_set::bpf_account_data_direct_mapping;
 use bincode::Error;
 use prost::Message;
-use solana_account::AccountSharedData;
-use solana_bpf_loader_program::{
-    serialization::serialize_parameters, syscalls::create_program_runtime_environment_v1,
-};
-use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_bpf_loader_program::serialization::serialize_parameters;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{
     invoke_context::{EnvironmentConfig, InvokeContext},
-    loaded_programs::ProgramCacheForTxBatch,
     mem_pool::VmMemoryPool,
-    sysvar_cache::SysvarCache,
 };
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
@@ -28,16 +22,11 @@ use solana_sbpf::{
     program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
     static_analysis::TraceLogEntry,
     verifier::RequisiteVerifier,
-    vm::{Config, ContextObject, EbpfVm},
+    vm::{ContextObject, EbpfVm},
 };
 
 use solana_program_test::IndexOfAccount;
-use solana_rent::Rent;
-use solana_sdk::{
-    account::WritableAccount, entrypoint::MAX_PERMITTED_DATA_INCREASE,
-    feature_set::bpf_account_data_direct_mapping,
-};
-use solana_transaction_context::{TransactionAccount, TransactionContext};
+use solana_sdk::{account::WritableAccount, entrypoint::MAX_PERMITTED_DATA_INCREASE};
 use std::{borrow::Borrow, cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 
 declare_builtin_function!(
@@ -156,97 +145,7 @@ pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
 // We are actually executing the JIT-compiled program here
 pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
-    let mut feature_set = instr_ctx.feature_set;
 
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            // Toggle the BPF direct mapping feature
-            if feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
-            {
-                feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
-            }
-        }
-    }
-
-    let existing_pubkeys: Vec<_> = instr_ctx
-        .accounts
-        .iter()
-        .map(|(pubkey, _)| pubkey)
-        .collect();
-
-    if !existing_pubkeys.contains(&&instr_ctx.instruction.program_id) {
-        instr_ctx.accounts.push((
-            instr_ctx.instruction.program_id,
-            AccountSharedData::default().into(),
-        ));
-    }
-
-    // Setup here for the vm serialization step
-    let mut transaction_accounts =
-        Vec::<TransactionAccount>::with_capacity(instr_ctx.accounts.len() + 1);
-    #[allow(deprecated)]
-    instr_ctx
-        .accounts
-        .clone()
-        .into_iter()
-        .map(|(pubkey, account)| (pubkey, AccountSharedData::from(account)))
-        .for_each(|x| transaction_accounts.push(x));
-
-    let compute_budget = ComputeBudget {
-        compute_unit_limit: instr_ctx.cu_avail,
-        ..ComputeBudget::default()
-    };
-    let mut transaction_context = TransactionContext::new(
-        transaction_accounts.clone(),
-        Rent::default(),
-        compute_budget.max_instruction_stack_depth,
-        compute_budget.max_instruction_trace_length,
-    );
-    transaction_context.set_remove_accounts_executable_flag_checks(
-        feature_set.is_active(&remove_accounts_executable_flag_checks::id()),
-    );
-
-    let sysvar_cache = SysvarCache::default();
-    #[allow(deprecated)]
-    let (blockhash, lamports_per_signature) = sysvar_cache
-        .get_recent_blockhashes()
-        .ok()
-        .and_then(|x| (*x).last().cloned())
-        .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
-        .unwrap_or_default();
-
-    let environment_config = EnvironmentConfig::new(
-        blockhash,
-        lamports_per_signature,
-        0,
-        &|_| 0u64,
-        Arc::new(feature_set.clone()),
-        &sysvar_cache,
-    );
-
-    let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
-    let log_collector = LogCollector::new_ref();
-    let invoke_context = RefCell::new(InvokeContext::new(
-        &mut transaction_context,
-        &mut program_cache_for_tx_batch,
-        environment_config,
-        Some(log_collector.clone()),
-        compute_budget,
-    ));
-
-    let instr = &instr_ctx.instruction;
-    let instr_accounts = crate::get_instr_accounts(&transaction_accounts, &instr.accounts);
-
-    let program_idx_in_txn = transaction_accounts
-        .iter()
-        .position(|(pubkey, _)| *pubkey == instr_ctx.instruction.program_id)?
-        as IndexOfAccount;
-
-    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
     let vm_ctx = syscall_context.vm_ctx.unwrap();
     let sbpf_version = match vm_ctx.sbpf_version {
         1 => SBPFVersion::V1,
@@ -255,31 +154,78 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         _ => SBPFVersion::V0,
     };
 
-    /* Enable direct_mapping for SBPF version >= v1 */
     if sbpf_version >= SBPFVersion::V1 {
-        feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
+        instr_ctx
+            .feature_set
+            .activate(&bpf_account_data_direct_mapping::id(), 0);
     }
 
-    let direct_mapping = sbpf_version >= SBPFVersion::V1
-        || invoke_ctx
-            .get_feature_set()
-            .is_active(&bpf_account_data_direct_mapping::id());
+    let (
+        mut transaction_context,
+        sysvar_cache,
+        mut program_cache_for_tx_batch,
+        blockhash,
+        lamports_per_signature,
+        compute_budget,
+    ) = crate::create_invoke_context_fields(&mut instr_ctx)?;
+
+    let instr = &instr_ctx.instruction;
+
+    unsafe {
+        if TOGGLE_DIRECT_MAPPING {
+            // Toggle the BPF direct mapping feature
+            if instr_ctx
+                .feature_set
+                .active()
+                .contains_key(&bpf_account_data_direct_mapping::id())
+            {
+                instr_ctx
+                    .feature_set
+                    .deactivate(&bpf_account_data_direct_mapping::id());
+            } else {
+                instr_ctx
+                    .feature_set
+                    .activate(&bpf_account_data_direct_mapping::id(), 0);
+            }
+        }
+    }
+
+    let log_collector = LogCollector::new_ref();
+    let instr_accounts = crate::get_instr_accounts(&transaction_context, &instr.accounts);
+
+    let invoke_context = RefCell::new(InvokeContext::new(
+        &mut transaction_context,
+        &mut program_cache_for_tx_batch,
+        EnvironmentConfig::new(
+            blockhash,
+            lamports_per_signature,
+            0,
+            &|_| 0u64,
+            Arc::new(instr_ctx.feature_set.clone()),
+            &sysvar_cache,
+        ),
+        Some(log_collector.clone()),
+        compute_budget,
+    ));
+
+    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+
+    let program_idx = invoke_ctx
+        .transaction_context
+        .find_index_of_program_account(&instr_ctx.instruction.program_id)?;
+
+    let direct_mapping = invoke_ctx
+        .get_feature_set()
+        .is_active(&bpf_account_data_direct_mapping::id());
+    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
+        .get_feature_set()
+        .is_active(&agave_feature_set::mask_out_rent_epoch_in_vm_serialization::id());
 
     invoke_ctx
         .transaction_context
         .get_next_instruction_context()
         .unwrap()
-        .configure(
-            &[program_idx_in_txn],
-            instr_accounts.as_slice(),
-            &instr.data,
-        );
-    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
-        .get_feature_set()
-        .is_active(&agave_feature_set::mask_out_rent_epoch_in_vm_serialization::id());
-    drop(invoke_ctx);
-
-    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+        .configure(&[program_idx], instr_accounts.as_slice(), &instr.data);
 
     match invoke_ctx.push() {
         Ok(_) => (),
@@ -300,24 +246,16 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     )
     .unwrap();
 
+    let mut config = invoke_ctx
+        .program_cache_for_tx_batch
+        .environments
+        .program_runtime_v1
+        .get_config()
+        .clone();
+    config.enable_instruction_tracing = true;
+    config.enabled_sbpf_versions = SBPFVersion::V0..=sbpf_version;
+
     drop(invoke_ctx);
-
-    // Load default syscalls, to be stubbed later
-    let unstubbed_runtime = create_program_runtime_environment_v1(
-        &feature_set,
-        &ComputeBudget::default(),
-        false,
-        true, /* capture register state to obtain pc on success */
-    )
-    .unwrap();
-
-    let config = &Config {
-        enabled_sbpf_versions: SBPFVersion::V0..=sbpf_version,
-        enable_stack_frame_gaps: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
-        aligned_memory_mapping: !feature_set.is_active(&bpf_account_data_direct_mapping::id()),
-        enable_instruction_tracing: true,
-        ..Config::default()
-    };
 
     let mut invoke_ctx = invoke_context.borrow_mut();
     invoke_ctx
@@ -333,7 +271,11 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     // Stub syscalls
     // Note: unstubbed_runtime is "v1", so syscalls are only registered for version < V3,
     //       i.e. unstubbed_runtime.get_function_registry(sbpf_version) does NOT work.
-    let syscall_reg = unstubbed_runtime.get_function_registry();
+    let syscall_reg = invoke_ctx
+        .program_cache_for_tx_batch
+        .environments
+        .program_runtime_v1
+        .get_function_registry();
     for (_key, (name, _func)) in syscall_reg.iter() {
         loader
             .register_function(std::str::from_utf8(name).unwrap(), SyscallStub::vm)
@@ -405,7 +347,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         }
         Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
     });
-    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, config, sbpf_version) {
+    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, &config, sbpf_version) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };

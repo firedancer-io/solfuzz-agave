@@ -1,14 +1,15 @@
+use agave_feature_set::set_exempt_rent_epoch_max;
 use prost::Message;
 use solana_program::bpf_loader_upgradeable;
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
+use solana_sdk::address_lookup_table;
 use solana_sdk::clock::Clock;
 use solana_sdk::epoch_schedule::EpochSchedule;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Signature;
 use solana_sdk::sysvar::SysvarId;
-use solana_sdk::{address_lookup_table, feature_set::*};
 use solfuzz_agave::proto::{
     AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
     SlotContext, TransactionMessage, TxnContext, TxnResult,

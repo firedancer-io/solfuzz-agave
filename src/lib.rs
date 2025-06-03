@@ -442,16 +442,16 @@ impl TryFrom<proto::InstrContext> for InstrContext {
 }
 
 pub fn get_instr_accounts(
-    txn_accounts: &[TransactionAccount],
+    txn_context: &TransactionContext,
     acct_metas: &StableVec<AccountMeta>,
 ) -> Vec<InstructionAccount> {
     let mut instruction_accounts: Vec<InstructionAccount> =
         Vec::with_capacity(acct_metas.len().try_into().unwrap());
     for (instruction_account_index, account_meta) in acct_metas.iter().enumerate() {
-        let index_in_transaction = txn_accounts
-            .iter()
-            .position(|(key, _account)| *key == account_meta.pubkey)
-            .unwrap_or(txn_accounts.len()) as IndexOfAccount;
+        let index_in_transaction = txn_context
+            .find_index_of_account(&account_meta.pubkey)
+            .unwrap_or(txn_context.get_number_of_accounts())
+            as IndexOfAccount;
         let index_in_callee = instruction_accounts
             .get(0..instruction_account_index)
             .unwrap()
@@ -607,7 +607,16 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
     load_bpf_program!();
 }
 
-fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
+fn create_invoke_context_fields(
+    input: &mut InstrContext,
+) -> Option<(
+    TransactionContext,
+    SysvarCache,
+    ProgramCacheForTxBatch,
+    Hash,
+    u64,
+    ComputeBudget,
+)> {
     unsafe {
         if TOGGLE_DIRECT_MAPPING {
             {
@@ -742,6 +751,17 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         return None;
     };
 
+    if !input
+        .accounts
+        .iter()
+        .any(|(pubkey, _)| pubkey == &input.instruction.program_id)
+    {
+        input.accounts.push((
+            input.instruction.program_id,
+            AccountSharedData::default().into(),
+        ));
+    }
+
     let mut transaction_accounts = Vec::<TransactionAccount>::with_capacity(input.accounts.len());
     #[allow(deprecated)]
     input
@@ -771,10 +791,6 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             (*pubkey, AccountSharedData::from(account.clone()))
         })
         .for_each(|x| transaction_accounts.push(x));
-
-    let program_idx = transaction_accounts
-        .iter()
-        .position(|(pubkey, _)| *pubkey == input.instruction.program_id)?;
 
     let mut transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
@@ -864,7 +880,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 reload: bool,
             ) -> Option<Arc<ProgramCacheEntry>> { */
             if let Some(loaded_program) = program_loader::load_program_with_pubkey(
-                &input,
+                input,
                 &environments,
                 &acc.0,
                 clock.slot,
@@ -876,8 +892,29 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         }
     }
 
+    Some((
+        transaction_context,
+        sysvar_cache,
+        program_cache_for_tx_batch,
+        blockhash,
+        lamports_per_signature,
+        compute_budget,
+    ))
+}
+
+fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     let log_collector = LogCollector::new_ref();
-    let env_config = EnvironmentConfig::new(
+
+    let (
+        mut transaction_context,
+        sysvar_cache,
+        mut program_cache_for_tx_batch,
+        blockhash,
+        lamports_per_signature,
+        compute_budget,
+    ) = create_invoke_context_fields(&mut input)?;
+
+    let environment_config = EnvironmentConfig::new(
         blockhash,
         lamports_per_signature,
         0,
@@ -885,29 +922,30 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         Arc::new(input.feature_set.clone()),
         &sysvar_cache,
     );
-    let mut invoke_context = InvokeContext::new(
-        &mut transaction_context,
-        &mut program_cache_for_tx_batch,
-        env_config,
-        Some(log_collector.clone()),
-        compute_budget,
-    );
 
-    let program_indices = &[program_idx as u16];
+    let program_idx =
+        transaction_context.find_index_of_program_account(&input.instruction.program_id)?;
+    let program_indices = &[program_idx];
 
     let mut compute_units_consumed = 0u64;
 
-    let mut timings = ExecuteTimings::default();
-
     let instruction_accounts =
-        get_instr_accounts(&transaction_accounts, &input.instruction.accounts);
+        get_instr_accounts(&transaction_context, &input.instruction.accounts);
+
+    let mut invoke_context = InvokeContext::new(
+        &mut transaction_context,
+        &mut program_cache_for_tx_batch,
+        environment_config,
+        Some(log_collector.clone()),
+        compute_budget,
+    );
 
     let result = invoke_context.process_instruction(
         &input.instruction.data,
         &instruction_accounts,
         program_indices,
         &mut compute_units_consumed,
-        &mut timings,
+        &mut ExecuteTimings::default(),
     );
 
     #[cfg(feature = "core-bpf-conformance")]
@@ -919,8 +957,16 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         .saturating_sub(CORE_BPF_DEFAULT_COMPUTE_UNITS);
     #[cfg(not(feature = "core-bpf-conformance"))]
     let cu_avail = input.cu_avail - compute_units_consumed;
-
     let return_data = transaction_context.get_return_data().1.to_vec();
+
+    let account_keys: Vec<Pubkey> = (0..transaction_context.get_number_of_accounts())
+        .map(|index| {
+            *transaction_context
+                .get_key_of_account_at_index(index)
+                .clone()
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
 
     Some(InstrEffects {
         custom_err: if let Err(InstructionError::Custom(code)) = result {
@@ -1010,8 +1056,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             .deconstruct_without_keys()
             .unwrap()
             .into_iter()
-            .enumerate()
-            .map(|(index, data)| {
+            .zip(account_keys)
+            .map(|(account, key)| {
                 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
                 // Fixtures provide the program account as a builtin account
                 // (owned by native loader).
@@ -1021,16 +1067,14 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 //
                 // We need to swap back in the original here to avoid a
                 // mismatch.
-                if index == program_idx {
-                    if let Some(program_account) = input
-                        .accounts
-                        .iter()
-                        .find(|(pubkey, _)| *pubkey == input.instruction.program_id)
-                    {
-                        return (program_account.0, program_account.1.clone());
-                    }
+                if let Some(program_account) = input
+                    .accounts
+                    .iter()
+                    .find(|(pubkey, _)| *pubkey == input.instruction.program_id)
+                {
+                    return (program_account.0, program_account.1.clone());
                 }
-                (transaction_accounts[index].0, data.into())
+                (key, account.into())
             })
             .collect(),
         cu_avail,
