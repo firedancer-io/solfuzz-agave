@@ -4,7 +4,8 @@ use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{invoke_context::InvokeContext, stable_log};
 use solana_sbpf::error::{EbpfError, StableResult};
 
-use solana_sdk::{instruction::InstructionError, pubkey::Pubkey};
+use solana_instruction::error::InstructionError;
+use solana_pubkey::Pubkey;
 
 // Important!
 // The error mapping in this file should be kept aligned with Firedancer.
