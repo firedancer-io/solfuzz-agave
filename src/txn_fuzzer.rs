@@ -457,8 +457,8 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     }
 
     /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */
-    bank.store_account(&address_lookup_table::ID, &AccountSharedData::default());
-    bank.store_account(&config::ID, &AccountSharedData::default());
+    bank.store_account(&address_lookup_table::id(), &AccountSharedData::default());
+    bank.store_account(&config::id(), &AccountSharedData::default());
 
     let account_keys = context
         .tx

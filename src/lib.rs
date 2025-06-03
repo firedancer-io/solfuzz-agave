@@ -519,7 +519,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
 fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     // Load builtin programs into the cache.
     cache.replenish(
-        bpf_loader_deprecated::ID,
+        bpf_loader_deprecated::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -527,7 +527,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         )),
     );
     cache.replenish(
-        bpf_loader::ID,
+        bpf_loader::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -535,7 +535,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         )),
     );
     cache.replenish(
-        bpf_loader_upgradeable::ID,
+        bpf_loader_upgradeable::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -544,7 +544,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
     );
     if feature_set.is_active(&enable_loader_v4::id()) {
         cache.replenish(
-            loader_v4::ID,
+            loader_v4::id(),
             Arc::new(ProgramCacheEntry::new_builtin(
                 0u64,
                 0usize,
@@ -553,7 +553,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         );
     }
     cache.replenish(
-        compute_budget::ID,
+        compute_budget::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,

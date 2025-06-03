@@ -11,11 +11,11 @@ pub fn get_dummy_bpf_native_programs() -> Vec<(Pubkey, AccountSharedData)> {
     vec![
         (
             config::id(),
-            AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::ID),
+            AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
         ),
         (
             config::id(),
-            AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::ID),
+            AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
         ),
     ]
 }
