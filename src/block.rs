@@ -4,6 +4,8 @@ use crate::utils::program::common::build_versioned_message;
 use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use prost::Message;
+#[allow(deprecated)]
+use solana_account::AccountSharedData;
 use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
@@ -32,8 +34,6 @@ use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 use solana_runtime::stakes::{Stakes, StakesEnum};
-#[allow(deprecated)]
-use solana_account::AccountSharedData;
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
 use solana_svm::runtime_config::RuntimeConfig;

@@ -1,12 +1,12 @@
 use agave_feature_set::set_exempt_rent_epoch_max;
 use prost::Message;
+use solana_clock::Clock;
+use solana_epoch_schedule::EpochSchedule;
 use solana_loader_v3_interface::state::UpgradeableLoaderState;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
-use solana_sdk_ids::{address_lookup_table, native_loader, bpf_loader_upgradeable};
-use solana_clock::Clock;
-use solana_epoch_schedule::EpochSchedule;
 use solana_rent::Rent;
+use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, native_loader};
 use solana_signature::Signature;
 use solana_sysvar_id::SysvarId;
 use solfuzz_agave::proto::{
