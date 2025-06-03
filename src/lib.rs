@@ -13,29 +13,32 @@ pub mod vm_syscalls;
 
 use agave_feature_set::*;
 use prost::Message;
+use solana_account::{Account, AccountSharedData, ReadableAccount};
+use solana_clock::Clock;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_log_collector::LogCollector;
+use solana_epoch_schedule::EpochSchedule;
 use solana_hash::Hash;
+use solana_instruction::error::InstructionError;
+use solana_instruction::AccountMeta;
+use solana_log_collector::LogCollector;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
-use solana_account::{Account, AccountSharedData, ReadableAccount};
-use solana_clock::Clock;
-use solana_epoch_schedule::EpochSchedule;
-use solana_instruction::AccountMeta;
-use solana_instruction::error::InstructionError;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_rent_collector::RentCollector;
-use solana_sdk_ids::{bpf_loader_deprecated, bpf_loader, bpf_loader_upgradeable, loader_v4, compute_budget, native_loader};
+use solana_sdk_ids::{
+    bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
+    native_loader,
+};
 use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
+use solana_svm::program_loader;
 use solana_sysvar::last_restart_slot;
 use solana_sysvar_id::SysvarId;
-use solana_svm::program_loader;
 use solana_timings::ExecuteTimings;
 use solana_transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
@@ -62,7 +65,6 @@ use solana_account::WritableAccount;
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
 use solana_slot_hashes::{SlotHash, SlotHashes};
 use solana_sysvar::Sysvar;
-
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 #[macro_export]
@@ -977,8 +979,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 && code == 10
             {
                 None
-            } else if input.instruction.program_id == solana_config::program::id() && code == 0
-            {
+            } else if input.instruction.program_id == solana_config::program::id() && code == 0 {
                 None
             } else {
                 Some(code)
