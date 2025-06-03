@@ -94,7 +94,11 @@ impl From<proto::Inflation> for Inflation {
     }
 }
 
-fn build_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<Delegation> {
+fn build_stake_delegations(
+    vote_accounts: &[proto::VoteAccount],
+    account_states: &[proto::AcctState],
+    use_latest_account_state: bool,
+) -> Stakes<Delegation> {
     let mut stakes = Stakes::<Delegation>::default();
     vote_accounts.iter().for_each(|vote_account| {
         let (pubkey, account) = vote_account
@@ -103,7 +107,15 @@ fn build_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<Deleg
             .unwrap()
             .try_into()
             .unwrap();
-        let account_shared_data = AccountSharedData::from(account);
+
+        /* Due to the way Agave and FD's stakes caches differ, we need to use the latest account states for the current epoch's stake delegations */
+        let account_shared_data = if !use_latest_account_state {
+            AccountSharedData::from(account)
+        } else {
+            let account_state = account_states.iter().find(|item| item.address.as_slice() == pubkey.as_ref() && item.lamports > 0).unwrap();
+            AccountSharedData::from(account_state)
+        };
+
         stakes.vote_accounts.insert(
             pubkey,
             VoteAccount::try_from(account_shared_data).unwrap(),
@@ -169,7 +181,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         epoch_schedule: epoch_schedule.clone(),
         cluster_type: ClusterType::Development,
         poh_config: PohConfig {
-            target_tick_duration: Duration::from_micros(1000), /* TODO: Restore this from input */
+            target_tick_duration: Duration::from_micros(6250), /* TODO: Restore this from input */
             ..PohConfig::default()
         },
         ..GenesisConfig::default()
@@ -223,9 +235,10 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     accounts.store_cached((slot - 1, &accounts_to_store[..]), None);
 
     /* Build the stakes separately */
-    let stakes_t = build_stake_delegations(&epoch_ctx.vote_accounts_t);
+    let stakes_t = build_stake_delegations(&epoch_ctx.vote_accounts_t, &context.acct_states, true);
 
-    let stakes_t_1 = build_stake_delegations(&epoch_ctx.vote_accounts_t_1);
+    let stakes_t_1 =
+        build_stake_delegations(&epoch_ctx.vote_accounts_t_1, &context.acct_states, false);
     let stake_accounts_t_1 = Stakes::new(&stakes_t_1, |pubkey| {
         let account = epoch_ctx
             .vote_accounts_t_1
@@ -248,7 +261,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
 
-    let stakes_t_2 = build_stake_delegations(&epoch_ctx.vote_accounts_t_2);
+    let stakes_t_2 =
+        build_stake_delegations(&epoch_ctx.vote_accounts_t_2, &context.acct_states, false);
     let stake_accounts_t_2 = Stakes::new(&stakes_t_2, |pubkey| {
         let account = epoch_ctx
             .vote_accounts_t_2
@@ -345,6 +359,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         None,
         false,
         0,
+        Some(feature_set),
     );
 
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
