@@ -33,7 +33,7 @@ use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 use solana_runtime::stakes::{Stakes, StakesEnum};
 #[allow(deprecated)]
-use solana_sdk::account::AccountSharedData;
+use solana_account::AccountSharedData;
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
 use solana_svm::runtime_config::RuntimeConfig;

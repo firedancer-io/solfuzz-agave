@@ -34,8 +34,8 @@ use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::epoch_stakes::NodeVoteAccounts;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence;
-use solana_sdk::feature::Feature;
-use solana_sdk::signature::Signature;
+use solana_feature_gate_interface::Feature;
+use solana_signature::Signature;
 use solana_vote::vote_account::VoteAccounts;
 type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;
 

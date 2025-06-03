@@ -23,8 +23,9 @@ use solana_sbpf::{
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
 };
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::{account::WritableAccount, entrypoint::MAX_PERMITTED_DATA_INCREASE};
+use solana_pubkey::Pubkey;
+use solana_account::WritableAccount;
+use solana_account_info::MAX_PERMITTED_DATA_INCREASE;
 use solana_transaction_context::{IndexOfAccount, TransactionContext};
 use std::{cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 

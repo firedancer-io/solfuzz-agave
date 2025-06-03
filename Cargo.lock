@@ -10854,7 +10854,6 @@ dependencies = [
  "solana-runtime-transaction",
  "solana-sanitize 2.2.1",
  "solana-sbpf",
- "solana-sdk 2.2.2",
  "solana-sdk-ids",
  "solana-sdk-macro 2.2.1",
  "solana-secp256k1-program",
