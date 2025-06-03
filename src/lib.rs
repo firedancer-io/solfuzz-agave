@@ -32,7 +32,6 @@ use solana_rent::Rent;
 use solana_rent_collector::RentCollector;
 use solana_sdk_ids::{
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
-    native_loader,
 };
 use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
@@ -64,7 +63,6 @@ use thiserror::Error;
 use solana_account::WritableAccount;
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
 use solana_slot_hashes::{SlotHash, SlotHashes};
-use solana_sysvar::Sysvar;
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 #[macro_export]
@@ -1194,6 +1192,7 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use solana_sdk_ids::native_loader;
 
     #[test]
     fn test_system_program_exec() {
