@@ -73,7 +73,7 @@ def parse_toml_file(file_path):
 def main():
 
     parser = argparse.ArgumentParser(description="Process input files.")
-    
+
     # # Add flags
     parser.add_argument("--commit", "-c", help="Commit in firedancer-io/agave to use")
     parser.add_argument("--agave-path", "-p", help="Commit in firedancer-io/agave to use")
@@ -98,14 +98,14 @@ def main():
 
         toml_data = parse_toml_file("dump/Cargo.toml")
         flatten_workspace(toml_data)
-        replace_path_with_git_rev(toml_data, "https://github.com/firedancer-io/agave", args.commit)        
+        replace_path_with_git_rev(toml_data, "https://github.com/firedancer-io/agave", args.commit)
 
     # some clean up
     toml_data["package"] = table()
-    for dep_to_remove in ["pickledb", "winreg"]:
+    for dep_to_remove in ["pickledb", "winreg","solana-sdk"]:
         if dep_to_remove in toml_data.get("dependencies", {}):
             del toml_data["dependencies"][dep_to_remove]
-    
+
     # add required solfuzz-agave added configurations
     solfuzz_agave_config = parse_toml_file("solfuzz_agave.toml")
     for section, values in solfuzz_agave_config.items():
