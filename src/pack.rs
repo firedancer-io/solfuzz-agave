@@ -1,8 +1,9 @@
 use crate::proto::{PackComputeBudgetContext, PackComputeBudgetEffects};
 use agave_feature_set::FeatureSet;
 use solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions;
-use solana_sdk::compute_budget;
-use solana_sdk::{fee::FeeBudgetLimits, pubkey::Pubkey};
+use solana_fee_structure::FeeBudgetLimits;
+use solana_pubkey::Pubkey;
+use solana_sdk_ids::compute_budget;
 use solana_svm_transaction::instruction::SVMInstruction;
 use {prost::Message, std::ffi::c_int};
 

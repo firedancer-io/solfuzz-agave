@@ -4,6 +4,8 @@ use crate::utils::program::common::build_versioned_message;
 use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use prost::Message;
+#[allow(deprecated)]
+use solana_account::AccountSharedData;
 use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
@@ -13,7 +15,9 @@ use solana_accounts_db::blockhash_queue::BlockhashQueue;
 use solana_clock::Epoch;
 use solana_cluster_type::ClusterType;
 use solana_entry::entry::{Entry, VerifyRecyclers};
+use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
+use solana_genesis_config::GenesisConfig;
 use solana_inflation::Inflation;
 use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
@@ -22,6 +26,7 @@ use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
 use solana_poh_config::PohConfig;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
+use solana_rent::Rent;
 use solana_rent_collector::RentCollector;
 use solana_runtime::bank::{Bank, BankFieldsToDeserialize, BankRc};
 use solana_runtime::bank_forks::BankForks;
@@ -29,18 +34,13 @@ use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 use solana_runtime::stakes::{Stakes, StakesEnum};
-#[allow(deprecated)]
-use solana_sdk::account::AccountSharedData;
-use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::genesis_config::GenesisConfig;
-use solana_sdk::rent::Rent;
-use solana_sdk::signature::Signature;
-use solana_sdk::sysvar;
-use solana_sdk::transaction::VersionedTransaction;
+use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
 use solana_svm::runtime_config::RuntimeConfig;
+use solana_sysvar;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;
+use solana_transaction::versioned::VersionedTransaction;
 use solana_vote::vote_account::VoteAccount;
 use std::collections::HashMap;
 use std::ffi::c_int;
@@ -155,14 +155,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let rent: Rent = context
         .acct_states
         .iter()
-        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref() && item.lamports > 0)
+        .find(|item| {
+            item.address.as_slice() == solana_sysvar::rent::id().as_ref() && item.lamports > 0
+        })
         .map(|account| bincode::deserialize(&account.data).unwrap())
         .unwrap();
     let epoch_schedule: EpochSchedule = context
         .acct_states
         .iter()
         .find(|item| {
-            item.address.as_slice() == sysvar::epoch_schedule::id().as_ref() && item.lamports > 0
+            item.address.as_slice() == solana_sysvar::epoch_schedule::id().as_ref()
+                && item.lamports > 0
         })
         .map(|account| bincode::deserialize(&account.data).unwrap())
         .unwrap();
@@ -170,7 +173,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .acct_states
         .iter()
         .find(|item| {
-            item.address.as_slice() == sysvar::recent_blockhashes::id().as_ref()
+            item.address.as_slice() == solana_sysvar::recent_blockhashes::id().as_ref()
                 && item.lamports > 0
         })
         .map(|account| bincode::deserialize(&account.data).unwrap())

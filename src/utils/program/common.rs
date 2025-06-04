@@ -1,19 +1,20 @@
 use crate::proto::TransactionMessage;
 use solana_account::AccountSharedData;
+use solana_message::compiled_instruction::CompiledInstruction;
 use solana_program::hash::Hash;
 use solana_program::message::v0::MessageAddressTableLookup;
 use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_pubkey::Pubkey;
-use solana_sdk::{bpf_loader_upgradeable, instruction::CompiledInstruction};
+use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, config};
 
 pub fn get_dummy_bpf_native_programs() -> Vec<(Pubkey, AccountSharedData)> {
     vec![
         (
-            solana_sdk::address_lookup_table::program::id(),
+            address_lookup_table::id(),
             AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
         ),
         (
-            solana_sdk::config::program::id(),
+            config::id(),
             AccountSharedData::new(1u64, 0, &bpf_loader_upgradeable::id()),
         ),
     ]

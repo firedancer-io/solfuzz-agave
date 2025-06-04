@@ -1,15 +1,14 @@
 use agave_feature_set::set_exempt_rent_epoch_max;
 use prost::Message;
-use solana_program::bpf_loader_upgradeable;
-use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
+use solana_clock::Clock;
+use solana_epoch_schedule::EpochSchedule;
+use solana_loader_v3_interface::state::UpgradeableLoaderState;
 use solana_program::hash::Hash;
 use solana_program::pubkey::Pubkey;
-use solana_sdk::address_lookup_table;
-use solana_sdk::clock::Clock;
-use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::rent::Rent;
-use solana_sdk::signature::Signature;
-use solana_sdk::sysvar::SysvarId;
+use solana_rent::Rent;
+use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, native_loader};
+use solana_signature::Signature;
+use solana_sysvar_id::SysvarId;
 use solfuzz_agave::proto::{
     AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
     SlotContext, TransactionMessage, TxnContext, TxnResult,
@@ -55,7 +54,7 @@ fn get_clock_sysvar_account() -> AcctState {
         data: bincode::serialize(&clock).unwrap(),
         executable: false,
         rent_epoch: u64::MAX,
-        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+        owner: native_loader::id().to_bytes().to_vec(),
         seed_addr: None,
     }
 }
@@ -74,13 +73,13 @@ fn get_epoch_schedule_sysvar_account() -> AcctState {
         data: bincode::serialize(&epoch_schedule).unwrap(),
         executable: false,
         rent_epoch: u64::MAX,
-        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+        owner: native_loader::id().to_bytes().to_vec(),
         seed_addr: None,
     }
 }
 
 fn get_rent_sysvar_account() -> AcctState {
-    let rent = solana_sdk::rent::Rent {
+    let rent = solana_rent::Rent {
         lamports_per_byte_year: 3480,
         exemption_threshold: 2.0,
         burn_percent: 50,
@@ -91,7 +90,7 @@ fn get_rent_sysvar_account() -> AcctState {
         data: bincode::serialize(&rent).unwrap(),
         executable: false,
         rent_epoch: u64::MAX,
-        owner: solana_sdk::native_loader::id().to_bytes().to_vec(),
+        owner: native_loader::id().to_bytes().to_vec(),
         seed_addr: None,
     }
 }
@@ -554,7 +553,7 @@ fn test_lookup_table() {
         data: alut_data,
         executable: false,
         rent_epoch: 0,
-        owner: address_lookup_table::program::id().to_bytes().to_vec(),
+        owner: address_lookup_table::id().to_bytes().to_vec(),
         seed_addr: None,
     };
 

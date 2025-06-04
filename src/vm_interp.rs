@@ -25,8 +25,9 @@ use solana_sbpf::{
     vm::{ContextObject, EbpfVm},
 };
 
+use solana_account::WritableAccount;
+use solana_account_info::MAX_PERMITTED_DATA_INCREASE;
 use solana_program_test::IndexOfAccount;
-use solana_sdk::{account::WritableAccount, entrypoint::MAX_PERMITTED_DATA_INCREASE};
 use std::{borrow::Borrow, cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 
 declare_builtin_function!(

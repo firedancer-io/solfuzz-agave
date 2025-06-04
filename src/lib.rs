@@ -13,28 +13,31 @@ pub mod vm_syscalls;
 
 use agave_feature_set::*;
 use prost::Message;
+use solana_account::{Account, AccountSharedData, ReadableAccount};
+use solana_clock::Clock;
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_epoch_schedule::EpochSchedule;
+use solana_hash::Hash;
+use solana_instruction::error::InstructionError;
+use solana_instruction::AccountMeta;
 use solana_log_collector::LogCollector;
-use solana_program::hash::Hash;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
-use solana_sdk::account::{Account, AccountSharedData, ReadableAccount};
-use solana_sdk::clock::Clock;
-use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::instruction::AccountMeta;
-use solana_sdk::instruction::InstructionError;
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::rent::Rent;
-use solana_sdk::rent_collector::RentCollector;
-use solana_sdk::stable_layout::stable_instruction::StableInstruction;
-use solana_sdk::stable_layout::stable_vec::StableVec;
-use solana_sdk::sysvar::last_restart_slot;
-use solana_sdk::sysvar::SysvarId;
+use solana_pubkey::Pubkey;
+use solana_rent::Rent;
+use solana_rent_collector::RentCollector;
+use solana_sdk_ids::{
+    bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
+};
+use solana_stable_layout::stable_instruction::StableInstruction;
+use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
+use solana_sysvar::last_restart_slot;
+use solana_sysvar_id::SysvarId;
 use solana_timings::ExecuteTimings;
 use solana_transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
@@ -57,12 +60,9 @@ use thiserror::Error;
     feature = "core-bpf",
     feature = "core-bpf-conformance",
 ))]
-use solana_sdk::account::WritableAccount;
+use solana_account::WritableAccount;
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
-use solana_sdk::{
-    slot_hashes::{SlotHash, SlotHashes},
-    sysvar::Sysvar,
-};
+use solana_slot_hashes::{SlotHash, SlotHashes};
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 #[macro_export]
@@ -519,7 +519,7 @@ pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEff
 fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     // Load builtin programs into the cache.
     cache.replenish(
-        solana_sdk::bpf_loader_deprecated::id(),
+        bpf_loader_deprecated::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -527,7 +527,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         )),
     );
     cache.replenish(
-        solana_sdk::bpf_loader::id(),
+        bpf_loader::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -535,7 +535,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         )),
     );
     cache.replenish(
-        solana_sdk::bpf_loader_upgradeable::id(),
+        bpf_loader_upgradeable::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -544,7 +544,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
     );
     if feature_set.is_active(&enable_loader_v4::id()) {
         cache.replenish(
-            solana_sdk::loader_v4::id(),
+            loader_v4::id(),
             Arc::new(ProgramCacheEntry::new_builtin(
                 0u64,
                 0usize,
@@ -553,7 +553,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         );
     }
     cache.replenish(
-        solana_sdk::compute_budget::id(),
+        compute_budget::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
@@ -644,7 +644,7 @@ fn create_invoke_context_fields(
     //
     // As a result, they must be activated when testing for conformance.
     {
-        if &input.instruction.program_id == &solana_sdk::address_lookup_table::program::id() {
+        if &input.instruction.program_id == &solana_address_lookup_table::program::id() {
             // The BPF version of Address Lookup Table depends on `SolGetSysvar`
             // to read slot hash data.
             input
@@ -693,7 +693,7 @@ fn create_invoke_context_fields(
                 // Fixtures may provide an incorrect sized slot hashes account,
                 // so this step is to rectify it by extending the buffer with
                 // all zeroes before adding it to the sysvar cache.
-                if &input.instruction.program_id == &solana_sdk::address_lookup_table::program::id()
+                if &input.instruction.program_id == &solana_address_lookup_table::program::id()
                     && pubkey == &SlotHashes::id()
                 {
                     let data_len = account.1.data.len();
@@ -784,7 +784,7 @@ fn create_invoke_context_fields(
             // https://github.com/anza-xyz/agave/blob/6d74d13749829d463fabccebd8203edf0cf4c500/svm/src/account_loader.rs#L246-L249
             if *pubkey == input.instruction.program_id {
                 let mut stubbed_out_program_account: AccountSharedData = account.clone().into();
-                stubbed_out_program_account.set_owner(solana_sdk::bpf_loader_upgradeable::id());
+                stubbed_out_program_account.set_owner(solana_bpf_loader_upgradeable::id());
                 stubbed_out_program_account.set_executable(true);
                 return (*pubkey, stubbed_out_program_account);
             }
@@ -862,10 +862,10 @@ fn create_invoke_context_fields(
 
         if program_cache_for_tx_batch.find(&acc.0).is_none() {
             // load_program_with_pubkey expects the owner to be one of the bpf loader
-            if !solana_sdk::loader_v4::check_id(&acc.1.owner)
-                && !solana_sdk::bpf_loader_deprecated::check_id(&acc.1.owner)
-                && !solana_sdk::bpf_loader::check_id(&acc.1.owner)
-                && !solana_sdk::bpf_loader_upgradeable::check_id(&acc.1.owner)
+            if !loader_v4::check_id(&acc.1.owner)
+                && !bpf_loader_deprecated::check_id(&acc.1.owner)
+                && !bpf_loader::check_id(&acc.1.owner)
+                && !bpf_loader_upgradeable::check_id(&acc.1.owner)
             {
                 continue;
             }
@@ -973,12 +973,11 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             #[cfg(feature = "core-bpf-conformance")]
             // See comment below under `result` for special-casing of custom
             // errors for Core BPF programs.
-            if input.instruction.program_id == solana_sdk::address_lookup_table::program::id()
+            if input.instruction.program_id == solana_address_lookup_table::program::id()
                 && code == 10
             {
                 None
-            } else if input.instruction.program_id == solana_sdk::config::program::id() && code == 0
-            {
+            } else if input.instruction.program_id == solana_config::program::id() && code == 0 {
                 None
             } else {
                 Some(code)
@@ -1035,13 +1034,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             // special-cased below to avoid fixture mismatches.
             match err {
                 InstructionError::Custom(code) => {
-                    if program_id == &solana_sdk::address_lookup_table::program::id() {
+                    if program_id == &solana_address_lookup_table::program::id() {
                         // Special-cased custom error codes for the ALT program.
                         if code == 10 {
                             return InstructionError::ReadonlyDataModified;
                         }
                     }
-                    if program_id == &solana_sdk::config::program::id() {
+                    if program_id == &solana_config::program::id() {
                         // Special-cased custom error codes for the Config program.
                         if code == 0 {
                             return InstructionError::ReadonlyDataModified;
@@ -1193,10 +1192,11 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use solana_sdk_ids::native_loader;
 
     #[test]
     fn test_system_program_exec() {
-        let native_loader_id = solana_sdk::native_loader::id().to_bytes().to_vec();
+        let native_loader_id = native_loader::id().to_bytes().to_vec();
 
         // Ensure that a basic account transfer works
         let input = proto::InstrContext {

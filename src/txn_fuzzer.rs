@@ -3,32 +3,29 @@ use crate::proto::{AcctState, TxnContext, TxnResult};
 use crate::utils::program::common::{build_versioned_message, get_dummy_bpf_native_programs};
 use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
+use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
+use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_db::AccountsDbConfig;
 use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
-use solana_program::hash::Hash;
-use solana_program::instruction::CompiledInstruction;
-use solana_program::message::v0::MessageAddressTableLookup;
-use solana_program::message::MessageHeader;
-use solana_program::pubkey::Pubkey;
+use solana_clock::MAX_PROCESSING_AGE;
+use solana_epoch_schedule::EpochSchedule;
+use solana_genesis_config::GenesisConfig;
+use solana_hash::Hash;
+use solana_instruction::error::InstructionError;
+use solana_message::compiled_instruction::CompiledInstruction;
+use solana_message::v0::MessageAddressTableLookup;
+use solana_message::MessageHeader;
+use solana_message::SanitizedMessage;
+use solana_pubkey::Pubkey;
+use solana_rent::Rent;
 use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
-use solana_sdk::account::{AccountSharedData, ReadableAccount};
-use solana_sdk::clock::MAX_PROCESSING_AGE;
-use solana_sdk::epoch_schedule::EpochSchedule;
-use solana_sdk::genesis_config::GenesisConfig;
-use solana_sdk::instruction::InstructionError;
-use solana_sdk::message::SanitizedMessage;
-use solana_sdk::precompiles::get_precompile;
-use solana_sdk::rent::Rent;
-use solana_sdk::signature::Signature;
-use solana_sdk::sysvar;
-use solana_sdk::transaction::{
-    TransactionError, TransactionVerificationMode, VersionedTransaction,
-};
+use solana_sdk_ids::{address_lookup_table, config};
+use solana_signature::Signature;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
@@ -36,8 +33,12 @@ use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
+use solana_sysvar;
 use solana_timings::ExecuteTimings;
+use solana_transaction::versioned::VersionedTransaction;
+use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::TransactionAccount;
+use solana_transaction_error::TransactionError;
 use std::cmp::max;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
@@ -127,7 +128,7 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
                 InstructionError::Custom(custom_err_no) => custom_err_no,
                 _ => 0,
             };
-            (instr_err_no, custom_err_no, instr_err_idx as u32)
+            (instr_err_no, custom_err_no, instr_err_idx)
         }
         _ => (0, 0, 0),
     };
@@ -135,7 +136,12 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
         let serialized = bincode::serialize(&transaction_error).unwrap_or(vec![0, 0, 0, 0]);
         u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
     };
-    (txn_err_no, instr_err_no, custom_err_no, instr_err_idx)
+    (
+        txn_err_no,
+        instr_err_no,
+        custom_err_no,
+        instr_err_idx.into(),
+    )
 }
 
 impl From<TransactionAccount> for proto::AcctState {
@@ -365,7 +371,9 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let rent: Rent = context
         .account_shared_data
         .iter()
-        .find(|item| item.address.as_slice() == sysvar::rent::id().as_ref() && item.lamports > 0)
+        .find(|item| {
+            item.address.as_slice() == solana_sysvar::rent::id().as_ref() && item.lamports > 0
+        })
         .map(|account| bincode::deserialize(&account.data).ok())
         .unwrap_or_default()
         .unwrap_or_default();
@@ -373,7 +381,8 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         .account_shared_data
         .iter()
         .find(|item| {
-            item.address.as_slice() == sysvar::epoch_schedule::id().as_ref() && item.lamports > 0
+            item.address.as_slice() == solana_sysvar::epoch_schedule::id().as_ref()
+                && item.lamports > 0
         })
         .map(|account| bincode::deserialize(&account.data).ok())
         .unwrap_or_default()
@@ -448,14 +457,8 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     }
 
     /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */
-    bank.store_account(
-        &solana_sdk::address_lookup_table::program::id(),
-        &AccountSharedData::default(),
-    );
-    bank.store_account(
-        &solana_sdk::config::program::id(),
-        &AccountSharedData::default(),
-    );
+    bank.store_account(&address_lookup_table::id(), &AccountSharedData::default());
+    bank.store_account(&config::id(), &AccountSharedData::default());
 
     let account_keys = context
         .tx

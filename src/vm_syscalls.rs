@@ -8,6 +8,8 @@ use crate::{
 };
 use agave_feature_set::bpf_account_data_direct_mapping;
 use prost::Message;
+use solana_account::WritableAccount;
+use solana_account_info::MAX_PERMITTED_DATA_INCREASE;
 use solana_bpf_loader_program::serialization::serialize_parameters;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
@@ -15,6 +17,7 @@ use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{
     invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch, mem_pool::VmMemoryPool,
 };
+use solana_pubkey::Pubkey;
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
@@ -23,8 +26,6 @@ use solana_sbpf::{
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
 };
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::{account::WritableAccount, entrypoint::MAX_PERMITTED_DATA_INCREASE};
 use solana_transaction_context::{IndexOfAccount, TransactionContext};
 use std::{cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 
