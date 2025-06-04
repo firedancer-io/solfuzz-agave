@@ -57,6 +57,21 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     1
 }
 
+/* Drop the 'static objects created at the beginning of the function to avoid memory leaks */
+fn cleanup_static_ptrs(
+    transaction_context_ptr: usize,
+    sysvar_cache_ptr: usize,
+    program_cache_for_tx_batch_ptr: usize,
+) {
+    unsafe {
+        let _transaction_context_droppable =
+            Box::from_raw(transaction_context_ptr as *mut TransactionContext);
+        let _sysvar_cache_droppable = Box::from_raw(sysvar_cache_ptr as *mut SysvarCache);
+        let _program_cache_for_tx_batch_droppable =
+            Box::from_raw(program_cache_for_tx_batch_ptr as *mut ProgramCacheForTxBatch);
+    }
+}
+
 pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
 
@@ -113,9 +128,20 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
 
-    let program_idx = invoke_ctx
+    let program_idx = match invoke_ctx
         .transaction_context
-        .find_index_of_program_account(&instr_ctx.instruction.program_id)?;
+        .find_index_of_program_account(&instr_ctx.instruction.program_id)
+    {
+        Some(idx) => idx,
+        None => {
+            cleanup_static_ptrs(
+                transaction_context_ptr,
+                sysvar_cache_ptr,
+                program_cache_for_tx_batch_ptr,
+            );
+            return None;
+        }
+    };
     let direct_mapping = invoke_ctx
         .get_feature_set()
         .is_active(&bpf_account_data_direct_mapping::id());
@@ -130,7 +156,14 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     match invoke_ctx.push() {
         Ok(_) => (),
-        Err(_) => return None,
+        Err(_) => {
+            cleanup_static_ptrs(
+                transaction_context_ptr,
+                sysvar_cache_ptr,
+                program_cache_for_tx_batch_ptr,
+            );
+            return None;
+        }
     }
     drop(invoke_ctx);
 
@@ -155,6 +188,11 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let vm_ctx = input.vm_ctx.unwrap();
     // Follow FD harness behavior
     if vm_ctx.heap_max as usize > HEAP_MAX {
+        cleanup_static_ptrs(
+            transaction_context_ptr,
+            sysvar_cache_ptr,
+            program_cache_for_tx_batch_ptr,
+        );
         return None;
     }
 
@@ -183,7 +221,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .program_runtime_v1
         .get_config()
         .clone();
-    let (_, syscall_func) = invoke_ctx
+    let syscall_func = match invoke_ctx
         .program_cache_for_tx_batch
         .environments
         .program_runtime_v1
@@ -194,7 +232,17 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 .clone()
                 .unwrap_or_default()
                 .function_name,
-        )?;
+        ) {
+        Some((_, syscall_func)) => syscall_func,
+        None => {
+            cleanup_static_ptrs(
+                transaction_context_ptr,
+                sysvar_cache_ptr,
+                program_cache_for_tx_batch_ptr,
+            );
+            return None;
+        }
+    };
 
     let mut mempool = VmMemoryPool::new();
     let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
@@ -236,7 +284,14 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     });
     let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, &config, sbpf_version) {
         Ok(mapping) => mapping,
-        Err(_) => return None,
+        Err(_) => {
+            cleanup_static_ptrs(
+                transaction_context_ptr,
+                sysvar_cache_ptr,
+                program_cache_for_tx_batch_ptr,
+            );
+            return None;
+        }
     };
 
     invoke_ctx
@@ -277,14 +332,11 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Invoke the syscall
     vm.invoke_function(syscall_func);
 
-    // Drop the 'static objects created at the beginning of the function
-    unsafe {
-        let _transaction_context_droppable =
-            Box::from_raw(transaction_context_ptr as *mut TransactionContext);
-        let _sysvar_cache_droppable = Box::from_raw(sysvar_cache_ptr as *mut SysvarCache);
-        let _program_cache_for_tx_batch_droppable =
-            Box::from_raw(program_cache_for_tx_batch_ptr as *mut ProgramCacheForTxBatch);
-    }
+    cleanup_static_ptrs(
+        transaction_context_ptr,
+        sysvar_cache_ptr,
+        program_cache_for_tx_batch_ptr,
+    );
 
     // Unwrap and return the effects of the syscall
     let program_id = instr_ctx.instruction.program_id;
