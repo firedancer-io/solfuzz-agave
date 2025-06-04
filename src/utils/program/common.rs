@@ -5,7 +5,7 @@ use solana_program::hash::Hash;
 use solana_program::message::v0::MessageAddressTableLookup;
 use solana_program::message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_pubkey::Pubkey;
-use solana_sdk_ids::{bpf_loader_upgradeable, config, address_lookup_table};
+use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, config};
 
 pub fn get_dummy_bpf_native_programs() -> Vec<(Pubkey, AccountSharedData)> {
     vec![
