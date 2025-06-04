@@ -24,8 +24,8 @@ use solana_ledger::blockstore_processor::{
 };
 use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
 use solana_poh_config::PohConfig;
-use solana_program::hash::Hash;
-use solana_program::pubkey::Pubkey;
+use solana_hash::Hash;
+use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_rent_collector::RentCollector;
 use solana_runtime::bank::{Bank, BankFieldsToDeserialize, BankRc};

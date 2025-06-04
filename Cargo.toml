@@ -362,7 +362,6 @@ solana-poh-config = "2.2.1"
 solana-poseidon = {git = "https://github.com/firedancer-io/agave", rev = "47f8aa3bc565ba70694ef86134192e7948f8e152"}
 solana-precompile-error = "2.2.1"
 solana-presigner = "2.2.1"
-solana-program = { version = "2.2.1", default-features = false }
 solana-program-error = "2.2.1"
 solana-program-memory = "2.2.1"
 solana-program-option = "2.2.1"
