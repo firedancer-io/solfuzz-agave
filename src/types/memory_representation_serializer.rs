@@ -91,7 +91,10 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         let bytes = v.to_ne_bytes();
         let hex_strings: Vec<String> = bytes.iter().map(|b| format!("0x{:02X}", b)).collect();
-        self.output += &format!("{},", hex_strings.join(","));
+        self.output += &hex_strings.join(",");
+        if !hex_strings.is_empty() {
+            self.output += ",";
+        }
         Ok(())
     }
 
@@ -107,7 +110,10 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
         let hex_strings: Vec<String> = v.iter().map(|b| format!("{}", b)).collect();
-        self.output += &format!("{},", hex_strings.join(","));
+        self.output += &hex_strings.join(",");
+        if !hex_strings.is_empty() {
+            self.output += ",";
+        }
         Ok(())
     }
 
@@ -124,7 +130,6 @@ impl serde::ser::Serializer for &mut MemoryRepresentationSerializer {
 
     // ()
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        self.output += "null,";
         Ok(())
     }
 
