@@ -10669,7 +10669,6 @@ dependencies = [
  "num-traits",
  "num_cpus",
  "num_enum",
- "once_cell",
  "openssl",
  "parking_lot 0.12.3",
  "pbkdf2 0.11.0",
