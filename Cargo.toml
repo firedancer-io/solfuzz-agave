@@ -403,7 +403,6 @@ solana-rpc-client-nonce-utils = {git = "https://github.com/firedancer-io/agave",
 solana-runtime = {git = "https://github.com/firedancer-io/agave", rev = "47f8aa3bc565ba70694ef86134192e7948f8e152"}
 solana-runtime-transaction = {git = "https://github.com/firedancer-io/agave", rev = "47f8aa3bc565ba70694ef86134192e7948f8e152"}
 solana-sbpf = "=0.10.1"
-#solana-sdk = "2.2.2"
 solana-sdk-ids = "2.2.1"
 solana-sdk-macro = "2.2.1"
 solana-secp256k1-program = "2.2.1"
