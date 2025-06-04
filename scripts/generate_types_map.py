@@ -19,11 +19,11 @@ fd_rust_types_map = {
   ),
   "signature": RustTypeInfo(
     type_name = "Signature",
-    dep_str   = "solana_sdk::signature::Signature"
+    dep_str   = "solana_signature::Signature"
   ),
   "feature": RustTypeInfo(
     type_name = "Feature",
-    dep_str   = "solana_sdk::feature::Feature"
+    dep_str   = "solana_feature_gate_interface::Feature"
   ),
   "fee_calculator": RustTypeInfo(
     type_name = "FeeCalculator",
