@@ -19,11 +19,11 @@ fd_rust_types_map = {
   ),
   "signature": RustTypeInfo(
     type_name = "Signature",
-    dep_str   = "solana_sdk::signature::Signature"
+    dep_str   = "solana_signature::Signature"
   ),
   "feature": RustTypeInfo(
     type_name = "Feature",
-    dep_str   = "solana_sdk::feature::Feature"
+    dep_str   = "solana_feature_gate_interface::Feature"
   ),
   "fee_calculator": RustTypeInfo(
     type_name = "FeeCalculator",
@@ -47,11 +47,11 @@ fd_rust_types_map = {
   ),
   "rent": RustTypeInfo(
     type_name = "Rent",
-    dep_str   = "solana_program::sysvar::rent::Rent"
+    dep_str   = "solana_sysvar::rent::Rent"
   ),
   "epoch_schedule": RustTypeInfo(
     type_name = "EpochSchedule",
-    dep_str   = "solana_program::sysvar::epoch_schedule::EpochSchedule"
+    dep_str   = "solana_sysvar::epoch_schedule::EpochSchedule"
   ),
   "rent_collector": RustTypeInfo(
     type_name = "RentCollector",
@@ -59,11 +59,11 @@ fd_rust_types_map = {
   ),
   "stake_history_entry": RustTypeInfo(
     type_name = "StakeHistoryEntry",
-    dep_str   = "solana_program::sysvar::stake_history::StakeHistoryEntry"
+    dep_str   = "solana_sysvar::stake_history::StakeHistoryEntry"
   ),
   "stake_history": RustTypeInfo(
     type_name = "StakeHistory",
-    dep_str   = "solana_program::sysvar::stake_history::StakeHistory"
+    dep_str   = "solana_sysvar::stake_history::StakeHistory"
   ),
   "vote_accounts": RustTypeInfo(
     type_name = "VoteAccounts",
@@ -178,13 +178,13 @@ def main():
     parser.add_argument('out', help='Output path for file (e.g. src/types/types_generated.rs)')
     parser.add_argument('--print-whitelist-idx', action='store_true', help='Print the whitelist of types indices to stdout (to apply to solfuzz mutator)')
     args = parser.parse_args()
-    
+
     with open(args.fd_types_json, 'r') as fd_types_file:
         types_dict = json.load(fd_types_file)["entries"]
 
     with open(args.fd_types_reflect, 'r') as fd_types_reflect_file:
         types_idx = init_fd_types_index_map(fd_types_reflect_file.read())
-    
+
     to_print = [
         (
             emit_dep(fd_rust_types_map[entry["name"]].dep_str),
@@ -201,7 +201,7 @@ def main():
     for dep, insert in to_print:
         type_deps += f"{dep}\n"
         map_inserts += f"    {insert}\n"
-    
+
     # Sort the dependencies (to make rustfmt happy)
     type_deps = "\n".join(sorted(type_deps.splitlines()))
 

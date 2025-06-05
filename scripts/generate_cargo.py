@@ -102,7 +102,7 @@ def main():
 
     # some clean up
     toml_data["package"] = table()
-    for dep_to_remove in ["pickledb", "winreg","solana-sdk"]:
+    for dep_to_remove in ["pickledb", "winreg", "solana-sdk", "solana-program"]:
         if dep_to_remove in toml_data.get("dependencies", {}):
             del toml_data["dependencies"][dep_to_remove]
 
