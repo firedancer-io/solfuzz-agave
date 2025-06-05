@@ -182,10 +182,6 @@ fn test_txn_execute_clock() {
         slots_per_year: 31_536_000.0,
         inflation: None,
         genesis_creation_time: 1_620_000_000,
-        new_stake_accounts: vec![],
-        stake_accounts: vec![],
-        new_vote_accounts: vec![],
-        vote_accounts_t: vec![],
         vote_accounts_t_1: vec![],
         vote_accounts_t_2: vec![],
     };
@@ -304,10 +300,6 @@ fn test_simple_transfer() {
         slots_per_year: 31_536_000.0,
         inflation: None,
         genesis_creation_time: 1_620_000_000,
-        new_stake_accounts: vec![],
-        stake_accounts: vec![],
-        new_vote_accounts: vec![],
-        vote_accounts_t: vec![],
         vote_accounts_t_1: vec![],
         vote_accounts_t_2: vec![],
     };
@@ -464,10 +456,6 @@ fn test_lookup_table() {
         slots_per_year: 31_536_000.0,
         inflation: None,
         genesis_creation_time: 1_620_000_000,
-        new_stake_accounts: vec![],
-        stake_accounts: vec![],
-        new_vote_accounts: vec![],
-        vote_accounts_t: vec![],
         vote_accounts_t_1: vec![],
         vote_accounts_t_2: vec![],
     };
