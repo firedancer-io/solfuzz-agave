@@ -3,6 +3,10 @@ name = "solfuzz-agave"
 version = "0.1.0"
 edition = "2021"
 
+[[bench]]
+name = "bench_txn"
+harness = false
+
 [dependencies]
 clap = { version = "4.5.2", features = ["derive"] }
 solfuzz-agave-macro = { path = "macro" }

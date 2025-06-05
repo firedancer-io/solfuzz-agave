@@ -27,7 +27,7 @@ fn exec(input: &PathBuf) -> bool {
             return false;
         }
     };
-    let effects = match solfuzz_agave::txn_fuzzer::execute_transaction(context) {
+    let effects = match solfuzz_agave::txn_fuzzer::execute_transaction(&context) {
         Some(e) => e,
         None => {
             println!(
