@@ -33,6 +33,8 @@ use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+use solana_runtime::stake_account;
+use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{Stakes, StakesEnum};
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
@@ -94,7 +96,60 @@ impl From<proto::Inflation> for Inflation {
     }
 }
 
-fn build_stake_delegations(
+/* This is a little bit hacky because there's no direct Agave API that gets us a populated Stakes<Delegation> object
+from a set of account states. Fine, I'll do it myself... */
+fn build_latest_stake_delegations(
+    account_states: &[proto::AcctState],
+    epoch: Epoch,
+    stake_history: &StakeHistory,
+) -> Stakes<Delegation> {
+    let mut stakes = Stakes::<Delegation>::default();
+
+    /* First populate the stake delegations. We only consider stake accounts with nonzero lamports and stake amount. */
+    account_states
+        .iter()
+        .filter(|item| item.lamports > 0)
+        .for_each(|account_state| {
+            let pubkey = Pubkey::new_from_array(account_state.address.clone().try_into().unwrap());
+            let account_shared_data = AccountSharedData::from(account_state);
+            if let Ok(stake_account) =
+                stake_account::StakeAccount::<Delegation>::try_from(account_shared_data)
+            {
+                /* Skip nonzero delegations */
+                if stake_account.delegation().stake > 0 {
+                    stakes
+                        .stake_delegations
+                        .insert(pubkey, *stake_account.delegation());
+                }
+            }
+        });
+
+    /* Then populate the vote accounts */
+    account_states
+        .iter()
+        .filter(|item| item.lamports > 0)
+        .for_each(|account_state| {
+            let pubkey = Pubkey::new_from_array(account_state.address.clone().try_into().unwrap());
+            let account_shared_data = AccountSharedData::from(account_state);
+            if let Ok(vote_account) = VoteAccount::try_from(account_shared_data) {
+                /* Note we can pass in new_rate_activation_epoch = 0 because the feature is activated on all clusters */
+                stakes.vote_accounts.insert(pubkey, vote_account, || {
+                    stakes
+                        .stake_delegations
+                        .values()
+                        .filter(|delegation| delegation.voter_pubkey == pubkey)
+                        .map(|delegation| delegation.stake(epoch, stake_history, Some(0)))
+                        .sum()
+                });
+            }
+        });
+
+    stakes
+}
+
+/* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_deleations()` is that
+we use the provided votes cache instead of the latest input account states. */
+fn build_prev_stake_delegations(
     vote_accounts: &[proto::VoteAccount],
     account_states: &[proto::AcctState],
     use_latest_account_state: bool,
@@ -178,6 +233,15 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         })
         .map(|account| bincode::deserialize(&account.data).unwrap())
         .unwrap();
+    let stake_history: StakeHistory = context
+        .acct_states
+        .iter()
+        .find(|item| {
+            item.address.as_slice() == solana_sysvar::stake_history::id().as_ref()
+                && item.lamports > 0
+        })
+        .map(|account| bincode::deserialize(&account.data).unwrap())
+        .unwrap();
     let genesis_config = GenesisConfig {
         creation_time: epoch_ctx.genesis_creation_time as i64,
         inflation: epoch_ctx.inflation.unwrap().into(),
@@ -238,10 +302,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     accounts.store_cached((slot - 1, &accounts_to_store[..]), None);
 
     /* Build the stakes separately */
-    let stakes_t = build_stake_delegations(&epoch_ctx.vote_accounts_t, &context.acct_states, true);
+    let epoch = epoch_schedule.get_epoch(slot);
+    let stakes_t = build_latest_stake_delegations(&context.acct_states, epoch, &stake_history);
 
     let stakes_t_1 =
-        build_stake_delegations(&epoch_ctx.vote_accounts_t_1, &context.acct_states, false);
+        build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1, &context.acct_states, false);
     let stake_accounts_t_1 = Stakes::new(&stakes_t_1, |pubkey| {
         let account = epoch_ctx
             .vote_accounts_t_1
@@ -265,7 +330,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     .unwrap();
 
     let stakes_t_2 =
-        build_stake_delegations(&epoch_ctx.vote_accounts_t_2, &context.acct_states, false);
+        build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2, &context.acct_states, false);
     let stake_accounts_t_2 = Stakes::new(&stakes_t_2, |pubkey| {
         let account = epoch_ctx
             .vote_accounts_t_2
@@ -289,27 +354,21 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     .unwrap();
 
     let mut epoch_stakes: HashMap<Epoch, EpochStakes> = HashMap::new();
-    let epoch = epoch_schedule.get_epoch(slot);
-    epoch_stakes.insert(
-        epoch.saturating_sub(2),
-        EpochStakes::new(
-            Arc::new(StakesEnum::from(stake_accounts_t_2)),
-            epoch.saturating_sub(2),
-        ),
-    );
     epoch_stakes.insert(
         epoch.saturating_sub(1),
         EpochStakes::new(
-            Arc::new(StakesEnum::from(stake_accounts_t_1)),
+            Arc::new(StakesEnum::from(stake_accounts_t_2)),
             epoch.saturating_sub(1),
         ),
     );
     epoch_stakes.insert(
         epoch,
-        EpochStakes::new(Arc::new(StakesEnum::from(stakes_t.clone())), epoch),
+        EpochStakes::new(
+            Arc::new(StakesEnum::from(stake_accounts_t_1.clone())),
+            epoch,
+        ),
     );
 
-    /* TODO: Restore this from the input */
     epoch_stakes.insert(
         epoch + 1,
         EpochStakes::new(Arc::new(StakesEnum::from(stakes_t.clone())), epoch + 1),
@@ -432,15 +491,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     no_schedule_bank.freeze();
 
-    // let lthash = no_schedule_bank.get_accounts_lt_hash_for_tests();
-    // let lt_hash_bytes: &[u8] = bytemuck::must_cast_slice(&lthash.0.0);
-
     Some(BlockEffects {
         has_error: result.is_err(),
-        acct_states: vec![],
         slot_capitalization: no_schedule_bank.capitalization(),
         bank_hash: no_schedule_bank.hash().to_bytes().to_vec(),
-        account_delta_hash: vec![0; 32],
-        lt_hash: vec![0; 32], // not active yet! lt_hash_bytes[0..32].to_vec(),
     })
 }
