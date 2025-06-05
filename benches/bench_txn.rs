@@ -1,5 +1,5 @@
 // Benchmark transaction execution using test vectors in dump/test-vectors/txn/fixtures/programs/
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use prost::Message;
 use solfuzz_agave::proto::TxnContext;
 use solfuzz_agave::proto::TxnFixture;
@@ -77,33 +77,28 @@ fn bench_txn_exec(c: &mut Criterion) {
     }
 
     let mut group = c.benchmark_group("txn-fixture-exec");
-    group.bench_function("all-fixtures-batch", |b| {
+    group.bench_function("100-fixtures-batch", |b| {
         b.iter(|| {
             let sample = &contexts_vec[..std::cmp::min(100, contexts_vec.len())];
 
             for context in sample {
-                black_box(solfuzz_agave::txn_fuzzer::execute_transaction(
-                    context,
-                ));
+                black_box(solfuzz_agave::txn_fuzzer::execute_transaction(context));
             }
         });
     });
+    group.bench_function("single-transaction", |b| {
+        let context = &contexts_vec[0];
+        b.iter(|| black_box(solfuzz_agave::txn_fuzzer::execute_transaction(context)));
+    });
 
-    // Optional: Also benchmark individual fixture execution to get per-transaction metrics
-    if contexts_vec.len() < 20 {
-        // Only do individual benchmarks for small sets
-        for (idx, context) in contexts_vec.iter().enumerate() {
-            group.bench_with_input(
-                BenchmarkId::from_parameter(format!("fixture-{}", idx)),
-                context,
-                |b, ctx| {
-                    b.iter(|| {
-                        black_box(solfuzz_agave::txn_fuzzer::execute_transaction(ctx));
-                    });
-                },
-            );
-        }
-    }
+    group.bench_function("small-batch-10", |b| {
+        let sample = &contexts_vec[..std::cmp::min(10, contexts_vec.len())];
+        b.iter(|| {
+            for context in sample {
+                black_box(solfuzz_agave::txn_fuzzer::execute_transaction(context));
+            }
+        });
+    });
 
     group.finish();
 }
