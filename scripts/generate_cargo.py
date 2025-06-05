@@ -102,19 +102,28 @@ def main():
 
     # some clean up
     toml_data["package"] = table()
-    for dep_to_remove in ["pickledb", "winreg", "solana-sdk", "solana-program"]:
+    for dep_to_remove in ["pickledb", "winreg", "solana-sdk", "solana-program", "once_cell"]:
         if dep_to_remove in toml_data.get("dependencies", {}):
             del toml_data["dependencies"][dep_to_remove]
 
     # add required solfuzz-agave added configurations
     solfuzz_agave_config = parse_toml_file("solfuzz_agave.toml")
+    print(solfuzz_agave_config)
     for section, values in solfuzz_agave_config.items():
         if section not in toml_data:
             toml_data[section] = table()
         elif not isinstance(toml_data[section], dict):
             continue
-        for k, v in values.items():
-            toml_data[section][k] = v
+
+        # **FIXED: Check if values has items() method before calling it**
+        if hasattr(values, 'items'):
+            # It's a dictionary/table
+            for k, v in values.items():
+                toml_data[section][k] = v
+        else:
+            # It's likely an Array of Tables or other non-dict type
+            # Assign the entire values object directly
+            toml_data[section] = values
 
     # Write the updated data to the output TOML file
     with open(args.output, "w") as f:
