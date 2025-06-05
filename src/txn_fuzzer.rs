@@ -40,6 +40,7 @@ use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::TransactionAccount;
 use solana_transaction_error::TransactionError;
 use std::cmp::max;
+use std::collections::HashMap;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
@@ -61,7 +62,7 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
         Err(_) => return 0, // Decode error
     };
 
-    let txn_result = match execute_transaction(txn_context) {
+    let txn_result = match execute_transaction(&txn_context) {
         Some(value) => value,
         None => return 0, // Data format error
     };
@@ -340,8 +341,19 @@ fn output_txn_result_from_result(
     }
 }
 
+// Helper function to deserialize sysvar data
+fn get_sysvar<T: serde::de::DeserializeOwned + Default>(
+    accounts: &HashMap<&[u8], &AcctState>,
+    sysvar_id: &[u8],
+) -> T {
+    accounts
+        .get(sysvar_id)
+        .and_then(|account| bincode::deserialize(&account.data).ok())
+        .unwrap_or_default()
+}
+
 #[allow(deprecated)]
-pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
+pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let fd_features = context
         .epoch_ctx
         .as_ref()
@@ -364,29 +376,20 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         }
     }
 
-    let fee_collector = Pubkey::new_unique();
+    const FEE_COLLECTOR: Pubkey = Pubkey::from_str_const("1111111111111111111111111111111111");
     let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
+    let sysvar_accounts: HashMap<&[u8], &AcctState> = context
+        .account_shared_data
+        .iter()
+        .filter(|item| item.lamports > 0)
+        .map(|item| (item.address.as_slice(), item))
+        .collect();
 
-    /* HACK: Set the genesis config rent and epoch schedule from the "to-be" sysvars, if present */
-    let rent: Rent = context
-        .account_shared_data
-        .iter()
-        .find(|item| {
-            item.address.as_slice() == solana_sysvar::rent::id().as_ref() && item.lamports > 0
-        })
-        .map(|account| bincode::deserialize(&account.data).ok())
-        .unwrap_or_default()
-        .unwrap_or_default();
-    let epoch_schedule: EpochSchedule = context
-        .account_shared_data
-        .iter()
-        .find(|item| {
-            item.address.as_slice() == solana_sysvar::epoch_schedule::id().as_ref()
-                && item.lamports > 0
-        })
-        .map(|account| bincode::deserialize(&account.data).ok())
-        .unwrap_or_default()
-        .unwrap_or_default();
+    let rent: Rent = get_sysvar(&sysvar_accounts, solana_sysvar::rent::id().as_ref());
+    let epoch_schedule: EpochSchedule = get_sysvar(
+        &sysvar_accounts,
+        solana_sysvar::epoch_schedule::id().as_ref(),
+    );
 
     /* HACK: Add dummy ALUT and config program accounts to genesis config so that their builtin versions don't get added to the program cache */
     let mut genesis_config = GenesisConfig {
@@ -406,7 +409,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     let mut blockhash_queue = if context.blockhash_queue.is_empty() {
         vec![vec![0u8; 32]]
     } else {
-        context.blockhash_queue
+        context.blockhash_queue.clone()
     };
     let genesis_hash = Some(Hash::new(blockhash_queue[0].as_slice()));
 
@@ -417,11 +420,16 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         index_limit_mb: IndexLimitMb::InMemOnly,
         ..AccountsIndexConfig::default()
     });
+    // create shm path for accountsdb to never touch disk
+    #[allow(unused)]
+    let shm_path = std::path::PathBuf::from("/dev/shm");
+
     let accounts_db_config = Some(AccountsDbConfig {
         index,
-        storage_access: StorageAccess::File,
+        storage_access: StorageAccess::Mmap,
         skip_initial_hash_calc: true,
         num_hash_threads: Some(NonZeroUsize::new(1).unwrap()),
+        base_working_path: Some(shm_path),
         ..AccountsDbConfig::default()
     });
     let bank = Bank::new_with_paths(
@@ -433,7 +441,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         false,
         accounts_db_config,
         None,
-        Some(fee_collector),
+        Some(FEE_COLLECTOR),
         Arc::new(AtomicBool::new(false)),
         genesis_hash,
         Some(feature_set.clone()),
@@ -443,7 +451,7 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     bank.rehash();
 
     if slot > 0 {
-        let new_bank = Bank::new_from_parent(bank.clone(), &fee_collector, slot);
+        let new_bank = Bank::new_from_parent(bank.clone(), &FEE_COLLECTOR, slot);
         bank = bank_forks
             .write()
             .unwrap()
@@ -459,13 +467,6 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
     /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */
     bank.store_account(&address_lookup_table::id(), &AccountSharedData::default());
     bank.store_account(&config::id(), &AccountSharedData::default());
-
-    let account_keys = context
-        .tx
-        .as_ref()
-        .and_then(|tx| tx.message.as_ref())
-        .map(|message| message.account_keys.clone())
-        .unwrap_or_default();
 
     /* Load accounts + sysvars
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
@@ -580,6 +581,13 @@ pub fn execute_transaction(context: TxnContext) -> Option<TxnResult> {
         &mut metrics,
         configs,
     );
+
+    let account_keys = context
+        .tx
+        .as_ref()
+        .and_then(|tx| tx.message.as_ref())
+        .map(|message| message.account_keys.clone())
+        .unwrap_or_default();
 
     let mut txn_result = output_txn_result_from_result(result, sanitized_transaction.message());
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
