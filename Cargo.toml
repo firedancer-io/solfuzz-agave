@@ -63,6 +63,10 @@ check-cfg = [
 ]
 
 
+[[bench]]
+name = "bench_txn"
+harness = false
+
 [dependencies]
 Inflector = "0.11.4"
 axum = "0.7.9"
