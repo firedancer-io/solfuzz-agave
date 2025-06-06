@@ -155,12 +155,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         _ => SBPFVersion::V0,
     };
 
-    if sbpf_version >= SBPFVersion::V1 {
-        instr_ctx
-            .feature_set
-            .activate(&bpf_account_data_direct_mapping::id(), 0);
-    }
-
     let (
         mut transaction_context,
         sysvar_cache,
@@ -320,7 +314,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
-            if config.enable_stack_frame_gaps {
+            if !sbpf_version.dynamic_stack_frames() && config.enable_stack_frame_gaps {
                 config.stack_frame_size as u64
             } else {
                 0
