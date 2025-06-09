@@ -435,7 +435,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let bank = Bank::new_with_paths(
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
-        vec![],
+        vec!["/dev/shm/a".into()],
         None,
         None,
         false,
