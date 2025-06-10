@@ -494,5 +494,11 @@ fn setup_internal_fn_registry(
         }
     }
 
+    // https://github.com/anza-xyz/sbpf/blob/v0.11.1/src/elf.rs#L529
+    // in vm v3, the function at 0 is always registered
+    if sbpf_version.enable_stricter_elf_headers() {
+        let _ = fn_reg.register_function(0, b"fn0", 0);
+    }
+
     fn_reg
 }
