@@ -2,11 +2,15 @@ use crate::proto::TypeEffects;
 use crate::types::memory_representation_serializer::MemoryRepresentationSerializer;
 use serde::Serialize;
 
+use bincode::Options;
+
 #[allow(dead_code)]
 pub fn process_type<T: Serialize + serde::de::DeserializeOwned>(
     bincode_slice: &[u8],
 ) -> Option<TypeEffects> {
-    let typ: T = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
+    let config = bincode::DefaultOptions::new().with_limit(10 * 1024 * 1024);
+
+    let typ: T = if let Ok(h) = config.deserialize(&bincode_slice[1..]) {
         h
     } else {
         return Some(TypeEffects {
