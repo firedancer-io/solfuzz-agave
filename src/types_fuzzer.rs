@@ -2,7 +2,73 @@ use crate::proto::{TypeContext, TypeEffects};
 use crate::types::types_map_generated::TYPE_PROCESSORS;
 use prost::Message;
 
+use std::alloc::{GlobalAlloc, Layout, System};
+use std::cell::Cell;
 use std::ffi::c_int;
+use std::thread_local;
+
+// Define a custom allocator that can detect and handle large allocations
+struct LimitedAllocator {
+    inner: System,
+}
+
+// Thread-local flag to determine if size limiting is active
+thread_local! {
+  static SIZE_LIMITING_ACTIVE: Cell<bool> = const { Cell::new(false) }
+}
+
+unsafe impl GlobalAlloc for LimitedAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // Only check allocation size if limiting is active
+        let mut should_limit = false;
+        SIZE_LIMITING_ACTIVE.with(|active| {
+            should_limit = active.get();
+        });
+
+        if should_limit {
+            // Set a reasonable maximum allocation size
+            const MAX_ALLOC: usize = 10 * 1024 * 1024; // 10 MB
+
+            if layout.size() > MAX_ALLOC {
+                panic!(
+                    "Allocation of {} bytes exceeds limit of {} bytes",
+                    layout.size(),
+                    MAX_ALLOC
+                );
+            }
+        }
+
+        self.inner.alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        self.inner.dealloc(ptr, layout)
+    }
+}
+
+// Install our custom allocator as the global allocator
+#[global_allocator]
+static ALLOCATOR: LimitedAllocator = LimitedAllocator { inner: System };
+
+// Helper struct that enables/disables allocation limiting within its scope
+struct AllocationLimitGuard;
+
+impl AllocationLimitGuard {
+    fn new() -> Self {
+        SIZE_LIMITING_ACTIVE.with(|active| {
+            active.set(true);
+        });
+        AllocationLimitGuard
+    }
+}
+
+impl Drop for AllocationLimitGuard {
+    fn drop(&mut self) {
+        SIZE_LIMITING_ACTIVE.with(|active| {
+            active.set(false);
+        });
+    }
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_type_execute_v1(
@@ -11,10 +77,14 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
+    // Enable allocation limiting for this function
+    let _guard = AllocationLimitGuard::new();
+
     /* Need this check since solfuzz may feed empty inputs */
     if in_ptr.is_null() || in_sz == 0 {
         return 0;
     }
+
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
     let type_ctx = match TypeContext::decode(in_slice) {
         Ok(context) => context,
