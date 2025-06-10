@@ -14,7 +14,7 @@ struct LimitedAllocator {
 
 // Thread-local flag to determine if size limiting is active
 thread_local! {
-    static SIZE_LIMITING_ACTIVE: Cell<bool> = Cell::new(false);
+  static SIZE_LIMITING_ACTIVE: Cell<bool> = const { Cell::new(false) }
 }
 
 unsafe impl GlobalAlloc for LimitedAllocator {
