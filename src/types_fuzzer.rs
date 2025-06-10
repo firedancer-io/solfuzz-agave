@@ -4,6 +4,38 @@ use prost::Message;
 
 use std::ffi::c_int;
 
+use std::alloc::{GlobalAlloc, Layout, System};
+
+// Define a custom allocator that can detect and handle large allocations
+struct LimitedAllocator {
+    inner: System,
+}
+
+unsafe impl GlobalAlloc for LimitedAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // Set a reasonable maximum allocation size
+        const MAX_ALLOC: usize = 10 * 1024 * 1024; // 10 MB
+
+        if layout.size() > MAX_ALLOC {
+            panic!(
+                "Allocation of {} bytes exceeds limit of {} bytes",
+                layout.size(),
+                MAX_ALLOC
+            );
+        } else {
+            self.inner.alloc(layout)
+        }
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        self.inner.dealloc(ptr, layout)
+    }
+}
+
+// Install our custom allocator as the global allocator
+#[global_allocator]
+static ALLOCATOR: LimitedAllocator = LimitedAllocator { inner: System };
+
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_type_execute_v1(
     out_ptr: *mut u8,

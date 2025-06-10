@@ -1,18 +1,26 @@
 use crate::proto::TypeEffects;
 use crate::types::memory_representation_serializer::MemoryRepresentationSerializer;
+use bincode::Options;
 use serde::Serialize;
 
 #[allow(dead_code)]
 pub fn process_type<T: Serialize + serde::de::DeserializeOwned>(
     bincode_slice: &[u8],
 ) -> Option<TypeEffects> {
-    let typ: T = if let Ok(h) = bincode::deserialize(&bincode_slice[1..]) {
-        h
-    } else {
-        return Some(TypeEffects {
-            result: 1,
-            ..Default::default()
-        });
+    let config = bincode::config::DefaultOptions::new()
+        .with_limit(10_000_000) // Limit to 10MB (adjust as needed)
+        .with_fixint_encoding()
+        .allow_trailing_bytes();
+
+    let res = config.deserialize::<T>(&bincode_slice[1..]);
+    let typ = match res {
+        Ok(h) => h,
+        Err(_err) => {
+            return Some(TypeEffects {
+                result: 1,
+                ..Default::default()
+            });
+        }
     };
 
     let mut ser = MemoryRepresentationSerializer::new();
