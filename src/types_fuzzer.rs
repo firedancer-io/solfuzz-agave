@@ -2,9 +2,9 @@ use crate::proto::{TypeContext, TypeEffects};
 use crate::types::types_map_generated::TYPE_PROCESSORS;
 use prost::Message;
 
-use std::ffi::c_int;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
+use std::ffi::c_int;
 use std::thread_local;
 
 // Define a custom allocator that can detect and handle large allocations
