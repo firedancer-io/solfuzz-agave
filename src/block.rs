@@ -149,11 +149,7 @@ fn build_latest_stake_delegations(
 
 /* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_deleations()` is that
 we use the provided votes cache instead of the latest input account states. */
-fn build_prev_stake_delegations(
-    vote_accounts: &[proto::VoteAccount],
-    account_states: &[proto::AcctState],
-    use_latest_account_state: bool,
-) -> Stakes<Delegation> {
+fn build_prev_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<Delegation> {
     let mut stakes = Stakes::<Delegation>::default();
     vote_accounts.iter().for_each(|vote_account| {
         let (pubkey, account) = vote_account
@@ -164,12 +160,7 @@ fn build_prev_stake_delegations(
             .unwrap();
 
         /* Due to the way Agave and FD's stakes caches differ, we need to use the latest account states for the current epoch's stake delegations */
-        let account_shared_data = if !use_latest_account_state {
-            AccountSharedData::from(account)
-        } else {
-            let account_state = account_states.iter().find(|item| item.address.as_slice() == pubkey.as_ref() && item.lamports > 0).unwrap();
-            AccountSharedData::from(account_state)
-        };
+        let account_shared_data = AccountSharedData::from(account);
 
         stakes.vote_accounts.insert(
             pubkey,
@@ -305,8 +296,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let epoch = epoch_schedule.get_epoch(slot);
     let stakes_t = build_latest_stake_delegations(&context.acct_states, epoch, &stake_history);
 
-    let stakes_t_1 =
-        build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1, &context.acct_states, false);
+    let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
     let stake_accounts_t_1 = Stakes::new(&stakes_t_1, |pubkey| {
         let account = epoch_ctx
             .vote_accounts_t_1
@@ -329,8 +319,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
 
-    let stakes_t_2 =
-        build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2, &context.acct_states, false);
+    let stakes_t_2 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2);
     let stake_accounts_t_2 = Stakes::new(&stakes_t_2, |pubkey| {
         let account = epoch_ctx
             .vote_accounts_t_2
