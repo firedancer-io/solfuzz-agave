@@ -110,17 +110,11 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
 }
 
 pub fn execute_elf_loader(input: ElfLoaderCtx) -> Option<ElfLoaderEffects> {
-    let mut elf_bytes = match input.elf {
+    let elf_bytes = match input.elf {
         Some(elf) => elf.data,
         None => return None,
     };
 
-    if elf_bytes.len() != input.elf_sz as usize {
-        // setup elf bytes to match the size
-        elf_bytes.resize(input.elf_sz as usize, 0);
-    }
-
     let elf_loader_effects = load_elf(elf_bytes.as_slice(), input.deploy_checks)?;
-
     Some(elf_loader_effects)
 }
