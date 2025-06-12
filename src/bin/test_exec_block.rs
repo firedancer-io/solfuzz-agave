@@ -1,6 +1,6 @@
 use clap::Parser;
 use prost::Message;
-use solfuzz_agave::proto::TxnFixture;
+use solfuzz_agave::proto::BlockFixture;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -11,7 +11,7 @@ struct Cli {
 
 fn exec(input: &PathBuf) -> bool {
     let blob = std::fs::read(input).unwrap();
-    let fixture = TxnFixture::decode(&blob[..]).unwrap();
+    let fixture = BlockFixture::decode(&blob[..]).unwrap();
     let context = match fixture.input {
         Some(i) => i,
         None => {
@@ -27,13 +27,10 @@ fn exec(input: &PathBuf) -> bool {
             return false;
         }
     };
-    let effects = match solfuzz_agave::txn_fuzzer::execute_transaction(&context) {
+    let effects = match solfuzz_agave::block::execute_block(context) {
         Some(e) => e,
         None => {
-            println!(
-                "FAIL: No transaction effects returned for input: {:?}",
-                input
-            );
+            println!("FAIL: No block effects returned for input: {:?}", input);
             return false;
         }
     };
