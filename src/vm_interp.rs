@@ -1,16 +1,17 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
     utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
-    InstrContext, TOGGLE_DIRECT_MAPPING,
+    InstrContext, MockInvokeContextCallback, TOGGLE_DIRECT_MAPPING,
 };
 use agave_feature_set::bpf_account_data_direct_mapping;
 use bincode::Error;
 use prost::Message;
-use solana_bpf_loader_program::serialization::serialize_parameters;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::{
+    execution_budget::SVMTransactionExecutionCost,
     invoke_context::{EnvironmentConfig, InvokeContext},
     mem_pool::VmMemoryPool,
+    serialization::serialize_parameters,
 };
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
@@ -25,10 +26,7 @@ use solana_sbpf::{
     vm::{ContextObject, EbpfVm},
 };
 
-use solana_account::WritableAccount;
-use solana_account_info::MAX_PERMITTED_DATA_INCREASE;
-use solana_program_test::IndexOfAccount;
-use std::{borrow::Borrow, cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
+use std::{borrow::Borrow, cell::RefCell, ffi::c_int};
 
 declare_builtin_function!(
     SyscallStub,
@@ -188,19 +186,20 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let log_collector = LogCollector::new_ref();
     let instr_accounts = crate::get_instr_accounts(&transaction_context, &instr.accounts);
 
+    let svm_feature_set = instr_ctx.feature_set.runtime_features();
     let invoke_context = RefCell::new(InvokeContext::new(
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
         EnvironmentConfig::new(
             blockhash,
             lamports_per_signature,
-            0,
-            &|_| 0u64,
-            Arc::new(instr_ctx.feature_set.clone()),
+            &MockInvokeContextCallback {},
+            &&svm_feature_set,
             &sysvar_cache,
         ),
         Some(log_collector.clone()),
         compute_budget,
+        SVMTransactionExecutionCost::default(),
     ));
 
     let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
@@ -209,12 +208,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .transaction_context
         .find_index_of_program_account(&instr_ctx.instruction.program_id)?;
 
-    let direct_mapping = invoke_ctx
-        .get_feature_set()
-        .is_active(&bpf_account_data_direct_mapping::id());
+    let direct_mapping = invoke_ctx.get_feature_set().bpf_account_data_direct_mapping;
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
-        .is_active(&agave_feature_set::mask_out_rent_epoch_in_vm_serialization::id());
+        .mask_out_rent_epoch_in_vm_serialization;
 
     invoke_ctx
         .transaction_context
@@ -327,22 +324,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .chain(input_memory_regions)
         .collect();
 
-    let cow_cb_accounts = Rc::clone(invoke_ctx.transaction_context.accounts());
-    let cow_cb = Box::new(move |index_in_transaction| {
-        let mut account = cow_cb_accounts
-            .get(index_in_transaction as IndexOfAccount)
-            .unwrap()
-            .borrow_mut();
-        cow_cb_accounts
-            .touch(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
-
-        if account.is_shared() {
-            account.reserve(MAX_PERMITTED_DATA_INCREASE);
-        }
-        Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
-    });
-    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, &config, sbpf_version) {
+    let memory_mapping = match MemoryMapping::new_with_cow(
+        regions,
+        &config,
+        sbpf_version,
+        invoke_ctx
+            .transaction_context
+            .account_data_write_access_handler(),
+    ) {
         Ok(mapping) => mapping,
         Err(_) => return None,
     };

@@ -33,12 +33,12 @@ use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+use solana_runtime::runtime_config::RuntimeConfig;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{Stakes, StakesEnum};
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
-use solana_svm::runtime_config::RuntimeConfig;
 use solana_sysvar;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;

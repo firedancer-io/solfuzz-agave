@@ -3,9 +3,9 @@ pub mod program;
 pub mod vm;
 use crate::proto;
 use crate::proto::AcctState;
+use ::std::sync::OnceLock;
 use agave_feature_set::{FeatureSet, FEATURE_NAMES};
 use ahash::AHashMap;
-use lazy_static::lazy_static;
 use solana_account::{AccountSharedData, WritableAccount};
 use solana_pubkey::Pubkey;
 
@@ -21,20 +21,22 @@ pub const fn feature_u64(feature: &Pubkey) -> u64 {
         | (feature_id[7] as u64) << 56
 }
 
-lazy_static! {
-    static ref INDEXED_FEATURES: AHashMap<u64, Pubkey> = {
+static INDEXED_FEATURES: OnceLock<AHashMap<u64, Pubkey>> = OnceLock::new();
+
+fn get_indexed_features() -> &'static AHashMap<u64, Pubkey> {
+    INDEXED_FEATURES.get_or_init(|| {
         FEATURE_NAMES
             .iter()
             .map(|(pubkey, _)| (feature_u64(pubkey), *pubkey))
             .collect()
-    };
+    })
 }
 
 impl From<&proto::FeatureSet> for FeatureSet {
     fn from(input: &proto::FeatureSet) -> Self {
         let mut feature_set = FeatureSet::default();
         for id in &input.features {
-            if let Some(pubkey) = INDEXED_FEATURES.get(id) {
+            if let Some(pubkey) = get_indexed_features().get(id) {
                 feature_set.activate(pubkey, 0);
             }
         }

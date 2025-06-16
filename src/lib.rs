@@ -11,16 +11,20 @@ pub mod utils;
 pub mod vm_interp;
 pub mod vm_syscalls;
 
+use crate::utils::err_map::instr_err_to_num;
+use crate::utils::feature_u64;
 use agave_feature_set::*;
 use prost::Message;
 use solana_account::{Account, AccountSharedData, ReadableAccount};
 use solana_clock::Clock;
-use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_epoch_schedule::EpochSchedule;
 use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
 use solana_instruction::AccountMeta;
 use solana_log_collector::LogCollector;
+use solana_program_runtime::execution_budget::{
+    SVMTransactionExecutionBudget, SVMTransactionExecutionCost,
+};
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
@@ -36,16 +40,14 @@ use solana_sdk_ids::{
 use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
+use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
+use solana_svm_callback::InvokeContextCallback;
 use solana_sysvar::last_restart_slot;
 use solana_sysvar_id::SysvarId;
 use solana_timings::ExecuteTimings;
 use solana_transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
-
-use crate::utils::err_map::instr_err_to_num;
-use crate::utils::feature_u64;
-use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::{
     declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
 };
@@ -264,7 +266,6 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     blake3_syscall_enabled,
     // zk_token_sdk_enabled, // NOT supported in fd
-    enable_partitioned_epoch_reward,
     stake_raise_minimum_delegation_to_1_sol,
     stake_minimum_delegation_for_rewards,
     skip_rent_rewrites,
@@ -338,6 +339,9 @@ pub enum Error {
     InvalidFixtureOutput,
 }
 
+struct MockInvokeContextCallback {}
+impl InvokeContextCallback for MockInvokeContextCallback {}
+
 pub struct InstrContext {
     pub feature_set: FeatureSet,
     pub accounts: Vec<(Pubkey, Account)>,
@@ -347,6 +351,7 @@ pub struct InstrContext {
     pub last_blockhash: Hash,
     pub lamports_per_signature: u64,
 }
+impl InvokeContextCallback for InstrContext {}
 
 impl TransactionProcessingCallback for InstrContext {
     fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
@@ -615,7 +620,7 @@ fn create_invoke_context_fields(
     ProgramCacheForTxBatch,
     Hash,
     u64,
-    ComputeBudget,
+    SVMTransactionExecutionBudget,
 )> {
     unsafe {
         if TOGGLE_DIRECT_MAPPING {
@@ -663,16 +668,16 @@ fn create_invoke_context_fields(
     // mismatches from the BPF program exhuasting the meter when the builtin
     // did not.
     let compute_budget = {
-        let mut budget = ComputeBudget::default();
+        let mut budget = SVMTransactionExecutionBudget::default();
         if input.cu_avail <= CORE_BPF_DEFAULT_COMPUTE_UNITS {
             budget.compute_unit_limit = 0; // Ensures CU meter exhaustion.
         }
         budget
     };
     #[cfg(not(feature = "core-bpf-conformance"))]
-    let compute_budget = ComputeBudget {
+    let compute_budget = SVMTransactionExecutionBudget {
         compute_unit_limit: input.cu_avail,
-        ..ComputeBudget::default()
+        ..SVMTransactionExecutionBudget::default()
     };
 
     let mut sysvar_cache = SysvarCache::default();
@@ -810,7 +815,7 @@ fn create_invoke_context_fields(
 
     let program_runtime_environment_v1 =
         solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
-            &input.feature_set,
+            &input.feature_set.runtime_features(),
             &compute_budget,
             false, /* deployment */
             false, /* debugging_features */
@@ -914,12 +919,12 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         compute_budget,
     ) = create_invoke_context_fields(&mut input)?;
 
+    let feature_set = input.feature_set.runtime_features();
     let environment_config = EnvironmentConfig::new(
         blockhash,
         lamports_per_signature,
-        0,
-        &|_| 0u64,
-        Arc::new(input.feature_set.clone()),
+        &MockInvokeContextCallback {},
+        &feature_set,
         &sysvar_cache,
     );
 
@@ -938,6 +943,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         environment_config,
         Some(log_collector.clone()),
         compute_budget,
+        SVMTransactionExecutionCost::default(),
     );
 
     let result = invoke_context.process_instruction(

@@ -4,7 +4,7 @@ use agave_feature_set::*;
 use ahash::{AHashMap, AHashSet};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_program_runtime::execution_budget::SVMTransactionExecutionBudget;
 use solana_pubkey::Pubkey;
 use solana_sbpf::{ebpf, elf::Executable};
 use std::collections::BTreeSet;
@@ -41,8 +41,8 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
     }
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
-        &feature_set,
-        &ComputeBudget::default(),
+        &feature_set.runtime_features(),
+        &SVMTransactionExecutionBudget::default(),
         deploy_checks,
         false,
     )

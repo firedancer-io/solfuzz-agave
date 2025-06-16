@@ -1,6 +1,6 @@
 use solana_sbpf::{
     ebpf,
-    memory_region::{MemoryMapping, MemoryRegion, MemoryState},
+    memory_region::{MemoryMapping, MemoryRegion},
 };
 
 use crate::proto::InputDataRegion;
@@ -10,7 +10,7 @@ them into InputDataRegions. The regions themselves are not copied,
 so be mindful of lifetimes. */
 pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<InputDataRegion> {
     match mapping {
-        MemoryMapping::Aligned(mapping) => {
+        MemoryMapping::Aligned(_) => {
             // regions in AlignedMemoryMapping are sorted by vm_addr
             mapping
                 .get_regions()
@@ -19,7 +19,7 @@ pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<Inp
                 .map(mem_region_to_input_data_region)
                 .collect()
         }
-        MemoryMapping::Unaligned(mapping) => {
+        MemoryMapping::Unaligned(_) => {
             // regions are in eytzinger order, so we need to collect and sort them
             let mut input_regions: Vec<InputDataRegion> = mapping
                 .get_regions()
@@ -48,9 +48,6 @@ fn mem_region_to_input_data_region(region: &MemoryRegion) -> InputDataRegion {
                 .to_vec()
         },
         offset: region.vm_addr - ebpf::MM_INPUT_START,
-        is_writable: matches!(
-            region.state.get(),
-            MemoryState::Writable | MemoryState::Cow(_)
-        ),
+        is_writable: region.writable.get(),
     }
 }
