@@ -24,15 +24,16 @@ use solana_rent::Rent;
 use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
+use solana_runtime::runtime_config::RuntimeConfig;
 use solana_sdk_ids::{address_lookup_table, config};
 use solana_signature::Signature;
 use solana_svm::account_loader::LoadedTransaction;
-use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
+
 use solana_sysvar;
 use solana_timings::ExecuteTimings;
 use solana_transaction::versioned::VersionedTransaction;
@@ -559,17 +560,16 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         enable_cpi_recording: false,
         enable_log_recording: true,
         enable_return_data_recording: true,
+        enable_transaction_balance_recording: false,
     };
 
     let mut timings = ExecuteTimings::default();
 
     let configs = TransactionProcessingConfig {
         account_overrides: None,
-        compute_budget: bank.compute_budget(),
         log_messages_bytes_limit: None,
         limit_to_load_programs: true,
         recording_config,
-        transaction_account_lock_limit: None,
         check_program_modification_slot: false,
     };
 

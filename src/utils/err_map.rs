@@ -110,7 +110,6 @@ pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
         EbpfError::CallOutsideTextSegment => 7,
         EbpfError::ExceededMaxInstructions => 8,
         EbpfError::JitNotCompiled => 9,
-        EbpfError::InvalidVirtualAddress(_) => 10,
         EbpfError::InvalidMemoryRegion(_) => 11,
         // Note: AccessViolation and StackAccessViolation are the same in Firedancer
         // so we return the same value
@@ -130,7 +129,6 @@ pub fn ebpf_err_to_str(error: &EbpfError) -> String {
     match error {
         EbpfError::ElfError(_) => "ELF error".to_string(),
         EbpfError::FunctionAlreadyRegistered(_) => "function was already registered".to_string(),
-        EbpfError::InvalidVirtualAddress(_) => "invalid virtual address".to_string(),
         EbpfError::InvalidMemoryRegion(_) => "Invalid memory region at index".to_string(),
         // Note: AccessViolation and StackAccessViolation are the same in Firedancer
         // so we return the same value
