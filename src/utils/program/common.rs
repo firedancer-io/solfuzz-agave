@@ -20,7 +20,7 @@ pub fn get_dummy_bpf_native_programs() -> Vec<(Pubkey, AccountSharedData)> {
     ]
 }
 
-pub fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMessage> {
+pub fn build_versioned_message(value: &TransactionMessage) -> VersionedMessage {
     let header = if let Some(value_header) = value.header {
         MessageHeader::from(&value_header)
     } else {
@@ -55,7 +55,7 @@ pub fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMe
             recent_blockhash,
             instructions,
         };
-        Some(VersionedMessage::Legacy(message))
+        VersionedMessage::Legacy(message)
     } else {
         let address_table_lookups = value
             .address_table_lookups
@@ -71,6 +71,6 @@ pub fn build_versioned_message(value: &TransactionMessage) -> Option<VersionedMe
             address_table_lookups,
         };
 
-        Some(VersionedMessage::V0(message))
+        VersionedMessage::V0(message)
     }
 }
