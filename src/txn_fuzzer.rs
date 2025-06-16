@@ -504,7 +504,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(bank.as_ref());
 
-    let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?)?;
+    let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?);
 
     let mut signatures = context
         .tx

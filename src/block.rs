@@ -435,8 +435,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             .microblocks
             .iter()
             .flat_map(|microblock| microblock.txns.iter())
-            .filter_map(|txn| {
-                let message = txn.message.as_ref().and_then(build_versioned_message)?;
+            .map(|txn| {
+                let message = build_versioned_message(txn.message.as_ref().unwrap());
                 let signatures = txn
                     .signatures
                     .iter()
@@ -452,11 +452,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
                     signatures,
                 };
 
-                Some(Entry {
+                Entry {
                     num_hashes: 1u64,
                     hash: Hash::default(),
                     transactions: vec![transaction],
-                })
+                }
             })
             .collect::<Vec<Entry>>(),
     );
