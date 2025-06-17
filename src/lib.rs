@@ -261,6 +261,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     reserve_minimal_cus_for_builtin_instructions,
     enable_transaction_loading_failure_fees,
     // enable_loader_v4, // rekeyed in 2.3
+    enable_tower_sync_ix, // cleaned up in 2.3
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -278,7 +279,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     enable_zk_transfer_with_fee, // deprecated / old stuff
     enable_zk_proof_from_account,
-    enable_tower_sync_ix,
     disable_rent_fees_collection,
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
