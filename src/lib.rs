@@ -259,6 +259,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     reserve_minimal_cus_for_builtin_instructions,
     enable_transaction_loading_failure_fees,
     // enable_loader_v4, // rekeyed in 2.3
+    move_precompile_verification_to_svm, // activated and cleaned up in 2.3
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -296,7 +297,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     remove_accounts_delta_hash,
     snapshots_lt_hash,
     raise_block_limits_to_50m,
-    move_precompile_verification_to_svm,
 ];
 
 // If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
