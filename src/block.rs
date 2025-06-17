@@ -432,9 +432,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let mut entries = vec![Entry::new_tick(1, &poh); 64];
     entries.extend(
         context
-            .microblocks
+            .txns
             .iter()
-            .flat_map(|microblock| microblock.txns.iter())
             .map(|txn| {
                 let message = build_versioned_message(txn.message.as_ref().unwrap());
                 let signatures = txn
