@@ -260,7 +260,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_account_loader_special_case,
     reserve_minimal_cus_for_builtin_instructions,
     enable_transaction_loading_failure_fees,
-    enable_loader_v4, // custom hardcoded feature
+    // enable_loader_v4, // rekeyed in 2.3
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
