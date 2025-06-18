@@ -260,6 +260,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_transaction_loading_failure_fees,
     // enable_loader_v4, // rekeyed in 2.3
     move_precompile_verification_to_svm, // activated and cleaned up in 2.3
+    deplete_cu_meter_on_vm_failure,      // activated and cleaned up in 2.3
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -273,7 +274,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
     apply_cost_tracker_during_replay,
-    // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
     // bpf_account_data_direct_mapping, // Some day
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     enable_zk_transfer_with_fee, // deprecated / old stuff
