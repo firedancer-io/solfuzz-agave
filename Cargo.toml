@@ -1,3 +1,4 @@
+# This file is auto generated. See generate_cargo.py
 [profile.release-with-debug]
 inherits = "release"
 debug = true
