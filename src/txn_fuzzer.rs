@@ -204,22 +204,6 @@ fn output_txn_result_from_result(
         resulting_state,
     ) = match execution_results {
         Ok(txn) => {
-            let is_ok = match txn {
-                ProcessedTransaction::Executed(executed_tx) => {
-                    executed_tx.execution_details.status.is_ok()
-                }
-                ProcessedTransaction::FeesOnly(_) => false,
-            };
-
-            let loaded_accounts_data_size = match txn {
-                ProcessedTransaction::Executed(executed_tx) => {
-                    executed_tx.loaded_transaction.loaded_accounts_data_size
-                }
-                ProcessedTransaction::FeesOnly(fees_only_tx) => {
-                    fees_only_tx.rollback_accounts.data_size() as u32
-                }
-            };
-
             let (status, instr_err, custom_err, instr_err_idx) =
                 match txn.status().as_ref().map_err(transaction_error_to_err_nums) {
                     Ok(_) => (0, 0, 0, 0),
@@ -271,12 +255,6 @@ fn output_txn_result_from_result(
                     })
                 }
             };
-            let executed_units = match txn {
-                ProcessedTransaction::Executed(executed_tx) => {
-                    executed_tx.execution_details.executed_units
-                }
-                ProcessedTransaction::FeesOnly(_) => 0,
-            };
             let return_data = match txn {
                 ProcessedTransaction::Executed(executed_tx) => executed_tx
                     .execution_details
@@ -287,17 +265,17 @@ fn output_txn_result_from_result(
                 ProcessedTransaction::FeesOnly(_) => vec![],
             };
             (
-                is_ok,
+                execution_results.was_processed_with_successful_result(),
                 false,
                 status,
                 instr_err,
                 instr_err_idx,
                 custom_err,
-                executed_units,
+                txn.executed_units(),
                 return_data,
                 Some(txn.fee_details()),
                 rent,
-                loaded_accounts_data_size,
+                txn.loaded_accounts_data_size(),
                 resulting_state,
             )
         }
