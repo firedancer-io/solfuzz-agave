@@ -109,7 +109,6 @@ def main():
 
     # some clean up
     toml_data["package"] = table()
-    print(toml_data)
     for dep_to_remove in ["pickledb", "winreg", "solana-sdk", "solana-program", "once_cell", "agave-cargo-registry", "solana-zk-keygen"]:
         if dep_to_remove in toml_data.get("dependencies", {}):
             del toml_data["dependencies"][dep_to_remove]
@@ -120,7 +119,6 @@ def main():
 
     # add required solfuzz-agave added configurations
     solfuzz_agave_config = parse_toml_file("solfuzz_agave.toml")
-    print(solfuzz_agave_config)
     for section, values in solfuzz_agave_config.items():
         if section not in toml_data:
             toml_data[section] = table()

@@ -85,39 +85,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "agave-cargo-registry"
-version = "2.2.13"
-source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
-dependencies = [
- "clap 2.34.0",
- "flate2",
- "hex",
- "hyper 0.14.32",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
- "sha2 0.10.8",
- "solana-clap-utils",
- "solana-cli",
- "solana-cli-config",
- "solana-cli-output",
- "solana-commitment-config",
- "solana-keypair",
- "solana-logger",
- "solana-pubkey 2.2.1",
- "solana-remote-wallet",
- "solana-rpc-client",
- "solana-rpc-client-api",
- "solana-signer",
- "solana-version",
- "tar",
- "tempfile",
- "tokio",
- "toml 0.8.20",
-]
-
-[[package]]
 name = "agave-feature-set"
 version = "2.2.13"
 source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
@@ -10388,24 +10355,6 @@ dependencies = [
  "solana-program-runtime",
  "solana-sdk-ids",
  "solana-zk-sdk",
-]
-
-[[package]]
-name = "solana-zk-keygen"
-version = "2.2.13"
-source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
-dependencies = [
- "bs58",
- "clap 3.2.25",
- "dirs-next",
- "solana-clap-v3-utils",
- "solana-remote-wallet",
- "solana-seed-derivable",
- "solana-signer",
- "solana-version",
- "solana-zk-token-sdk",
- "thiserror 2.0.12",
- "tiny-bip39",
 ]
 
 [[package]]

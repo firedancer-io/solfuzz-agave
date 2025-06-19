@@ -273,7 +273,6 @@ solana-bpf-loader-program = {git = "https://github.com/firedancer-io/agave", rev
 solana-bucket-map = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-builtins = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-builtins-default-costs = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
-agave-cargo-registry = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 agave-thread-manager = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-clap-utils = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-clap-v3-utils = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
@@ -444,7 +443,6 @@ solana-vote-interface = "2.2.3"
 solana-vote-program = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-wen-restart = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-zk-elgamal-proof-program = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
-solana-zk-keygen = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-zk-sdk = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-zk-token-proof-program = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
 solana-zk-token-sdk = {git = "https://github.com/firedancer-io/agave", rev = "f5bed6630a"}
