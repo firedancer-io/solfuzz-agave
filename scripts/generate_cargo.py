@@ -81,19 +81,25 @@ def main():
 
     parser = argparse.ArgumentParser(description="Process input files.")
 
-    # # Add flags
-    parser.add_argument("--commit", "-c", help="Commit in firedancer-io/agave to use")
-    parser.add_argument("--agave-path", "-p", help="Commit in firedancer-io/agave to use")
+    # Add flags
+    parser.add_argument("--repo", "-r", help="Repo to use (default: firedancer-io/agave)")
+    parser.add_argument("--commit", "-c", help="Commit to use")
+    parser.add_argument("--agave-path", "-p", help="Path to local Cargo.toml to use")
     parser.add_argument("--output", "-o", help="Path to the output file")
 
     args = parser.parse_args()
+
+    if args.repo:
+        repo = args.repo
+    else:
+        repo = "firedancer-io/agave"
 
     if args.agave_path:
         toml_data = parse_toml_file(args.agave_path + "/Cargo.toml")
         flatten_workspace(toml_data)
         replace_path_with_local(toml_data, args.agave_path)
     else:
-        url = f"https://raw.githubusercontent.com/firedancer-io/agave/{args.commit}/Cargo.toml"
+        url = f"https://raw.githubusercontent.com/{repo}/{args.commit}/Cargo.toml"
         os.makedirs("dump", exist_ok=True)
         try:
             subprocess.run(
@@ -105,7 +111,7 @@ def main():
 
         toml_data = parse_toml_file("dump/Cargo.toml")
         flatten_workspace(toml_data)
-        replace_path_with_git_rev(toml_data, "https://github.com/firedancer-io/agave", args.commit)
+        replace_path_with_git_rev(toml_data, f"https://github.com/{repo}", args.commit)
 
     # some clean up
     toml_data["package"] = table()
