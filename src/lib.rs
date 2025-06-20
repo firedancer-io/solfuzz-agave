@@ -260,12 +260,17 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_account_loader_special_case,
     reserve_minimal_cus_for_builtin_instructions,
     enable_transaction_loading_failure_fees,
-    enable_loader_v4, // custom hardcoded feature
+    enable_loader_v4, // custom hardcoded feature, rekeyed in 2.3
+    // The following section was activated and cleaned up in v2.3
+    move_precompile_verification_to_svm,
+    enable_tower_sync_ix,
+    // END
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     blake3_syscall_enabled,
     // zk_token_sdk_enabled, // NOT supported in fd
+    // enable_partitioned_epoch_reward // removed in 2.3
     stake_raise_minimum_delegation_to_1_sol,
     stake_minimum_delegation_for_rewards,
     skip_rent_rewrites,
@@ -273,12 +278,13 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
     apply_cost_tracker_during_replay,
-    // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
+    // Ignoring picks up divergences that are otherwise masked by CU depletion
+    // Requires reverting https://github.com/anza-xyz/agave/pull/5576/commits/b9916a499898edff2f2abb0069446ca82c1a291d
+    // deplete_cu_meter_on_vm_failure,
     // bpf_account_data_direct_mapping, // Some day
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     enable_zk_transfer_with_fee, // deprecated / old stuff
     enable_zk_proof_from_account,
-    enable_tower_sync_ix,
     disable_rent_fees_collection,
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
@@ -297,7 +303,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     remove_accounts_delta_hash,
     snapshots_lt_hash,
     raise_block_limits_to_50m,
-    move_precompile_verification_to_svm,
 ];
 
 // If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
