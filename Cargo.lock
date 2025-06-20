@@ -85,39 +85,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "agave-cargo-registry"
-version = "2.2.13"
-source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
-dependencies = [
- "clap 2.34.0",
- "flate2",
- "hex",
- "hyper 0.14.32",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
- "sha2 0.10.8",
- "solana-clap-utils",
- "solana-cli",
- "solana-cli-config",
- "solana-cli-output",
- "solana-commitment-config",
- "solana-keypair",
- "solana-logger",
- "solana-pubkey 2.2.1",
- "solana-remote-wallet",
- "solana-rpc-client",
- "solana-rpc-client-api",
- "solana-signer",
- "solana-version",
- "tar",
- "tempfile",
- "tokio",
- "toml 0.8.20",
-]
-
-[[package]]
 name = "agave-feature-set"
 version = "2.2.13"
 source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
@@ -1347,7 +1314,6 @@ checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
 dependencies = [
  "atty",
  "bitflags 1.3.2",
- "clap_derive 3.2.25",
  "clap_lex 0.2.4",
  "indexmap 1.9.3",
  "once_cell",
@@ -1363,7 +1329,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7be5744db7978a28d9df86a214130d106a89ce49644cbc4e3f0c22c3fba30615"
 dependencies = [
  "clap_builder",
- "clap_derive 4.5.18",
+ "clap_derive",
 ]
 
 [[package]]
@@ -1376,19 +1342,6 @@ dependencies = [
  "anstyle",
  "clap_lex 0.7.2",
  "strsim 0.11.1",
-]
-
-[[package]]
-name = "clap_derive"
-version = "3.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae6371b8bdc8b7d3959e9cf7b22d4435ef3e79e138688421ec654acf8c81b008"
-dependencies = [
- "heck 0.4.1",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -4582,30 +4535,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecf48c7ca261d60b74ab1a7b20da18bede46776b2e55535cb958eb595c5fa7b"
 dependencies = [
  "toml_edit",
-]
-
-[[package]]
-name = "proc-macro-error"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
-dependencies = [
- "proc-macro-error-attr",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "version_check",
-]
-
-[[package]]
-name = "proc-macro-error-attr"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
-dependencies = [
- "proc-macro2",
- "quote",
- "version_check",
 ]
 
 [[package]]
@@ -10429,24 +10358,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-zk-keygen"
-version = "2.2.13"
-source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
-dependencies = [
- "bs58",
- "clap 3.2.25",
- "dirs-next",
- "solana-clap-v3-utils",
- "solana-remote-wallet",
- "solana-seed-derivable",
- "solana-signer",
- "solana-version",
- "solana-zk-token-sdk",
- "thiserror 2.0.12",
- "tiny-bip39",
-]
-
-[[package]]
 name = "solana-zk-sdk"
 version = "2.2.13"
 source = "git+https://github.com/firedancer-io/agave?rev=f5bed6630a#f5bed6630a541549f8c91b4c6fe5adf1f07cf594"
@@ -10540,7 +10451,6 @@ dependencies = [
  "Inflector",
  "aes-gcm-siv",
  "agave-banking-stage-ingress-types",
- "agave-cargo-registry",
  "agave-feature-set",
  "agave-geyser-plugin-interface",
  "agave-precompiles",
@@ -10913,7 +10823,6 @@ dependencies = [
  "solana-vote-program",
  "solana-wen-restart",
  "solana-zk-elgamal-proof-program",
- "solana-zk-keygen",
  "solana-zk-sdk",
  "solana-zk-token-proof-program",
  "solana-zk-token-sdk",
@@ -13090,8 +12999,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "crossbeam-epoch"
-version = "0.9.5"
-source = "git+https://github.com/anza-xyz/crossbeam?rev=fd279d707025f0e60951e429bf778b4813d1b6bf#fd279d707025f0e60951e429bf778b4813d1b6bf"

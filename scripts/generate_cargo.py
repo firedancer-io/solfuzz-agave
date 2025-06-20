@@ -1,3 +1,10 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = [
+#     "tomlkit",
+# ]
+# ///
+
 import argparse
 from tomlkit import parse, inline_table, table
 import re
@@ -102,13 +109,16 @@ def main():
 
     # some clean up
     toml_data["package"] = table()
-    for dep_to_remove in ["pickledb", "winreg", "solana-sdk", "solana-program", "once_cell"]:
+    for dep_to_remove in ["pickledb", "winreg", "solana-sdk", "solana-program", "once_cell", "agave-cargo-registry", "solana-zk-keygen"]:
         if dep_to_remove in toml_data.get("dependencies", {}):
             del toml_data["dependencies"][dep_to_remove]
 
+    for patch_to_remove in ["crossbeam-epoch",]:
+        if patch_to_remove in toml_data.get("patch", {}).get("crates-io", {}):
+            del toml_data["patch"]["crates-io"][patch_to_remove]
+
     # add required solfuzz-agave added configurations
     solfuzz_agave_config = parse_toml_file("solfuzz_agave.toml")
-    print(solfuzz_agave_config)
     for section, values in solfuzz_agave_config.items():
         if section not in toml_data:
             toml_data[section] = table()
@@ -127,6 +137,7 @@ def main():
 
     # Write the updated data to the output TOML file
     with open(args.output, "w") as f:
+        f.write("# This file is auto generated. See generate_cargo.py\n")
         f.write(toml_data.as_string())
 
 if __name__ == "__main__":
