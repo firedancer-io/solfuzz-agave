@@ -29,6 +29,7 @@ jobs:
         run: |
           sudo dnf install -y protobuf-compiler
           sudo dnf install -y systemd-devel
+          sudo dnf install -y libclang-dev
 
       - name: Clone protosol
         run: make fetch_proto
