@@ -19,8 +19,7 @@ use solana_sbpf::{
     elf::Executable,
     error::{EbpfError, StableResult},
     memory_region::{MemoryMapping, MemoryRegion},
-    program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
-    static_analysis::TraceLogEntry,
+    program::{FunctionRegistry, SBPFVersion},
     verifier::RequisiteVerifier,
     vm::{ContextObject, EbpfVm},
 };
@@ -33,7 +32,7 @@ use std::{borrow::Borrow, cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
 declare_builtin_function!(
     SyscallStub,
     fn rust(
-        _invoke_context: &mut TestContextObject,
+        _invoke_context: &mut InvokeContext,
         _r1: u64,
         _r2: u64,
         _r3: u64,
@@ -45,51 +44,6 @@ declare_builtin_function!(
         Ok(0)
     }
 );
-
-/// Simple instruction meter for testing
-#[derive(Debug, Clone, Default)]
-pub struct TestContextObject {
-    /// Contains the register state at every instruction in order of execution
-    pub trace_log: Vec<TraceLogEntry>,
-    /// Maximal amount of instructions which still can be executed
-    pub remaining: u64,
-}
-
-impl ContextObject for TestContextObject {
-    fn trace(&mut self, state: [u64; 12]) {
-        self.trace_log.push(state);
-    }
-
-    fn consume(&mut self, amount: u64) {
-        self.remaining = self.remaining.saturating_sub(amount);
-    }
-
-    fn get_remaining(&self) -> u64 {
-        self.remaining
-    }
-}
-
-impl TestContextObject {
-    /// Initialize with instruction meter
-    pub fn new(remaining: u64) -> Self {
-        Self {
-            trace_log: Vec::new(),
-            remaining,
-        }
-    }
-
-    /// Compares an interpreter trace and a JIT trace.
-    ///
-    /// The log of the JIT can be longer because it only validates the instruction meter at branches.
-    pub fn compare_trace_log(interpreter: &Self, jit: &Self) -> bool {
-        let interpreter = interpreter.trace_log.as_slice();
-        let mut jit = jit.trace_log.as_slice();
-        if jit.len() > interpreter.len() {
-            jit = &jit[0..interpreter.len()];
-        }
-        interpreter == jit
-    }
-}
 
 /* Set to true to make debugging easier
 
@@ -261,27 +215,23 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         })
         .unwrap();
 
-    let mut loader = BuiltinProgram::new_loader(config.clone());
-
-    // Stub syscalls
-    // Note: unstubbed_runtime is "v1", so syscalls are only registered for version < V3,
-    //       i.e. unstubbed_runtime.get_function_registry(sbpf_version) does NOT work.
-    let syscall_reg = invoke_ctx
-        .program_cache_for_tx_batch
-        .environments
-        .program_runtime_v1
-        .get_function_registry();
-    for (_key, (name, _func)) in syscall_reg.iter() {
-        loader
-            .register_function(std::str::from_utf8(name).unwrap(), SyscallStub::vm)
-            .unwrap();
-    }
-    let loader = std::sync::Arc::new(loader);
+    let program_runtime_environment =
+        solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
+            invoke_ctx.get_feature_set(),
+            &compute_budget,
+            true,
+            false,
+        )
+        .unwrap();
 
     let function_registry = setup_internal_fn_registry(&vm_ctx, sbpf_version);
-    let mut executable =
-        Executable::from_text_bytes(&vm_ctx.rodata, loader, sbpf_version, function_registry)
-            .unwrap();
+    let mut executable = Executable::from_text_bytes(
+        &vm_ctx.rodata,
+        Arc::new(program_runtime_environment),
+        sbpf_version,
+        function_registry,
+    )
+    .unwrap();
 
     if executable.verify::<RequisiteVerifier>().is_err() {
         return Some(SyscallEffects {
@@ -296,9 +246,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             ..Default::default()
         });
     }
-
-    // Setup TestContextObject
-    let mut context_obj = TestContextObject::new(instr_ctx.cu_avail);
 
     // setup memory
     let heap_max = (vm_ctx.heap_max as usize).min(HEAP_MAX);
@@ -350,7 +297,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let mut vm = EbpfVm::new(
         executable.get_loader().clone(),
         executable.get_sbpf_version(),
-        &mut context_obj,
+        &mut invoke_ctx,
         memory_mapping,
         STACK_SIZE,
     );
@@ -383,7 +330,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     );
 
     if ENABLE_TRACE_DUMP {
-        eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
+        eprintln!("Tracing: {:x?}", vm.context_object_pointer.get_traces());
     }
 
     // When a program fails, the register in trace_log are not properly
@@ -391,7 +338,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     // For simplicity, we ignore them.
     let out_registers = match result {
         StableResult::Err(_) => &[0; 12],
-        StableResult::Ok(_) => vm.context_object_pointer.trace_log.last()?,
+        StableResult::Ok(_) => &vm.context_object_pointer.get_traces().last()?[0],
     };
 
     if let StableResult::Err(err) = result.borrow() {
@@ -434,8 +381,8 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
         pc: match result {
-            StableResult::Ok(_) => match vm.context_object_pointer.trace_log.last() {
-                Some(regs) => regs[11],
+            StableResult::Ok(_) => match vm.context_object_pointer.get_traces().last() {
+                Some(regs) => regs[0][11],
                 None => vm.registers[11],
             },
             StableResult::Err(_) => vm.registers[11],
