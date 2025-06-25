@@ -55,25 +55,25 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(17, process_type::<RentCollector>);
     map.insert(18, process_type::<StakeHistoryEntry>);
     map.insert(20, process_type::<StakeHistory>);
-    map.insert(23, process_type::<VoteAccounts>);
-    map.insert(34, process_type::<BankIncrementalSnapshotPersistence>);
-    map.insert(35, process_type::<NodeVoteAccounts>);
-    map.insert(38, process_type::<EpochStakes>);
-    map.insert(43, process_type::<BankHashStats>);
-    map.insert(51, process_type::<VersionedEpochStakes>);
-    map.insert(57, process_type::<PohConfig>);
-    map.insert(61, process_type::<Clock>);
-    map.insert(62, process_type::<LastRestartSlot>);
-    map.insert(93, process_type::<EpochRewards>);
-    map.insert(154, process_type::<ConfigKeys>);
-    map.insert(170, process_type::<FrozenHashStatus>);
-    map.insert(171, process_type::<FrozenHashVersioned>);
-    map.insert(208, process_type::<CrdsData>);
-    map.insert(210, process_type::<CrdsFilter>);
-    map.insert(211, process_type::<CrdsValue>);
-    map.insert(220, process_type::<RepairRequestHeader>);
-    map.insert(225, process_type::<RepairProtocol>);
-    map.insert(240, process_type::<DuplicateSlotProof>);
+    map.insert(27, process_type::<VoteAccounts>);
+    map.insert(38, process_type::<BankIncrementalSnapshotPersistence>);
+    map.insert(39, process_type::<NodeVoteAccounts>);
+    map.insert(42, process_type::<EpochStakes>);
+    map.insert(47, process_type::<BankHashStats>);
+    map.insert(55, process_type::<VersionedEpochStakes>);
+    map.insert(61, process_type::<PohConfig>);
+    map.insert(65, process_type::<Clock>);
+    map.insert(66, process_type::<LastRestartSlot>);
+    map.insert(97, process_type::<EpochRewards>);
+    map.insert(158, process_type::<ConfigKeys>);
+    map.insert(174, process_type::<FrozenHashStatus>);
+    map.insert(175, process_type::<FrozenHashVersioned>);
+    map.insert(212, process_type::<CrdsData>);
+    map.insert(214, process_type::<CrdsFilter>);
+    map.insert(215, process_type::<CrdsValue>);
+    map.insert(224, process_type::<RepairRequestHeader>);
+    map.insert(229, process_type::<RepairProtocol>);
+    map.insert(244, process_type::<DuplicateSlotProof>);
 
     map
 }
