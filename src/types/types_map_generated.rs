@@ -7,7 +7,7 @@ use std::collections::HashMap;
 // Type imports
 use solana_accounts_db::blockhash_queue::HashInfo;
 use solana_clock::Clock;
-use solana_config_program::ConfigKeys;
+use solana_config_program_client::ConfigKeys;
 use solana_core::repair::serve_repair::RepairProtocol;
 use solana_core::repair::serve_repair::RepairRequestHeader;
 use solana_epoch_rewards::EpochRewards;

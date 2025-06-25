@@ -24,10 +24,10 @@ use solana_rent::Rent;
 use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
+use solana_runtime::runtime_config::RuntimeConfig;
 use solana_sdk_ids::{address_lookup_table, config};
 use solana_signature::Signature;
 use solana_svm::account_loader::LoadedTransaction;
-use solana_svm::runtime_config::RuntimeConfig;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
@@ -57,14 +57,12 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
         return 0;
     }
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let txn_context = match TxnContext::decode(&in_slice[..in_sz as usize]) {
-        Ok(context) => context,
-        Err(_) => return 0, // Decode error
+    let Ok(txn_context) = TxnContext::decode(&in_slice[..in_sz as usize]) else {
+        return 0;
     };
 
-    let txn_result = match execute_transaction(&txn_context) {
-        Some(value) => value,
-        None => return 0, // Data format error
+    let Some(txn_result) = execute_transaction(&txn_context) else {
+        return 0;
     };
 
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
@@ -123,7 +121,7 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
         TransactionError::InstructionError(instr_err_idx, instruction_error) => {
             let instr_err_no = {
                 let serialized = bincode::serialize(&instruction_error).unwrap_or(vec![0, 0, 0, 0]);
-                u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
+                u32::from_le_bytes(serialized[0..4].try_into().unwrap()).saturating_add(1)
             };
             let custom_err_no = match instruction_error {
                 InstructionError::Custom(custom_err_no) => custom_err_no,
@@ -135,7 +133,7 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
     };
     let txn_err_no = {
         let serialized = bincode::serialize(&transaction_error).unwrap_or(vec![0, 0, 0, 0]);
-        u32::from_le_bytes(serialized[0..4].try_into().unwrap()) + 1
+        u32::from_le_bytes(serialized[0..4].try_into().unwrap()).saturating_add(1)
     };
     (
         txn_err_no,
@@ -537,18 +535,17 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         enable_cpi_recording: false,
         enable_log_recording: true,
         enable_return_data_recording: true,
+        enable_transaction_balance_recording: false,
     };
 
     let mut timings = ExecuteTimings::default();
 
     let configs = TransactionProcessingConfig {
         account_overrides: None,
-        compute_budget: bank.compute_budget(),
+        check_program_modification_slot: false,
         log_messages_bytes_limit: None,
         limit_to_load_programs: true,
         recording_config,
-        transaction_account_lock_limit: None,
-        check_program_modification_slot: false,
     };
 
     let mut metrics = TransactionErrorMetrics::default();

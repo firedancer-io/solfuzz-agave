@@ -12,30 +12,21 @@ struct Cli {
 fn exec(input: &PathBuf) -> bool {
     let blob = std::fs::read(input).unwrap();
     let fixture = SyscallFixture::decode(&blob[..]).unwrap();
-    let context = match fixture.input {
-        Some(i) => i,
-        None => {
-            println!("No context found.");
-            return false;
-        }
+    let Some(context) = fixture.input else {
+        println!("No context found.");
+        return false;
     };
 
-    let expected = match fixture.output {
-        Some(e) => e,
-        None => {
-            println!("No fixture found.");
-            return false;
-        }
+    let Some(expected) = fixture.output else {
+        println!("No fixture found.");
+        return false;
     };
-    let effects = match solfuzz_agave::vm_syscalls::execute_vm_syscall(context) {
-        Some(e) => e,
-        None => {
-            println!(
-                "FAIL: No instruction effects returned for input: {:?}",
-                input
-            );
-            return false;
-        }
+    let Some(effects) = solfuzz_agave::vm_syscalls::execute_vm_syscall(context) else {
+        println!(
+            "FAIL: No instruction effects returned for input: {:?}",
+            input
+        );
+        return false;
     };
 
     let ok = effects == expected;
@@ -49,10 +40,10 @@ fn exec(input: &PathBuf) -> bool {
 
 fn main() {
     let cli = Cli::parse();
-    let mut fail_cnt = 0;
+    let mut fail_cnt: i32 = 0;
     for input in cli.inputs {
         if !exec(&input) {
-            fail_cnt += 1;
+            fail_cnt = fail_cnt.saturating_add(1);
         }
     }
     std::process::exit(fail_cnt);

@@ -17,7 +17,7 @@ use solana_pubkey::Pubkey;
 
 pub fn instr_err_to_num(error: &InstructionError) -> i32 {
     let serialized_err = bincode::serialize(error).unwrap();
-    i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()) + 1
+    i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()).saturating_add(1)
 }
 
 pub fn instr_err_to_str(error: &InstructionError) -> String {
@@ -31,7 +31,7 @@ pub fn instr_err_to_str(error: &InstructionError) -> String {
 }
 
 pub fn syscall_err_to_num(error: &SyscallError) -> i32 {
-    let err = match error {
+    let err: i32 = match error {
         SyscallError::InvalidString(_, _) => 0,
         SyscallError::Abort => 1,
         SyscallError::Panic(_, _, _) => 2,
@@ -63,7 +63,7 @@ pub fn syscall_err_to_num(error: &SyscallError) -> i32 {
         SyscallError::InvalidPointer => 19,
         SyscallError::ArithmeticOverflow => 20,
     };
-    err + 1
+    err.saturating_add(1)
 }
 
 pub fn syscall_err_to_str(error: &SyscallError) -> String {
@@ -99,7 +99,7 @@ pub fn syscall_err_to_str(error: &SyscallError) -> String {
 }
 
 pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
-    let err = match error {
+    let err: i32 = match error {
         EbpfError::ElfError(_) => 0,
         EbpfError::FunctionAlreadyRegistered(_) => 1,
         EbpfError::CallDepthExceeded => 2,
@@ -110,7 +110,6 @@ pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
         EbpfError::CallOutsideTextSegment => 7,
         EbpfError::ExceededMaxInstructions => 8,
         EbpfError::JitNotCompiled => 9,
-        EbpfError::InvalidVirtualAddress(_) => 10,
         EbpfError::InvalidMemoryRegion(_) => 11,
         // Note: AccessViolation and StackAccessViolation are the same in Firedancer
         // so we return the same value
@@ -123,14 +122,13 @@ pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
         EbpfError::VerifierError(_) => 18,
         EbpfError::SyscallError(_) => -10, // this should never be used as dyn errors are explicitly downcasted
     };
-    err + 1
+    err.saturating_add(1)
 }
 
 pub fn ebpf_err_to_str(error: &EbpfError) -> String {
     match error {
         EbpfError::ElfError(_) => "ELF error".to_string(),
         EbpfError::FunctionAlreadyRegistered(_) => "function was already registered".to_string(),
-        EbpfError::InvalidVirtualAddress(_) => "invalid virtual address".to_string(),
         EbpfError::InvalidMemoryRegion(_) => "Invalid memory region at index".to_string(),
         // Note: AccessViolation and StackAccessViolation are the same in Firedancer
         // so we return the same value

@@ -2,7 +2,7 @@ name: "Build, check, test, release"
 on:
   push:
     branches:
-      - 'agave-v2.2.13'
+      - 'agave-v2.3.1'
 
 jobs:
   build:

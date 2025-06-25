@@ -233,7 +233,7 @@ fn test_txn_execute_clock() {
     let tx = SanitizedTransaction {
         message: Some(message),
         message_hash: Hash::new_unique().to_bytes().to_vec(),
-        signatures: vec![Signature::new_unique().as_ref().to_vec()],
+        signatures: vec![Signature::default().as_ref().to_vec()],
     };
 
     let txn_input = TxnContext {
@@ -376,8 +376,8 @@ fn test_simple_transfer() {
         message: Some(message),
         message_hash: Hash::new_unique().to_bytes().to_vec(),
         signatures: vec![
-            Signature::new_unique().as_ref().to_vec(),
-            Signature::new_unique().as_ref().to_vec(),
+            Signature::default().as_ref().to_vec(),
+            Signature::default().as_ref().to_vec(),
         ],
     };
 
@@ -565,8 +565,8 @@ fn test_lookup_table() {
         message: Some(message),
         message_hash: Hash::new_unique().to_bytes().to_vec(),
         signatures: vec![
-            Signature::new_unique().as_ref().to_vec(),
-            Signature::new_unique().as_ref().to_vec(),
+            Signature::default().as_ref().to_vec(),
+            Signature::default().as_ref().to_vec(),
         ],
     };
 
