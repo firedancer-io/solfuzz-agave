@@ -62,10 +62,6 @@ fd_rust_types_map = {
     type_name = "StakeHistoryEntry",
     dep_str   = "solana_sysvar::stake_history::StakeHistoryEntry"
   ),
-  "stake_history": RustTypeInfo(
-    type_name = "StakeHistory",
-    dep_str   = "solana_sysvar::stake_history::StakeHistory"
-  ),
   "vote_accounts": RustTypeInfo(
     type_name = "VoteAccounts",
     dep_str   = "solana_vote::vote_account::VoteAccounts"

@@ -34,7 +34,6 @@ use solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence;
 use solana_signature::Signature;
 use solana_sysvar::epoch_schedule::EpochSchedule;
 use solana_sysvar::rent::Rent;
-use solana_sysvar::stake_history::StakeHistory;
 use solana_sysvar::stake_history::StakeHistoryEntry;
 use solana_vote::vote_account::VoteAccounts;
 type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;
@@ -54,7 +53,6 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(16, process_type::<EpochSchedule>);
     map.insert(17, process_type::<RentCollector>);
     map.insert(18, process_type::<StakeHistoryEntry>);
-    map.insert(20, process_type::<StakeHistory>);
     map.insert(27, process_type::<VoteAccounts>);
     map.insert(38, process_type::<BankIncrementalSnapshotPersistence>);
     map.insert(39, process_type::<NodeVoteAccounts>);
