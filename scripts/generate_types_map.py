@@ -234,11 +234,9 @@ pub static TYPE_PROCESSORS: LazyLock<HashMap<u8, TypeProcessorFn>> =
     LazyLock::new(build_type_processor_map);""", file=out)
 
     if args.print_whitelist_idx:
-        print("Whitelist indices:")
         for entry in types_dict:
             if entry["name"] in fd_rust_types_map:
-                print(str(types_idx[f'fd_{entry["name"]}']) + ',')
-        print("Done printing whitelist indices")
+                print(str(types_idx[f'fd_{entry["name"]}']) + ', //' + entry["name"])
 
 if __name__ == "__main__":
     main()
