@@ -63,15 +63,15 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(65, process_type::<Clock>);
     map.insert(66, process_type::<LastRestartSlot>);
     map.insert(97, process_type::<EpochRewards>);
-    map.insert(156, process_type::<ConfigKeys>);
-    map.insert(172, process_type::<FrozenHashStatus>);
-    map.insert(173, process_type::<FrozenHashVersioned>);
-    map.insert(210, process_type::<CrdsData>);
-    map.insert(212, process_type::<CrdsFilter>);
-    map.insert(213, process_type::<CrdsValue>);
-    map.insert(222, process_type::<RepairRequestHeader>);
-    map.insert(227, process_type::<RepairProtocol>);
-    map.insert(242, process_type::<DuplicateSlotProof>);
+    map.insert(154, process_type::<ConfigKeys>);
+    map.insert(170, process_type::<FrozenHashStatus>);
+    map.insert(171, process_type::<FrozenHashVersioned>);
+    map.insert(208, process_type::<CrdsData>);
+    map.insert(210, process_type::<CrdsFilter>);
+    map.insert(211, process_type::<CrdsValue>);
+    map.insert(220, process_type::<RepairRequestHeader>);
+    map.insert(225, process_type::<RepairProtocol>);
+    map.insert(240, process_type::<DuplicateSlotProof>);
 
     map
 }
