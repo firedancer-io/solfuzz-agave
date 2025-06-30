@@ -1,6 +1,6 @@
 # Example usage:
 
-# python3 scripts/generate_types_map.py ../firedancer/src/flamenco/types/{fd_types.json,fd_types_reflect_generated.c} src/types/types_map_generated.rs
+# python3 scripts/generate_types_map.py --print-whitelist-idx ../firedancer/src/flamenco/types/{fd_types.json,fd_types_reflect_generated.c} src/types/types_map_generated.rs > ../solfuzz/src/mutate/whitelist.h
 
 import argparse
 import json
