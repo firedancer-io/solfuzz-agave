@@ -797,7 +797,7 @@ fn create_invoke_context_fields(
             // https://github.com/anza-xyz/agave/blob/6d74d13749829d463fabccebd8203edf0cf4c500/svm/src/account_loader.rs#L246-L249
             if *pubkey == input.instruction.program_id {
                 let mut stubbed_out_program_account: AccountSharedData = account.clone().into();
-                stubbed_out_program_account.set_owner(solana_bpf_loader_upgradeable::id());
+                stubbed_out_program_account.set_owner(bpf_loader_upgradeable::id());
                 stubbed_out_program_account.set_executable(true);
                 return (*pubkey, stubbed_out_program_account);
             }
