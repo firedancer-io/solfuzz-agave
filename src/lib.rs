@@ -16,6 +16,7 @@ use prost::Message;
 use solana_account::{Account, AccountSharedData, ReadableAccount};
 use solana_clock::Clock;
 use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
 use solana_epoch_schedule::EpochSchedule;
 use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
@@ -36,6 +37,7 @@ use solana_sdk_ids::{
 use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
+use solana_svm_callback::InvokeContextCallback;
 use solana_sysvar::last_restart_slot;
 use solana_sysvar_id::SysvarId;
 use solana_timings::ExecuteTimings;
@@ -207,6 +209,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_request_heap_frame_ix,
     prevent_rent_paying_rent_recipients,
     delay_visibility_of_program_deployment,
+    apply_cost_tracker_during_replay,
     add_set_tx_loaded_accounts_data_size_instruction,
     switch_to_new_elf_parser,
     round_up_heap_size,
@@ -219,9 +222,10 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     checked_arithmetic_in_fee_validation,
     last_restart_slot_sysvar,
     reduce_stake_warmup_cooldown,
-    // revise_turbine_epoch_stakes,
+    revise_turbine_epoch_stakes,
     enable_poseidon_syscall,
     timely_vote_credits,
+    enable_loader_v4,
     require_rent_exempt_split_destination,
     better_error_codes_for_tx_lamport_check,
     enable_alt_bn128_compression_syscall,
@@ -244,19 +248,23 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     remove_rounding_in_fee_calculation,
     deprecate_unused_legacy_vote_plumbing,
     reward_full_priority_fee,
+    disable_rent_fees_collection,
     add_new_reserved_account_keys,
     simplify_alt_bn128_syscall_error_codes,
     abort_on_invalid_curve,
     ed25519_precompile_verify_strict,
     zk_elgamal_proof_program_enabled,
     move_stake_and_move_lamports_ixs,
+    deprecate_legacy_vote_ixs,
     partitioned_epoch_rewards_superfeature,
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
     migrate_config_program_to_core_bpf,
-    migrate_address_lookup_table_program_to_core_bpf, // custom hardcoded feature
+    migrate_address_lookup_table_program_to_core_bpf,
     disable_account_loader_special_case,
     reserve_minimal_cus_for_builtin_instructions,
+    raise_block_limits_to_50m,
+    move_precompile_verification_to_svm,
     enable_transaction_loading_failure_fees,
     enable_loader_v4, // custom hardcoded feature
 ];
@@ -264,23 +272,20 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     blake3_syscall_enabled,
     // zk_token_sdk_enabled, // NOT supported in fd
-    enable_partitioned_epoch_reward,
     stake_raise_minimum_delegation_to_1_sol,
     stake_minimum_delegation_for_rewards,
     skip_rent_rewrites,
     increase_tx_account_lock_limit,
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
-    apply_cost_tracker_during_replay,
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
-    // bpf_account_data_direct_mapping, // Some day
+    // bpf_account_data_direct_mapping, // NOT finished in fd
+    include_loaded_accounts_data_size_in_fee_calculation,
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
-    enable_zk_transfer_with_fee, // deprecated / old stuff
+    enable_zk_transfer_with_fee,
     enable_zk_proof_from_account,
     enable_tower_sync_ix,
-    disable_rent_fees_collection,
     chained_merkle_conflict_duplicate_proofs,
-    deprecate_legacy_vote_ixs,
     enable_secp256r1_precompile,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
@@ -295,8 +300,15 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     accounts_lt_hash,
     remove_accounts_delta_hash,
     snapshots_lt_hash,
-    raise_block_limits_to_50m,
-    move_precompile_verification_to_svm,
+    disable_partitioned_rent_collection,
+    vote_only_full_fec_sets,
+    drop_unchained_merkle_shreds,
+    verify_retransmitter_signature,
+    enable_turbine_extended_fanout_experiments,
+    vote_only_retransmitter_signed_fec_sets,
+    mask_out_rent_epoch_in_vm_serialization,
+    disable_zk_elgamal_proof_program,
+    reenable_zk_elgamal_proof_program,
 ];
 
 // If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
@@ -348,12 +360,14 @@ pub struct InstrContext {
     pub lamports_per_signature: u64,
 }
 
+impl InvokeContextCallback for InstrContext {}
+
 impl TransactionProcessingCallback for InstrContext {
     fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
         let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
             .accounts
             .iter()
-            .map(|(_pubkey, _account)| (*_pubkey, AccountSharedData::from(_account.clone())))
+            .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
             .collect();
         if let Some(data) = account_shared_data
             .iter()
@@ -378,7 +392,7 @@ impl TransactionProcessingCallback for InstrContext {
             .collect();
         account_shared_data
             .iter()
-            .find(|(_pubkey, _)| *_pubkey == *pubkey)
+            .find(|(found_pubkey, _)| *found_pubkey == *pubkey)
             .map(|(_, shared_account)| shared_account)
             .cloned()
     }
@@ -508,9 +522,8 @@ impl From<InstrEffects> for proto::InstrEffects {
 }
 
 pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEffects> {
-    let instr_context = match InstrContext::try_from(input) {
-        Ok(context) => context,
-        Err(_) => return None,
+    let Ok(instr_context) = InstrContext::try_from(input) else {
+        return None;
     };
     let instr_effects = execute_instr(instr_context);
     instr_effects.map(Into::into)
@@ -810,8 +823,8 @@ fn create_invoke_context_fields(
 
     let program_runtime_environment_v1 =
         solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
-            &input.feature_set,
-            &compute_budget,
+            &input.feature_set.runtime_features(),
+            &compute_budget.to_budget(),
             false, /* deployment */
             false, /* debugging_features */
         )
@@ -914,12 +927,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         compute_budget,
     ) = create_invoke_context_fields(&mut input)?;
 
+    let runtime_features = input.feature_set.runtime_features();
+
     let environment_config = EnvironmentConfig::new(
         blockhash,
         lamports_per_signature,
-        0,
-        &|_| 0u64,
-        Arc::new(input.feature_set.clone()),
+        &input,
+        &runtime_features,
         &sysvar_cache,
     );
 
@@ -937,7 +951,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         &mut program_cache_for_tx_batch,
         environment_config,
         Some(log_collector.clone()),
-        compute_budget,
+        compute_budget.to_budget(),
+        SVMTransactionExecutionCost::default(),
     );
 
     let result = invoke_context.process_instruction(
@@ -956,7 +971,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         .cu_avail
         .saturating_sub(CORE_BPF_DEFAULT_COMPUTE_UNITS);
     #[cfg(not(feature = "core-bpf-conformance"))]
-    let cu_avail = input.cu_avail - compute_units_consumed;
+    let cu_avail = input.cu_avail.saturating_sub(compute_units_consumed);
     let return_data = transaction_context.get_return_data().1.to_vec();
 
     let account_keys: Vec<Pubkey> = (0..transaction_context.get_number_of_accounts())
@@ -1170,13 +1185,11 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let instr_context = match proto::InstrContext::decode(in_slice) {
-        Ok(context) => context,
-        Err(_) => return 0,
+    let Ok(instr_context) = proto::InstrContext::decode(in_slice) else {
+        return 0;
     };
-    let instr_effects = match execute_instr_proto(instr_context) {
-        Some(v) => v,
-        None => return 0,
+    let Some(instr_effects) = execute_instr_proto(instr_context) else {
+        return 0;
     };
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
     let out_vec = instr_effects.encode_to_vec();

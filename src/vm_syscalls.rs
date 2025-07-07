@@ -6,13 +6,11 @@ use crate::{
     utils::vm::STACK_SIZE,
     InstrContext,
 };
-use agave_feature_set::bpf_account_data_direct_mapping;
 use prost::Message;
-use solana_account::WritableAccount;
-use solana_account_info::MAX_PERMITTED_DATA_INCREASE;
-use solana_bpf_loader_program::serialization::serialize_parameters;
+use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
 use solana_log_collector::LogCollector;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
+use solana_program_runtime::serialization::serialize_parameters;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{
     invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch, mem_pool::VmMemoryPool,
@@ -26,8 +24,9 @@ use solana_sbpf::{
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
 };
-use solana_transaction_context::{IndexOfAccount, TransactionContext};
-use std::{cell::RefCell, ffi::c_int, rc::Rc, sync::Arc};
+use solana_svm_feature_set::SVMFeatureSet;
+use solana_transaction_context::TransactionContext;
+use std::{cell::RefCell, ffi::c_int};
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
@@ -37,14 +36,12 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let syscall_context = match SyscallContext::decode(in_slice) {
-        Ok(context) => context,
-        Err(_) => return 0,
+    let Ok(syscall_context) = SyscallContext::decode(in_slice) else {
+        return 0;
     };
 
-    let syscall_effects = match execute_vm_syscall(syscall_context) {
-        Some(v) => v,
-        None => return 0,
+    let Some(syscall_effects) = execute_vm_syscall(syscall_context) else {
+        return 0;
     };
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
     let out_vec = syscall_effects.encode_to_vec();
@@ -62,6 +59,8 @@ fn cleanup_static_ptrs(
     transaction_context_ptr: usize,
     sysvar_cache_ptr: usize,
     program_cache_for_tx_batch_ptr: usize,
+    instr_ctx_ptr: usize,
+    runtime_features_ptr: usize,
 ) {
     unsafe {
         let _transaction_context_droppable =
@@ -69,11 +68,14 @@ fn cleanup_static_ptrs(
         let _sysvar_cache_droppable = Box::from_raw(sysvar_cache_ptr as *mut SysvarCache);
         let _program_cache_for_tx_batch_droppable =
             Box::from_raw(program_cache_for_tx_batch_ptr as *mut ProgramCacheForTxBatch);
+        let _instr_ctx_droppable = Box::from_raw(instr_ctx_ptr as *mut InstrContext);
+        let _runtime_features_droppable = Box::from_raw(runtime_features_ptr as *mut SVMFeatureSet);
     }
 }
 
 pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
+    let runtime_feature_set = instr_ctx.feature_set.runtime_features();
 
     let (
         transaction_context,
@@ -94,9 +96,12 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let program_cache_for_tx_batch = Box::leak(Box::new(program_cache_for_tx_batch));
     let program_cache_for_tx_batch_ptr =
         program_cache_for_tx_batch as *mut ProgramCacheForTxBatch as usize;
+    let instr_ctx = Box::leak(Box::new(instr_ctx));
+    let instr_ctx_ptr = instr_ctx as *mut InstrContext as usize;
+    let runtime_features = Box::leak(Box::new(runtime_feature_set));
+    let runtime_features_ptr = runtime_features as *const SVMFeatureSet as usize;
 
     let instr = &instr_ctx.instruction;
-    let feature_set = &instr_ctx.feature_set;
 
     if let Some(vm_ctx) = &input.vm_ctx {
         if let Some(return_data) = vm_ctx.return_data.clone() {
@@ -108,7 +113,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     }
 
     let log_collector = LogCollector::new_ref();
-
     let instr_accounts = crate::get_instr_accounts(transaction_context, &instr.accounts);
 
     let invoke_context = RefCell::new(InvokeContext::new(
@@ -117,37 +121,34 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         EnvironmentConfig::new(
             blockhash,
             lamports_per_signature,
-            0,
-            &|_| 0u64,
-            Arc::new(feature_set.clone()),
+            instr_ctx,
+            runtime_features,
             sysvar_cache,
         ),
         Some(log_collector.clone()),
-        compute_budget,
+        compute_budget.to_budget(),
+        SVMTransactionExecutionCost::default(),
     ));
 
     let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
 
-    let program_idx = match invoke_ctx
+    let Some(program_idx) = invoke_ctx
         .transaction_context
         .find_index_of_program_account(&instr_ctx.instruction.program_id)
-    {
-        Some(idx) => idx,
-        None => {
-            cleanup_static_ptrs(
-                transaction_context_ptr,
-                sysvar_cache_ptr,
-                program_cache_for_tx_batch_ptr,
-            );
-            return None;
-        }
+    else {
+        cleanup_static_ptrs(
+            transaction_context_ptr,
+            sysvar_cache_ptr,
+            program_cache_for_tx_batch_ptr,
+            instr_ctx_ptr,
+            runtime_features_ptr,
+        );
+        return None;
     };
-    let direct_mapping = invoke_ctx
-        .get_feature_set()
-        .is_active(&bpf_account_data_direct_mapping::id());
+    let direct_mapping = invoke_ctx.get_feature_set().bpf_account_data_direct_mapping;
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
-        .is_active(&agave_feature_set::mask_out_rent_epoch_in_vm_serialization::id());
+        .mask_out_rent_epoch_in_vm_serialization;
     invoke_ctx
         .transaction_context
         .get_next_instruction_context()
@@ -161,6 +162,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 transaction_context_ptr,
                 sysvar_cache_ptr,
                 program_cache_for_tx_batch_ptr,
+                instr_ctx_ptr,
+                runtime_features_ptr,
             );
             return None;
         }
@@ -192,6 +195,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             transaction_context_ptr,
             sysvar_cache_ptr,
             program_cache_for_tx_batch_ptr,
+            instr_ctx_ptr,
+            runtime_features_ptr,
         );
         return None;
     }
@@ -221,7 +226,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .program_runtime_v1
         .get_config()
         .clone();
-    let syscall_func = match invoke_ctx
+    let Some((_, syscall_func)) = invoke_ctx
         .program_cache_for_tx_batch
         .environments
         .program_runtime_v1
@@ -232,16 +237,16 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 .clone()
                 .unwrap_or_default()
                 .function_name,
-        ) {
-        Some((_, syscall_func)) => syscall_func,
-        None => {
-            cleanup_static_ptrs(
-                transaction_context_ptr,
-                sysvar_cache_ptr,
-                program_cache_for_tx_batch_ptr,
-            );
-            return None;
-        }
+        )
+    else {
+        cleanup_static_ptrs(
+            transaction_context_ptr,
+            sysvar_cache_ptr,
+            program_cache_for_tx_batch_ptr,
+            instr_ctx_ptr,
+            runtime_features_ptr,
+        );
+        return None;
     };
 
     let mut mempool = VmMemoryPool::new();
@@ -267,31 +272,22 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .chain(input_memory_regions)
         .collect();
 
-    let cow_cb_accounts = Rc::clone(invoke_ctx.transaction_context.accounts());
-    let cow_cb = Box::new(move |index_in_transaction| {
-        let mut account = cow_cb_accounts
-            .get(index_in_transaction as IndexOfAccount)
-            .unwrap()
-            .borrow_mut();
-        cow_cb_accounts
-            .touch(index_in_transaction as IndexOfAccount)
-            .map_err(|_| ())?;
-
-        if account.is_shared() {
-            account.reserve(MAX_PERMITTED_DATA_INCREASE);
-        }
-        Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
-    });
-    let memory_mapping = match MemoryMapping::new_with_cow(regions, cow_cb, &config, sbpf_version) {
-        Ok(mapping) => mapping,
-        Err(_) => {
-            cleanup_static_ptrs(
-                transaction_context_ptr,
-                sysvar_cache_ptr,
-                program_cache_for_tx_batch_ptr,
-            );
-            return None;
-        }
+    let Ok(memory_mapping) = MemoryMapping::new_with_cow(
+        regions,
+        &config,
+        sbpf_version,
+        invoke_ctx
+            .transaction_context
+            .account_data_write_access_handler(),
+    ) else {
+        cleanup_static_ptrs(
+            transaction_context_ptr,
+            sysvar_cache_ptr,
+            program_cache_for_tx_batch_ptr,
+            instr_ctx_ptr,
+            runtime_features_ptr,
+        );
+        return None;
     };
 
     invoke_ctx
@@ -336,6 +332,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         transaction_context_ptr,
         sysvar_cache_ptr,
         program_cache_for_tx_batch_ptr,
+        instr_ctx_ptr,
+        runtime_features_ptr,
     );
 
     // Unwrap and return the effects of the syscall

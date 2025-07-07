@@ -1,6 +1,6 @@
 # Example usage:
 
-# python3 scripts/generate_types_map.py ../firedancer/src/flamenco/types/{fd_types.json,fd_types_reflect_generated.c} src/types/types_map_generated.rs
+# python3 scripts/generate_types_map.py --print-whitelist-idx ../firedancer/src/flamenco/types/{fd_types.json,fd_types_reflect_generated.c} src/types/types_map_generated.rs > ../solfuzz/src/mutate/whitelist.h
 
 import argparse
 import json
@@ -61,10 +61,6 @@ fd_rust_types_map = {
   "stake_history_entry": RustTypeInfo(
     type_name = "StakeHistoryEntry",
     dep_str   = "solana_sysvar::stake_history::StakeHistoryEntry"
-  ),
-  "stake_history": RustTypeInfo(
-    type_name = "StakeHistory",
-    dep_str   = "solana_sysvar::stake_history::StakeHistory"
   ),
   "vote_accounts": RustTypeInfo(
     type_name = "VoteAccounts",
@@ -238,11 +234,9 @@ pub static TYPE_PROCESSORS: LazyLock<HashMap<u8, TypeProcessorFn>> =
     LazyLock::new(build_type_processor_map);""", file=out)
 
     if args.print_whitelist_idx:
-        print("Whitelist indices:")
         for entry in types_dict:
             if entry["name"] in fd_rust_types_map:
-                print(str(types_idx[f'fd_{entry["name"]}']) + ',')
-        print("Done printing whitelist indices")
+                print(str(types_idx[f'fd_{entry["name"]}']) + ', //' + entry["name"])
 
 if __name__ == "__main__":
     main()

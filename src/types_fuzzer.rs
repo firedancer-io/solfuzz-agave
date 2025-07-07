@@ -86,13 +86,11 @@ pub unsafe extern "C" fn sol_compat_type_execute_v1(
     }
 
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let type_ctx = match TypeContext::decode(in_slice) {
-        Ok(context) => context,
-        Err(_) => return 0,
+    let Ok(type_ctx) = TypeContext::decode(in_slice) else {
+        return 0;
     };
-    let type_effects = match execute_type(type_ctx) {
-        Some(effects) => effects,
-        None => return 0,
+    let Some(type_effects) = execute_type(type_ctx) else {
+        return 0;
     };
 
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);

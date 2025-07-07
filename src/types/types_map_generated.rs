@@ -7,7 +7,7 @@ use std::collections::HashMap;
 // Type imports
 use solana_accounts_db::blockhash_queue::HashInfo;
 use solana_clock::Clock;
-use solana_config_program::ConfigKeys;
+use solana_config_program_client::ConfigKeys;
 use solana_core::repair::serve_repair::RepairProtocol;
 use solana_core::repair::serve_repair::RepairRequestHeader;
 use solana_epoch_rewards::EpochRewards;
@@ -34,7 +34,6 @@ use solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence;
 use solana_signature::Signature;
 use solana_sysvar::epoch_schedule::EpochSchedule;
 use solana_sysvar::rent::Rent;
-use solana_sysvar::stake_history::StakeHistory;
 use solana_sysvar::stake_history::StakeHistoryEntry;
 use solana_vote::vote_account::VoteAccounts;
 type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;
@@ -54,7 +53,6 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(16, process_type::<EpochSchedule>);
     map.insert(17, process_type::<RentCollector>);
     map.insert(18, process_type::<StakeHistoryEntry>);
-    map.insert(20, process_type::<StakeHistory>);
     map.insert(27, process_type::<VoteAccounts>);
     map.insert(38, process_type::<BankIncrementalSnapshotPersistence>);
     map.insert(39, process_type::<NodeVoteAccounts>);
@@ -65,15 +63,15 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(65, process_type::<Clock>);
     map.insert(66, process_type::<LastRestartSlot>);
     map.insert(97, process_type::<EpochRewards>);
-    map.insert(158, process_type::<ConfigKeys>);
-    map.insert(174, process_type::<FrozenHashStatus>);
-    map.insert(175, process_type::<FrozenHashVersioned>);
-    map.insert(212, process_type::<CrdsData>);
-    map.insert(214, process_type::<CrdsFilter>);
-    map.insert(215, process_type::<CrdsValue>);
-    map.insert(224, process_type::<RepairRequestHeader>);
-    map.insert(229, process_type::<RepairProtocol>);
-    map.insert(244, process_type::<DuplicateSlotProof>);
+    map.insert(154, process_type::<ConfigKeys>);
+    map.insert(170, process_type::<FrozenHashStatus>);
+    map.insert(171, process_type::<FrozenHashVersioned>);
+    map.insert(208, process_type::<CrdsData>);
+    map.insert(210, process_type::<CrdsFilter>);
+    map.insert(211, process_type::<CrdsValue>);
+    map.insert(220, process_type::<RepairRequestHeader>);
+    map.insert(225, process_type::<RepairProtocol>);
+    map.insert(240, process_type::<DuplicateSlotProof>);
 
     map
 }

@@ -4,7 +4,7 @@ use agave_feature_set::*;
 use ahash::{AHashMap, AHashSet};
 use prost::Message;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_compute_budget::compute_budget::SVMTransactionExecutionBudget;
 use solana_pubkey::Pubkey;
 use solana_sbpf::{ebpf, elf::Executable};
 use std::collections::BTreeSet;
@@ -41,8 +41,8 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
     }
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
-        &feature_set,
-        &ComputeBudget::default(),
+        &feature_set.runtime_features(),
+        &SVMTransactionExecutionBudget::default(),
         deploy_checks,
         false,
     )
@@ -51,12 +51,11 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
     let mut elf_effects = ElfLoaderEffects::default();
 
     // load the elf
-    let elf_exec = match Executable::load(
+    let Ok(elf_exec) = Executable::load(
         elf_bytes,
         std::sync::Arc::new(program_runtime_environment_v1),
-    ) {
-        Ok(v) => v,
-        Err(_) => return Some(elf_effects),
+    ) else {
+        return Some(elf_effects);
     };
 
     let ro_section = elf_exec.get_ro_section();
@@ -67,15 +66,15 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
 
     let fn_reg = elf_exec.get_function_registry();
     for (_k, v) in fn_reg.iter() {
-        let (_name, fn_addr) = v;
-        let _name_str = std::str::from_utf8(_name).unwrap();
+        let (name, fn_addr) = v;
+        let _name_str = std::str::from_utf8(name).unwrap();
         calldests.insert(fn_addr as u64);
     }
 
     elf_effects.rodata = ro_section.to_vec();
     elf_effects.rodata_sz = ro_section.len() as u64;
     elf_effects.entry_pc = elf_exec.get_entrypoint_instruction_offset() as u64;
-    elf_effects.text_off = text_vaddr - ebpf::MM_RODATA_START;
+    elf_effects.text_off = text_vaddr.saturating_sub(ebpf::MM_RODATA_START);
     elf_effects.text_cnt = (raw_text_sz / 8) as u64;
     elf_effects.calldests = calldests.into_iter().collect();
     Some(elf_effects)
@@ -89,14 +88,12 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let elf_loader_ctx = match ElfLoaderCtx::decode(in_slice) {
-        Ok(context) => context,
-        Err(_) => return 0,
+    let Ok(elf_loader_ctx) = ElfLoaderCtx::decode(in_slice) else {
+        return 0;
     };
 
-    let elf_loader_effects = match execute_elf_loader(elf_loader_ctx) {
-        Some(v) => v,
-        None => return 0,
+    let Some(elf_loader_effects) = execute_elf_loader(elf_loader_ctx) else {
+        return 0;
     };
 
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);

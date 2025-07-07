@@ -33,12 +33,12 @@ use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+use solana_runtime::runtime_config::RuntimeConfig;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{Stakes, StakesEnum};
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
-use solana_svm::runtime_config::RuntimeConfig;
 use solana_sysvar;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;
@@ -62,14 +62,12 @@ pub unsafe extern "C" fn sol_compat_block_execute_v1(
         return 0;
     }
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let block_context = match BlockContext::decode(&in_slice[..in_sz as usize]) {
-        Ok(context) => context,
-        Err(_) => return 0, // Decode error
+    let Ok(block_context) = BlockContext::decode(&in_slice[..in_sz as usize]) else {
+        return 0;
     };
 
-    let block_result = match execute_block(block_context) {
-        Some(value) => value,
-        None => return 0, // Data format error
+    let Some(block_result) = execute_block(block_context) else {
+        return 0;
     };
 
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
@@ -257,7 +255,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     });
 
     let mut ancestors = AncestorsForSerialization::default();
-    ancestors.insert(slot - 1, 1);
+    ancestors.insert(slot.saturating_sub(1), 1);
     ancestors.insert(slot, 1);
 
     /* Accounts DB config and initialization */
@@ -290,7 +288,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             (pubkey, account_data)
         })
         .collect::<Vec<_>>();
-    accounts.store_cached((slot - 1, &accounts_to_store[..]), None);
+    accounts.store_cached((slot.saturating_sub(1), &accounts_to_store[..]), None);
 
     /* Build the stakes separately */
     let epoch = epoch_schedule.get_epoch(slot);
@@ -359,8 +357,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     );
 
     epoch_stakes.insert(
-        epoch + 1,
-        EpochStakes::new(Arc::new(StakesEnum::from(stakes_t.clone())), epoch + 1),
+        epoch.saturating_add(1),
+        EpochStakes::new(
+            Arc::new(StakesEnum::from(stakes_t.clone())),
+            epoch.saturating_add(1),
+        ),
     );
 
     let bank_fields = BankFieldsToDeserialize {
@@ -370,8 +371,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         parent_hash: Hash::new_from_array(slot_ctx.parent_bank_hash.try_into().unwrap()),
         parent_slot: slot_ctx.prev_slot,
         capitalization: slot_ctx.prev_epoch_capitalization,
-        tick_height: 64u64 * slot,
-        max_tick_height: 64u64 * (slot + 1u64),
+        tick_height: 64u64.saturating_mul(slot),
+        max_tick_height: 64u64.saturating_mul(slot.saturating_add(1)),
         ticks_per_slot: 64u64,
         ns_per_slot: genesis_config.ns_per_slot(),
         genesis_creation_time: epoch_ctx.genesis_creation_time as i64,

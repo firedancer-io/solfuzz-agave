@@ -15,14 +15,12 @@ pub unsafe extern "C" fn sol_compat_pack_compute_budget_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let input = match PackComputeBudgetContext::decode(in_slice) {
-        Ok(input) => input,
-        Err(_) => return 0,
+    let Ok(input) = PackComputeBudgetContext::decode(in_slice) else {
+        return 0;
     };
 
-    let effects = match execute_pack_cbp(input) {
-        Some(effects) => effects,
-        None => return 0,
+    let Some(effects) = execute_pack_cbp(input) else {
+        return 0;
     };
 
     let out_slice = std::slice::from_raw_parts_mut(out_ptr, *out_psz as usize);

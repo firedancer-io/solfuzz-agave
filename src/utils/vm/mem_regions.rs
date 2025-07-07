@@ -1,6 +1,6 @@
 use solana_sbpf::{
     ebpf,
-    memory_region::{MemoryMapping, MemoryRegion, MemoryState},
+    memory_region::{MemoryMapping, MemoryRegion},
 };
 
 use crate::proto::InputDataRegion;
@@ -47,10 +47,7 @@ fn mem_region_to_input_data_region(region: &MemoryRegion) -> InputDataRegion {
             std::slice::from_raw_parts(region.host_addr.get() as *const u8, region.len as usize)
                 .to_vec()
         },
-        offset: region.vm_addr - ebpf::MM_INPUT_START,
-        is_writable: matches!(
-            region.state.get(),
-            MemoryState::Writable | MemoryState::Cow(_)
-        ),
+        offset: region.vm_addr.saturating_sub(ebpf::MM_INPUT_START),
+        is_writable: region.writable.get(),
     }
 }

@@ -12,9 +12,8 @@ pub unsafe extern "C" fn sol_compat_shred_parse_v1(
 ) -> c_int {
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
 
-    let binary_shred = match ShredBinary::decode(in_slice) {
-        Ok(context) => context,
-        Err(_) => return 0,
+    let Ok(binary_shred) = ShredBinary::decode(in_slice) else {
+        return 0;
     };
 
     let shred_bytes = binary_shred.data;
