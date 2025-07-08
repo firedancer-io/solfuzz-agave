@@ -16,15 +16,15 @@ echo "LOG_PATH: $LOG_PATH"
 
 mkdir -p dump
 
-# if [ ! -d dump/test-vectors ]; then
-#   cd dump
-#   git clone --depth=1 -q https://github.com/firedancer-io/test-vectors.git
-#   cd ..
-# else
-#   cd dump/test-vectors
-#   git pull -q
-#   cd ../..
-# fi
+if [ ! -d dump/test-vectors ]; then
+  cd dump
+  git clone --depth=1 -q https://github.com/firedancer-io/test-vectors.git
+  cd ..
+else
+  cd dump/test-vectors
+  git pull -q
+  cd ../..
+fi
 
 find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_instr                > $LOG_PATH/test_exec_instr.log 2>&1
 find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_txn         > $LOG_PATH/test_exec_precompile.log 2>&1
