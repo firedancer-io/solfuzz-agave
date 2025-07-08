@@ -51,7 +51,7 @@ fn generate_cache_load_tokens(program_id_bytes: &PubkeyBytes, elf: &ElfBytes) ->
             target_program_id,
             Arc::new(
                 solana_program_runtime::loaded_programs::ProgramCacheEntry::new(
-                    &solana_sdk::bpf_loader_upgradeable::id(),
+                    &bpf_loader_upgradeable::id(),
                     cache.environments.program_runtime_v1.clone(),
                     0,
                     0,
