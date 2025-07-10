@@ -328,6 +328,12 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Invoke the syscall
     vm.invoke_function(syscall_func);
 
+    // Unwrap and return the effects of the syscall
+    let program_id = instr_ctx.instruction.program_id;
+    let program_result = vm.program_result;
+    let (error, error_kind, r0) =
+        unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
+
     cleanup_static_ptrs(
         transaction_context_ptr,
         sysvar_cache_ptr,
@@ -336,11 +342,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         runtime_features_ptr,
     );
 
-    // Unwrap and return the effects of the syscall
-    let program_id = instr_ctx.instruction.program_id;
-    let program_result = vm.program_result;
-    let (error, error_kind, r0) =
-        unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
     Some(SyscallEffects {
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.

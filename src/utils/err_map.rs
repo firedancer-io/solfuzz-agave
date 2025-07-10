@@ -66,38 +66,6 @@ pub fn syscall_err_to_num(error: &SyscallError) -> i32 {
     err.saturating_add(1)
 }
 
-pub fn syscall_err_to_str(error: &SyscallError) -> String {
-    match error {
-        // InvalidString prints rust std::str::Utf8Error, we simplify a bit
-        SyscallError::InvalidString(_, _) => "invalid utf-8 sequence".to_string(),
-        SyscallError::Panic(_, _, _) => "SBF program Panicked in...".to_string(),
-        SyscallError::MalformedSignerSeed(_, _) => "Malformed signer seed".to_string(),
-        SyscallError::BadSeeds(_) => {
-            "Could not create program address with signer seeds".to_string()
-        }
-        SyscallError::ProgramNotSupported(_) => {
-            "Program not supported by inner instructions".to_string()
-        }
-        SyscallError::InstructionTooLarge(_, _) => {
-            "Instruction passed to inner instruction is too large".to_string()
-        }
-        SyscallError::ReturnDataTooLarge(_, _) => "Return data too large".to_string(),
-        SyscallError::MaxInstructionDataLenExceeded {
-            data_len: _,
-            max_data_len: _,
-        } => "Invoked an instruction with data that is too large".to_string(),
-        SyscallError::MaxInstructionAccountsExceeded {
-            num_accounts: _,
-            max_accounts: _,
-        } => "Invoked an instruction with too many accounts".to_string(),
-        SyscallError::MaxInstructionAccountInfosExceeded {
-            num_account_infos: _,
-            max_account_infos: _,
-        } => "Invoked an instruction with too many account info's".to_string(),
-        _ => error.to_string(),
-    }
-}
-
 pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
     let err: i32 = match error {
         EbpfError::ElfError(_) => 0,
@@ -111,10 +79,8 @@ pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
         EbpfError::ExceededMaxInstructions => 8,
         EbpfError::JitNotCompiled => 9,
         EbpfError::InvalidMemoryRegion(_) => 11,
-        // Note: AccessViolation and StackAccessViolation are the same in Firedancer
-        // so we return the same value
         EbpfError::AccessViolation(_, _, _, _) => 12,
-        EbpfError::StackAccessViolation(_, _, _, _) => 12, // it was: 13
+        EbpfError::StackAccessViolation(_, _, _, _) => 13,
         EbpfError::InvalidInstruction => 14,
         EbpfError::UnsupportedInstruction => 15,
         EbpfError::ExhaustedTextSegment(_) => 16,
@@ -123,27 +89,6 @@ pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
         EbpfError::SyscallError(_) => -10, // this should never be used as dyn errors are explicitly downcasted
     };
     err.saturating_add(1)
-}
-
-pub fn ebpf_err_to_str(error: &EbpfError) -> String {
-    match error {
-        EbpfError::ElfError(_) => "ELF error".to_string(),
-        EbpfError::FunctionAlreadyRegistered(_) => "function was already registered".to_string(),
-        EbpfError::InvalidMemoryRegion(_) => "Invalid memory region at index".to_string(),
-        // Note: AccessViolation and StackAccessViolation are the same in Firedancer
-        // so we return the same value
-        EbpfError::AccessViolation(_, _, _, _) => "Access violation".to_string(),
-        EbpfError::StackAccessViolation(_, _, _, _) => {
-            // it was: "Access violation in stack frame".to_string()
-            "Access violation".to_string()
-        }
-        EbpfError::ExhaustedTextSegment(_) => {
-            "Compilation exhausted text segment at BPF instruction".to_string()
-        }
-        EbpfError::LibcInvocationFailed(_, _, _) => "Libc calling returned error code".to_string(),
-        EbpfError::VerifierError(_) => "Verifier error".to_string(),
-        _ => error.to_string(),
-    }
 }
 
 pub fn unpack_stable_result(
@@ -175,19 +120,11 @@ pub fn unpack_stable_result(
                     );
                     (instr_err_to_num(instruction_err), ErrKind::Instruction)
                 } else if let Some(syscall_error) = syscall_error.downcast_ref::<SyscallError>() {
-                    stable_log::program_failure(
-                        &logger,
-                        program_id,
-                        &syscall_err_to_str(syscall_error),
-                    );
+                    stable_log::program_failure(&logger, program_id, &syscall_error.to_string());
                     (syscall_err_to_num(syscall_error), ErrKind::Syscall)
-                } else if let Some(syscall_error) = syscall_error.downcast_ref::<EbpfError>() {
-                    stable_log::program_failure(
-                        &logger,
-                        program_id,
-                        &ebpf_err_to_str(syscall_error),
-                    );
-                    (ebpf_err_to_num(syscall_error), ErrKind::Ebpf)
+                } else if let Some(ebpf_error) = syscall_error.downcast_ref::<EbpfError>() {
+                    stable_log::program_failure(&logger, program_id, &ebpf_error.to_string());
+                    (ebpf_err_to_num(ebpf_error), ErrKind::Ebpf)
                 } else if syscall_error
                     .downcast_ref::<PoseidonSyscallError>()
                     .is_some()
@@ -196,11 +133,11 @@ pub fn unpack_stable_result(
                     (-1, ErrKind::Syscall)
                 } else {
                     // This should never happen, so we return -1 to highlight an unknown error
-                    stable_log::program_failure(&logger, program_id, &ebpf_err_to_str(err));
+                    stable_log::program_failure(&logger, program_id, &err.to_string());
                     (-1, ErrKind::Unspecified)
                 }
             } else {
-                stable_log::program_failure(&logger, program_id, &ebpf_err_to_str(err));
+                stable_log::program_failure(&logger, program_id, &err.to_string());
                 (ebpf_err_to_num(err), ErrKind::Ebpf)
             };
             (err_no as i64, err_kind, 0)

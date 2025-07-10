@@ -1,6 +1,9 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
-    utils::vm::{err_map, mem_regions, HEAP_MAX, STACK_SIZE},
+    utils::{
+        err_map,
+        vm::{mem_regions, HEAP_MAX, STACK_SIZE},
+    },
     InstrContext, TOGGLE_DIRECT_MAPPING,
 };
 use agave_feature_set::bpf_account_data_direct_mapping;
@@ -18,14 +21,14 @@ use solana_sbpf::{
     declare_builtin_function,
     ebpf::{self, HOST_ALIGN},
     elf::Executable,
-    error::{EbpfError, StableResult},
+    error::StableResult,
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
     static_analysis::TraceLogEntry,
     verifier::RequisiteVerifier,
     vm::{ContextObject, EbpfVm},
 };
-use std::{borrow::Borrow, cell::RefCell, ffi::c_int};
+use std::{cell::RefCell, ffi::c_int};
 
 declare_builtin_function!(
     SyscallStub,
@@ -367,10 +370,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         USE_INTERPRETER, /* use JIT for fuzzing, interpreter for debugging */
     );
 
-    if ENABLE_TRACE_DUMP {
-        eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
-    }
-
     // When a program fails, the register in trace_log are not properly
     // captured (they represent the state at the end of the previous ix).
     // For simplicity, we ignore them.
@@ -379,25 +378,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         StableResult::Ok(_) => vm.context_object_pointer.trace_log.last()?,
     };
 
-    if let StableResult::Err(err) = result.borrow() {
-        if let EbpfError::ExceededMaxInstructions = err {
-            /* CU error is difficult to properly compare as there may have been
-            valid writes to the memory regions prior to capturing the error. And
-            the pc might be well past (by an arbitrary amount) the instruction
-            where the CU error occurred. */
-            return Some(SyscallEffects {
-                error: err_map::get_fd_vm_err_code(err).into(),
-                cu_avail: 0,
-                frame_count: vm.call_depth,
-                ..Default::default()
-            });
-        }
+    if ENABLE_TRACE_DUMP {
+        eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
     }
 
     Some(SyscallEffects {
         error: match result {
             StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_err) => err_map::get_fd_vm_err_code(ebpf_err).into(),
+            StableResult::Err(ref ebpf_err) => err_map::ebpf_err_to_num(ebpf_err).into(),
         },
         r0: out_registers[0],
         r1: out_registers[1],
