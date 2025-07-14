@@ -104,7 +104,7 @@ fd_rust_types_map = {
   ),
   "config_keys": RustTypeInfo(
     type_name = "ConfigKeys",
-    dep_str   = "solana_config_program::ConfigKeys"
+    dep_str   = "solana_config_program_client::ConfigKeys"
   ),
   "frozen_hash_status": RustTypeInfo(
     type_name = "FrozenHashStatus",
