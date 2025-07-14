@@ -54,24 +54,24 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(17, process_type::<RentCollector>);
     map.insert(18, process_type::<StakeHistoryEntry>);
     map.insert(27, process_type::<VoteAccounts>);
-    map.insert(38, process_type::<BankIncrementalSnapshotPersistence>);
-    map.insert(39, process_type::<NodeVoteAccounts>);
-    map.insert(42, process_type::<EpochStakes>);
-    map.insert(47, process_type::<BankHashStats>);
-    map.insert(55, process_type::<VersionedEpochStakes>);
-    map.insert(61, process_type::<PohConfig>);
-    map.insert(65, process_type::<Clock>);
-    map.insert(66, process_type::<LastRestartSlot>);
-    map.insert(97, process_type::<EpochRewards>);
-    map.insert(154, process_type::<ConfigKeys>);
-    map.insert(170, process_type::<FrozenHashStatus>);
-    map.insert(171, process_type::<FrozenHashVersioned>);
-    map.insert(208, process_type::<CrdsData>);
-    map.insert(210, process_type::<CrdsFilter>);
-    map.insert(211, process_type::<CrdsValue>);
-    map.insert(220, process_type::<RepairRequestHeader>);
-    map.insert(225, process_type::<RepairProtocol>);
-    map.insert(240, process_type::<DuplicateSlotProof>);
+    map.insert(36, process_type::<BankIncrementalSnapshotPersistence>);
+    map.insert(37, process_type::<NodeVoteAccounts>);
+    map.insert(40, process_type::<EpochStakes>);
+    map.insert(45, process_type::<BankHashStats>);
+    map.insert(53, process_type::<VersionedEpochStakes>);
+    map.insert(59, process_type::<PohConfig>);
+    map.insert(63, process_type::<Clock>);
+    map.insert(64, process_type::<LastRestartSlot>);
+    map.insert(95, process_type::<EpochRewards>);
+    map.insert(152, process_type::<ConfigKeys>);
+    map.insert(168, process_type::<FrozenHashStatus>);
+    map.insert(169, process_type::<FrozenHashVersioned>);
+    map.insert(206, process_type::<CrdsData>);
+    map.insert(208, process_type::<CrdsFilter>);
+    map.insert(209, process_type::<CrdsValue>);
+    map.insert(218, process_type::<RepairRequestHeader>);
+    map.insert(223, process_type::<RepairProtocol>);
+    map.insert(238, process_type::<DuplicateSlotProof>);
 
     map
 }
