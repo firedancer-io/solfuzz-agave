@@ -3,7 +3,7 @@ extern crate proc_macro;
 use {
     proc_macro::TokenStream,
     quote::{quote, ToTokens},
-    solana_sdk::pubkey::Pubkey,
+    solana_pubkey::Pubkey,
     std::{fs::File, io::Read, path::Path, str::FromStr},
 };
 
@@ -24,10 +24,10 @@ impl ToTokens for ElfBytes {
 }
 
 const SUPPORTED_BUILTINS: [Pubkey; 4] = [
-    solana_sdk::address_lookup_table::program::id(),
-    solana_sdk::config::program::id(),
-    solana_sdk::feature::id(),
-    solana_sdk::stake::program::id(),
+    solana_sdk_ids::address_lookup_table::id(),
+    solana_sdk_ids::config::id(),
+    solana_sdk_ids::feature::id(),
+    solana_sdk_ids::stake::id(),
 ];
 
 fn read_file(path: &Path) -> Vec<u8> {
@@ -127,22 +127,22 @@ pub fn declare_core_bpf_default_compute_units(_: TokenStream) -> TokenStream {
             panic!("Unsupported program id: {}", program_id);
         }
 
-        if program_id == solana_sdk::address_lookup_table::program::id() {
+        if program_id == solana_sdk_ids::address_lookup_table::id() {
             tokens = quote! {
                 #[cfg(feature = "core-bpf-conformance")]
                 const CORE_BPF_DEFAULT_COMPUTE_UNITS: u64 = solana_address_lookup_table_program::processor::DEFAULT_COMPUTE_UNITS;
             }
-        } else if program_id == solana_sdk::config::program::id() {
+        } else if program_id == solana_sdk_ids::config::id() {
             tokens = quote! {
                 #[cfg(feature = "core-bpf-conformance")]
                 const CORE_BPF_DEFAULT_COMPUTE_UNITS: u64 = solana_config_program::config_processor::DEFAULT_COMPUTE_UNITS;
             }
-        } else if program_id == solana_sdk::feature::id() {
+        } else if program_id == solana_sdk_ids::feature::id() {
             tokens = quote! {
                 #[cfg(feature = "core-bpf-conformance")]
                 const CORE_BPF_DEFAULT_COMPUTE_UNITS: u64 = 0;
             }
-        } else if program_id == solana_sdk::stake::program::id() {
+        } else if program_id == solana_sdk_ids::stake::id() {
             tokens = quote! {
                 #[cfg(feature = "core-bpf-conformance")]
                 const CORE_BPF_DEFAULT_COMPUTE_UNITS: u64 = solana_stake_program::stake_instruction::DEFAULT_COMPUTE_UNITS;
