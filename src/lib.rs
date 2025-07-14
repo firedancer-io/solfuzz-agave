@@ -12,6 +12,8 @@ pub mod vm_interp;
 pub mod vm_syscalls;
 
 use agave_feature_set::*;
+use agave_precompiles::get_precompile;
+use agave_precompiles::is_precompile;
 use prost::Message;
 use solana_account::{Account, AccountSharedData, ReadableAccount};
 use solana_clock::Clock;
@@ -22,6 +24,7 @@ use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
 use solana_instruction::AccountMeta;
 use solana_log_collector::LogCollector;
+use solana_precompile_error::PrecompileError;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::ProgramCacheEntry;
@@ -360,7 +363,28 @@ pub struct InstrContext {
     pub lamports_per_signature: u64,
 }
 
-impl InvokeContextCallback for InstrContext {}
+impl InvokeContextCallback for InstrContext {
+    fn is_precompile(&self, program_id: &Pubkey) -> bool {
+        is_precompile(program_id, |feature_id: &Pubkey| {
+            self.feature_set.is_active(feature_id)
+        })
+    }
+
+    fn process_precompile(
+        &self,
+        program_id: &Pubkey,
+        data: &[u8],
+        instruction_datas: Vec<&[u8]>,
+    ) -> std::result::Result<(), PrecompileError> {
+        if let Some(precompile) = get_precompile(program_id, |feature_id: &Pubkey| {
+            self.feature_set.is_active(feature_id)
+        }) {
+            precompile.verify(data, &instruction_datas, &self.feature_set)
+        } else {
+            Err(PrecompileError::InvalidPublicKey)
+        }
+    }
+}
 
 impl TransactionProcessingCallback for InstrContext {
     fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
