@@ -406,12 +406,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         rodata: rodata.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
-        pc: match result {
-            StableResult::Ok(_) => match vm.context_object_pointer.trace_log.last() {
-                Some(regs) => regs[11],
-                None => vm.registers[11],
-            },
-            StableResult::Err(_) => vm.registers[11],
+        pc: match vm.context_object_pointer.trace_log.last() {
+            Some(regs) => regs[11],
+            None => vm.registers[11],
         },
         ..Default::default()
     })
