@@ -114,18 +114,18 @@ fd_rust_types_map = {
     type_name = "FrozenHashVersioned",
     dep_str   = "solana_ledger::blockstore_meta::FrozenHashVersioned"
   ),
-  "crds_data": RustTypeInfo(
-    type_name = "CrdsData",
-    dep_str   = "solana_gossip::crds_data::CrdsData"
-  ),
+#  "crds_data": RustTypeInfo(
+#    type_name = "CrdsData",
+#    dep_str   = "solana_gossip::crds_data::CrdsData"
+#  ),
   "crds_filter": RustTypeInfo(
     type_name = "CrdsFilter",
     dep_str   = "solana_gossip::crds_gossip_pull::CrdsFilter"
   ),
-  "crds_value": RustTypeInfo(
-    type_name = "CrdsValue",
-    dep_str   = "solana_gossip::crds_value::CrdsValue"
-  ),
+#  "crds_value": RustTypeInfo(
+#    type_name = "CrdsValue",
+#    dep_str   = "solana_gossip::crds_value::CrdsValue"
+#  ),
   "repair_request_header": RustTypeInfo(
     type_name = "RepairRequestHeader",
     dep_str   = "solana_core::repair::serve_repair::RepairRequestHeader"
@@ -137,6 +137,10 @@ fd_rust_types_map = {
   "duplicate_slot_proof": RustTypeInfo(
     type_name = "DuplicateSlotProof",
     dep_str   = "solana_ledger::blockstore_meta::DuplicateSlotProof"
+  ),
+  "vote_state": RustTypeInfo(
+    type_name = "VoteState",
+    dep_str   = "solana_vote_program::vote_state::VoteState"
   ),
 }
 
