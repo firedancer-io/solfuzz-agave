@@ -14,9 +14,7 @@ use solana_epoch_rewards::EpochRewards;
 use solana_feature_gate_interface::Feature;
 use solana_fee_calculator::FeeCalculator;
 use solana_fee_calculator::FeeRateGovernor;
-use solana_gossip::crds_data::CrdsData;
 use solana_gossip::crds_gossip_pull::CrdsFilter;
-use solana_gossip::crds_value::CrdsValue;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_inflation::Inflation;
@@ -36,6 +34,7 @@ use solana_sysvar::epoch_schedule::EpochSchedule;
 use solana_sysvar::rent::Rent;
 use solana_sysvar::stake_history::StakeHistoryEntry;
 use solana_vote::vote_account::VoteAccounts;
+use solana_vote_program::vote_state::VoteState;
 type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;
 
 fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
@@ -62,13 +61,12 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(59, process_type::<PohConfig>);
     map.insert(63, process_type::<Clock>);
     map.insert(64, process_type::<LastRestartSlot>);
+    map.insert(78, process_type::<VoteState>);
     map.insert(95, process_type::<EpochRewards>);
     map.insert(152, process_type::<ConfigKeys>);
     map.insert(168, process_type::<FrozenHashStatus>);
     map.insert(169, process_type::<FrozenHashVersioned>);
-    map.insert(206, process_type::<CrdsData>);
     map.insert(208, process_type::<CrdsFilter>);
-    map.insert(209, process_type::<CrdsValue>);
     map.insert(218, process_type::<RepairRequestHeader>);
     map.insert(223, process_type::<RepairProtocol>);
     map.insert(238, process_type::<DuplicateSlotProof>);
