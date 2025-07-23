@@ -313,6 +313,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     disable_zk_elgamal_proof_program,
     reenable_zk_elgamal_proof_program,
     formalize_loaded_transaction_data_size,
+    enable_extend_program_checked,
 ];
 
 // If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
