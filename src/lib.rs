@@ -981,13 +981,24 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         SVMTransactionExecutionCost::default(),
     );
 
-    let result = invoke_context.process_instruction(
-        &input.instruction.data,
-        &instruction_accounts,
-        program_indices,
-        &mut compute_units_consumed,
-        &mut ExecuteTimings::default(),
-    );
+    let result = if invoke_context.is_precompile(&input.instruction.program_id) {
+        let instruction_data = input.instruction.data.iter().copied().collect::<Vec<_>>();
+        invoke_context.process_precompile(
+            &input.instruction.program_id,
+            &input.instruction.data,
+            &instruction_accounts,
+            program_indices,
+            [instruction_data.as_slice()].into_iter(),
+        )
+    } else {
+        invoke_context.process_instruction(
+            &input.instruction.data,
+            &instruction_accounts,
+            program_indices,
+            &mut compute_units_consumed,
+            &mut ExecuteTimings::default(),
+        )
+    };
 
     #[cfg(feature = "core-bpf-conformance")]
     // To keep alignment with a builtin run, deduct only the CUs the builtin
