@@ -165,7 +165,7 @@ def init_fd_types_index_map( type_names_source: str ):
         line = line.strip()
         if line.startswith("#"):
             continue
-        if ".name=" in line:
+        if ".name=" in line and not ".name=NULL" in line:
             type_name = line.split(".name=\"")[1].split("\"")[0].strip().strip("\"")
             fd_types_index_map[type_name] = counter
             counter += 1
