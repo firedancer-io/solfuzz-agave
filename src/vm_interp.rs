@@ -21,7 +21,7 @@ use solana_sbpf::{
     declare_builtin_function,
     ebpf::{self, HOST_ALIGN},
     elf::Executable,
-    error::StableResult,
+    error::{EbpfError, StableResult},
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
     static_analysis::TraceLogEntry,
@@ -380,6 +380,18 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     if ENABLE_TRACE_DUMP {
         eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
+    }
+
+    /* We do not compare VM state on CU errors since CU consumption is
+    not precisely defined when VM faults. */
+    if matches!(
+        result,
+        StableResult::Err(EbpfError::ExceededMaxInstructions)
+    ) {
+        return Some(SyscallEffects {
+            error: err_map::ebpf_err_to_num(&EbpfError::ExceededMaxInstructions).into(),
+            ..Default::default()
+        });
     }
 
     Some(SyscallEffects {
