@@ -23,6 +23,12 @@ Install dependencies:
 apt install libudev-dev protobuf-compiler pkg-config
 ```
 
+Running with a local copy of Agave (for easily adding print statements):
+```sh
+pip3 install tomlkit
+python3 scripts/generate_cargo.py -p <your_local_agave_path> -o Cargo.toml
+```
+
 
 Check and test:
 
