@@ -1032,11 +1032,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 None
             } else if input.instruction.program_id == solana_config::program::id() && code == 0 {
                 None
+            }
+
+            if get_precompile(&input.instruction.program_id, |_| true).is_some() {
+                Some(0)
             } else {
                 Some(code)
             }
-            #[cfg(not(feature = "core-bpf-conformance"))]
-            Some(code)
         } else {
             None
         },
