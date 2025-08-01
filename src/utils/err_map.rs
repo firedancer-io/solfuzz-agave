@@ -20,16 +20,6 @@ pub fn instr_err_to_num(error: &InstructionError) -> i32 {
     i32::from_le_bytes((&serialized_err[0..4]).try_into().unwrap()).saturating_add(1)
 }
 
-pub fn instr_err_to_str(error: &InstructionError) -> String {
-    match error {
-        // Simplified to: Failed to serialize or deserialize account data
-        InstructionError::BorshIoError(_) => {
-            "Failed to serialize or deserialize account data".to_string()
-        }
-        _ => error.to_string(),
-    }
-}
-
 pub fn syscall_err_to_num(error: &SyscallError) -> i32 {
     let err: i32 = match error {
         SyscallError::InvalidString(_, _) => 0,
@@ -113,11 +103,7 @@ pub fn unpack_stable_result(
             let logger = invoke_context.get_log_collector();
             let (err_no, err_kind) = if let EbpfError::SyscallError(syscall_error) = err {
                 if let Some(instruction_err) = syscall_error.downcast_ref::<InstructionError>() {
-                    stable_log::program_failure(
-                        &logger,
-                        program_id,
-                        &instr_err_to_str(instruction_err),
-                    );
+                    stable_log::program_failure(&logger, program_id, &instruction_err.to_string());
                     (instr_err_to_num(instruction_err), ErrKind::Instruction)
                 } else if let Some(syscall_error) = syscall_error.downcast_ref::<SyscallError>() {
                     stable_log::program_failure(&logger, program_id, &syscall_error.to_string());
