@@ -38,6 +38,13 @@ jobs:
           cargo fmt --all -- --check
           cargo clippy --all -- -D warnings
 
+      - name: Make binaries
+        run: make binaries
+
+      - name: Run test-vectors
+        run: |
+          ./scripts/run_test_vectors.sh
+
       - name: Run cargo check + test
         run: |
           cargo check --release
@@ -52,13 +59,6 @@ jobs:
           make shared_obj_cov
           cd src && pwd > buildpwd && cd -
           cp -r ./src/ ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
-
-      - name: Make binaries
-        run: make binaries
-
-      - name: Run test-vectors
-        run: |
-          ./scripts/run_test_vectors.sh
 
       - name: Upload main so
         if: ${{ inputs.upload_artifacts }}
