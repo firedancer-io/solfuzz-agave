@@ -269,7 +269,11 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     raise_block_limits_to_50m,
     move_precompile_verification_to_svm,
     enable_transaction_loading_failure_fees,
-    enable_loader_v4, // custom hardcoded feature
+    enable_loader_v4,                       // custom hardcoded feature
+    remove_accounts_executable_flag_checks, // custom hardcoded feature
+    accounts_lt_hash,                       // custom hardcoded feature
+    remove_accounts_delta_hash,             // custom hardcoded feature
+    snapshots_lt_hash,                      // custom hardcoded feature
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -297,12 +301,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_sbpf_v3_deployment_and_execution,
     // migrate_stake_program_to_core_bpf, // NOT impl in fd
     enable_get_epoch_stake_syscall,
-    remove_accounts_executable_flag_checks,
     fix_alt_bn128_multiplication_input_length,
     lift_cpi_caller_restriction,
-    accounts_lt_hash,
-    remove_accounts_delta_hash,
-    snapshots_lt_hash,
     disable_partitioned_rent_collection,
     vote_only_full_fec_sets,
     drop_unchained_merkle_shreds,
