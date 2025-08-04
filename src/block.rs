@@ -9,6 +9,7 @@ use solana_account::AccountSharedData;
 use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
+use solana_accounts_db::accounts_hash::AccountsLtHash;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
 use solana_accounts_db::ancestors::AncestorsForSerialization;
 use solana_accounts_db::blockhash_queue::BlockhashQueue;
@@ -20,6 +21,7 @@ use solana_fee_calculator::FeeRateGovernor;
 use solana_genesis_config::GenesisConfig;
 use solana_hash::Hash;
 use solana_inflation::Inflation;
+use solana_lattice_hash::lt_hash::LtHash;
 use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
 };
@@ -398,6 +400,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         inflation: epoch_ctx.inflation.unwrap().into(),
         stakes: stakes_t,
         epoch_stakes,
+        accounts_lt_hash: Some(AccountsLtHash(LtHash::identity())),
         ..BankFieldsToDeserialize::default()
     };
 
