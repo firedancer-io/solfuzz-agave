@@ -353,7 +353,12 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     }
 
     const FEE_COLLECTOR: Pubkey = Pubkey::from_str_const("1111111111111111111111111111111111");
-    let slot = context.slot_ctx.as_ref().map(|ctx| ctx.slot).unwrap_or(10); // Arbitrary default > 0
+
+    let slot = context
+        .slot_ctx
+        .as_ref()
+        .map(|ctx| if ctx.slot == 0 { 10 } else { ctx.slot })
+        .unwrap_or(10);
     let sysvar_accounts: HashMap<&[u8], &AcctState> = context
         .account_shared_data
         .iter()
