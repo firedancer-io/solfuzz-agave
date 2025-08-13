@@ -1173,6 +1173,10 @@ pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
     if env::var("TOGGLE_DIRECT_MAPPING").is_ok() {
         TOGGLE_DIRECT_MAPPING = true;
     }
+    if env::var("ENABLE_SOLANA_LOGGER").is_ok() {
+        /* Pairs with RUST_LOG={trace,debug,info,etc} */
+        solana_logger::setup();
+    }
 }
 
 #[repr(C)]
