@@ -274,6 +274,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     accounts_lt_hash,                       // custom hardcoded feature
     remove_accounts_delta_hash,             // custom hardcoded feature
     snapshots_lt_hash,                      // custom hardcoded feature
+    disable_partitioned_rent_collection,    // custom hardcoded feature
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -303,7 +304,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_get_epoch_stake_syscall,
     fix_alt_bn128_multiplication_input_length,
     lift_cpi_caller_restriction,
-    disable_partitioned_rent_collection,
     vote_only_full_fec_sets,
     drop_unchained_merkle_shreds,
     verify_retransmitter_signature,
