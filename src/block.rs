@@ -30,7 +30,7 @@ use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_rent_collector::RentCollector;
-use solana_runtime::bank::{Bank, BankFieldsToDeserialize, BankRc};
+use solana_runtime::bank::{null_tracer, Bank, BankFieldsToDeserialize, BankRc};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::EpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
@@ -423,15 +423,27 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .unwrap_or_default();
     bank.set_collector_id_for_tests(leader);
 
-    let bank_forks = BankForks::new_rw_arc(bank);
-    let bank = bank_forks.write().unwrap().root_bank();
-
     bank.get_transaction_processor().reset_sysvar_cache();
     bank.update_slot_hashes();
     bank.update_clock(None);
     bank.update_recent_blockhashes();
     bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
+        .fill_missing_sysvar_cache_entries(&bank);
+
+    /* Have we crossed an epoch boundary? */
+    let current_epoch = bank.epoch_schedule().get_epoch(bank.slot());
+    let parent_epoch = bank.epoch_schedule().get_epoch(bank.parent_slot());
+    if parent_epoch < current_epoch {
+        bank.process_new_epoch(
+            parent_epoch,
+            current_epoch,
+            bank.block_height(),
+            null_tracer(),
+        );
+    }
+
+    let bank_forks = BankForks::new_rw_arc(bank);
+    let bank = bank_forks.write().unwrap().root_bank();
 
     let mut entries = vec![Entry::new_tick(1, &poh); 64];
     entries.extend(
