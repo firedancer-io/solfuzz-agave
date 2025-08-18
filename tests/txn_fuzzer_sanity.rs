@@ -172,6 +172,8 @@ fn test_txn_execute_clock() {
         prev_slot: 0,
         prev_lps: 0,
         prev_epoch_capitalization: 0,
+        fee_rate_governor: None,
+        parent_signature_count: 0,
     };
     let features = get_features();
     let epoch_ctx = EpochContext {
@@ -289,6 +291,8 @@ fn test_simple_transfer() {
         prev_slot: 0,
         prev_lps: 0,
         prev_epoch_capitalization: 0,
+        fee_rate_governor: None,
+        parent_signature_count: 0,
     };
     let features = get_features();
     let epoch_ctx = EpochContext {
@@ -444,6 +448,8 @@ fn test_lookup_table() {
         prev_slot: 0,
         prev_lps: 0,
         prev_epoch_capitalization: 0,
+        fee_rate_governor: None,
+        parent_signature_count: 0,
     };
     let features = get_features();
     let epoch_ctx = EpochContext {
