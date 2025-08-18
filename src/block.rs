@@ -366,6 +366,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         ),
     );
 
+    let fee_rate_governor = slot_ctx.fee_rate_governor.unwrap();
+
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
         ancestors,
@@ -382,14 +384,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         slot,
         epoch,
         block_height: slot_ctx.block_height,
-        fee_rate_governor: FeeRateGovernor {
-            lamports_per_signature,
-            target_lamports_per_signature: 10000,
-            target_signatures_per_slot: 20000,
-            min_lamports_per_signature: 5000,
-            max_lamports_per_signature: 100000,
-            burn_percent: 50,
-        },
+        fee_rate_governor: FeeRateGovernor::new_derived(
+            &FeeRateGovernor {
+                lamports_per_signature,
+                target_lamports_per_signature: fee_rate_governor.target_lamports_per_signature,
+                target_signatures_per_slot: fee_rate_governor.target_signatures_per_slot,
+                min_lamports_per_signature: fee_rate_governor.min_lamports_per_signature,
+                max_lamports_per_signature: fee_rate_governor.max_lamports_per_signature,
+                burn_percent: fee_rate_governor.burn_percent as u8,
+            },
+            slot_ctx.parent_signature_count,
+        ),
         rent_collector: RentCollector {
             epoch: epoch_schedule.get_epoch(slot),
             epoch_schedule: epoch_schedule.clone(),
