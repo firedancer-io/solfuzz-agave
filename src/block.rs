@@ -433,7 +433,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     bank.get_transaction_processor().reset_sysvar_cache();
     bank.update_slot_hashes();
+    bank.update_stake_history(Some(parent_epoch));
     bank.update_clock(Some(parent_epoch));
+    bank.update_last_restart_slot();
     bank.update_recent_blockhashes();
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(&bank);
