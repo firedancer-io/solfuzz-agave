@@ -144,6 +144,8 @@ fn build_latest_stake_delegations(
             }
         });
 
+    stakes.epoch = epoch;
+    stakes.stake_history = stake_history.clone();
     stakes
 }
 
