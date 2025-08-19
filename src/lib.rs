@@ -275,6 +275,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     remove_accounts_delta_hash,             // custom hardcoded feature
     snapshots_lt_hash,                      // custom hardcoded feature
     disable_partitioned_rent_collection,    // custom hardcoded feature
+    formalize_loaded_transaction_data_size, // SIMD-186, hardcoded as loaded account data size is poorly specified in Agave
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -312,7 +313,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     mask_out_rent_epoch_in_vm_serialization,
     disable_zk_elgamal_proof_program,
     reenable_zk_elgamal_proof_program,
-    formalize_loaded_transaction_data_size,
     enable_extend_program_checked,
     require_static_nonce_account,
 ];
