@@ -1,9 +1,9 @@
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
-use crate::TOGGLE_DIRECT_MAPPING;
+// use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
+use agave_syscalls::create_program_runtime_environment_v1;
 use ahash::{AHashMap, AHashSet};
 use prost::Message;
-use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionBudget;
 use solana_pubkey::Pubkey;
 use solana_sbpf::{ebpf, elf::Executable};
@@ -14,7 +14,6 @@ use std::ffi::c_int;
 pub const ACTIVATE_FEATURES: &[Pubkey] = &[
     switch_to_new_elf_parser::id(),
     error_on_syscall_bpf_function_hash_collisions::id(),
-    bpf_account_data_direct_mapping::id(),
 ];
 
 pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffects> {
@@ -24,21 +23,7 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
         feature_set.activate(feature, 0);
     }
 
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            {
-                // Toggle the BPF direct mapping feature
-                if feature_set
-                    .active()
-                    .contains_key(&bpf_account_data_direct_mapping::id())
-                {
-                    feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-                } else {
-                    feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
-                }
-            }
-        }
-    }
+    // direct mapping toggling removed in Agave 3.0
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set.runtime_features(),

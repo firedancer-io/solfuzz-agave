@@ -7,7 +7,7 @@ use std::collections::HashMap;
 // Type imports
 use solana_accounts_db::blockhash_queue::HashInfo;
 use solana_clock::Clock;
-use solana_config_program_client::ConfigKeys;
+use solana_config_interface::state::ConfigKeys;
 use solana_core::repair::serve_repair::RepairProtocol;
 use solana_core::repair::serve_repair::RepairRequestHeader;
 use solana_epoch_rewards::EpochRewards;
@@ -23,18 +23,18 @@ use solana_ledger::blockstore_meta::DuplicateSlotProof;
 use solana_ledger::blockstore_meta::FrozenHashStatus;
 use solana_ledger::blockstore_meta::FrozenHashVersioned;
 use solana_poh_config::PohConfig;
-use solana_rent_collector::RentCollector;
 use solana_runtime::bank::BankHashStats;
-use solana_runtime::epoch_stakes::EpochStakes;
+use solana_runtime::rent_collector::RentCollector;
+// EpochStakes is no longer exposed; use VersionedEpochStakes instead where needed
 use solana_runtime::epoch_stakes::NodeVoteAccounts;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
-use solana_runtime::serde_snapshot::BankIncrementalSnapshotPersistence;
+use solana_runtime::serde_snapshot::ObsoleteIncrementalSnapshotPersistence as BankIncrementalSnapshotPersistence;
 use solana_signature::Signature;
+use solana_stake_interface::stake_history::StakeHistoryEntry;
 use solana_sysvar::epoch_schedule::EpochSchedule;
 use solana_sysvar::rent::Rent;
-use solana_sysvar::stake_history::StakeHistoryEntry;
 use solana_vote::vote_account::VoteAccounts;
-use solana_vote_program::vote_state::VoteState;
+use solana_vote_interface::state::VoteStateV3 as VoteState;
 type TypeProcessorFn = fn(&[u8]) -> Option<TypeEffects>;
 
 fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
@@ -55,7 +55,7 @@ fn build_type_processor_map() -> HashMap<u8, TypeProcessorFn> {
     map.insert(26, process_type::<VoteAccounts>);
     map.insert(35, process_type::<BankIncrementalSnapshotPersistence>);
     map.insert(36, process_type::<NodeVoteAccounts>);
-    map.insert(39, process_type::<EpochStakes>);
+    // 39 was EpochStakes in older versions; removed in Agave 3.0
     map.insert(44, process_type::<BankHashStats>);
     map.insert(52, process_type::<VersionedEpochStakes>);
     map.insert(58, process_type::<PohConfig>);

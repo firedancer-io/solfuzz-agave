@@ -15,7 +15,7 @@ use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use agave_precompiles::is_precompile;
 use prost::Message;
-use solana_account::{Account, AccountSharedData, ReadableAccount};
+use solana_account::{Account, AccountSharedData};
 use solana_clock::Clock;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
@@ -23,7 +23,6 @@ use solana_epoch_schedule::EpochSchedule;
 use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
 use solana_instruction::AccountMeta;
-use solana_log_collector::LogCollector;
 use solana_precompile_error::PrecompileError;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
@@ -33,7 +32,7 @@ use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
-use solana_rent_collector::RentCollector;
+use solana_runtime::rent_collector::RentCollector;
 use solana_sdk_ids::{
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
 };
@@ -41,9 +40,10 @@ use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
 use solana_svm_callback::InvokeContextCallback;
+use solana_svm_log_collector::LogCollector;
+use solana_svm_timings::ExecuteTimings;
 use solana_sysvar::last_restart_slot;
 use solana_sysvar_id::SysvarId;
-use solana_timings::ExecuteTimings;
 use solana_transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
@@ -304,7 +304,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // migrate_stake_program_to_core_bpf, // NOT impl in fd
     enable_get_epoch_stake_syscall,
     fix_alt_bn128_multiplication_input_length,
-    lift_cpi_caller_restriction,
+    // lift_cpi_caller_restriction, // removed in Agave 3.0 feature-set crate surface
     vote_only_full_fec_sets,
     drop_unchained_merkle_shreds,
     verify_retransmitter_signature,
@@ -390,38 +390,11 @@ impl InvokeContextCallback for InstrContext {
 }
 
 impl TransactionProcessingCallback for InstrContext {
-    fn account_matches_owners(&self, account: &Pubkey, owners: &[Pubkey]) -> Option<usize> {
-        let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
-            .accounts
-            .iter()
-            .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
-            .collect();
-        if let Some(data) = account_shared_data
-            .iter()
-            .find(|(pubkey, _)| *pubkey == *account)
-            .map(|(_, shared_account)| shared_account)
-        {
-            if data.lamports() == 0 {
-                None
-            } else {
-                owners.iter().position(|entry| data.owner() == entry)
-            }
-        } else {
-            None
-        }
-    }
-
-    fn get_account_shared_data(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
-        let account_shared_data: Vec<(Pubkey, AccountSharedData)> = self
-            .accounts
-            .iter()
-            .map(|(pubkey, account)| (*pubkey, AccountSharedData::from(account.clone())))
-            .collect();
-        account_shared_data
+    fn get_account_shared_data(&self, pubkey: &Pubkey) -> Option<(AccountSharedData, u64)> {
+        self.accounts
             .iter()
             .find(|(found_pubkey, _)| *found_pubkey == *pubkey)
-            .map(|(_, shared_account)| shared_account)
-            .cloned()
+            .map(|(_, account)| (AccountSharedData::from(account.clone()), 0u64))
     }
 }
 
@@ -488,26 +461,16 @@ pub fn get_instr_accounts(
 ) -> Vec<InstructionAccount> {
     let mut instruction_accounts: Vec<InstructionAccount> =
         Vec::with_capacity(acct_metas.len().try_into().unwrap());
-    for (instruction_account_index, account_meta) in acct_metas.iter().enumerate() {
+    for account_meta in acct_metas.iter() {
         let index_in_transaction = txn_context
             .find_index_of_account(&account_meta.pubkey)
             .unwrap_or(txn_context.get_number_of_accounts())
             as IndexOfAccount;
-        let index_in_callee = instruction_accounts
-            .get(0..instruction_account_index)
-            .unwrap()
-            .iter()
-            .position(|instruction_account| {
-                instruction_account.index_in_transaction == index_in_transaction
-            })
-            .unwrap_or(instruction_account_index) as IndexOfAccount;
-        instruction_accounts.push(InstructionAccount {
+        instruction_accounts.push(InstructionAccount::new(
             index_in_transaction,
-            index_in_caller: index_in_transaction,
-            index_in_callee,
-            is_signer: account_meta.is_signer,
-            is_writable: account_meta.is_writable,
-        });
+            account_meta.is_signer,
+            account_meta.is_writable,
+        ));
     }
     instruction_accounts
 }
@@ -657,26 +620,6 @@ fn create_invoke_context_fields(
     u64,
     ComputeBudget,
 )> {
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            {
-                // Toggle the BPF direct mapping feature
-                if input
-                    .feature_set
-                    .active()
-                    .contains_key(&bpf_account_data_direct_mapping::id())
-                {
-                    input
-                        .feature_set
-                        .deactivate(&bpf_account_data_direct_mapping::id());
-                } else {
-                    input
-                        .feature_set
-                        .activate(&bpf_account_data_direct_mapping::id(), 0);
-                }
-            }
-        }
-    }
     #[cfg(feature = "core-bpf-conformance")]
     // The BPF version of some builtin programs are built with the assumption
     // that certain features will be active at the time of their deployment.
@@ -703,16 +646,17 @@ fn create_invoke_context_fields(
     // mismatches from the BPF program exhuasting the meter when the builtin
     // did not.
     let compute_budget = {
-        let mut budget = ComputeBudget::default();
+        let mut budget = ComputeBudget::new_with_defaults(false);
         if input.cu_avail <= CORE_BPF_DEFAULT_COMPUTE_UNITS {
             budget.compute_unit_limit = 0; // Ensures CU meter exhaustion.
         }
         budget
     };
     #[cfg(not(feature = "core-bpf-conformance"))]
-    let compute_budget = ComputeBudget {
-        compute_unit_limit: input.cu_avail,
-        ..ComputeBudget::default()
+    let compute_budget = {
+        let mut budget = ComputeBudget::new_with_defaults(false);
+        budget.compute_unit_limit = input.cu_avail;
+        budget
     };
 
     let mut sysvar_cache = SysvarCache::default();
@@ -832,30 +776,24 @@ fn create_invoke_context_fields(
         })
         .for_each(|x| transaction_accounts.push(x));
 
-    let mut transaction_context = TransactionContext::new(
+    let transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
         rent,
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
-    );
-    transaction_context.set_remove_accounts_executable_flag_checks(
-        input
-            .feature_set
-            .is_active(&remove_accounts_executable_flag_checks::id()),
     );
 
     // sigh ... What is this mess?
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     program_cache_for_tx_batch.set_slot_for_tests(clock.slot);
 
-    let program_runtime_environment_v1 =
-        solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1(
-            &input.feature_set.runtime_features(),
-            &compute_budget.to_budget(),
-            false, /* deployment */
-            false, /* debugging_features */
-        )
-        .unwrap();
+    let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
+        &input.feature_set.runtime_features(),
+        &compute_budget.to_budget(),
+        false, /* deployment */
+        false, /* debugging_features */
+    )
+    .unwrap();
     let environments = ProgramRuntimeEnvironments {
         program_runtime_v1: Arc::new(program_runtime_environment_v1),
         ..ProgramRuntimeEnvironments::default()
@@ -964,9 +902,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         &sysvar_cache,
     );
 
-    let program_idx =
-        transaction_context.find_index_of_program_account(&input.instruction.program_id)?;
-    let program_indices = &[program_idx];
+    let program_idx = transaction_context.find_index_of_account(&input.instruction.program_id)?;
 
     let mut compute_units_consumed = 0u64;
 
@@ -982,23 +918,25 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         SVMTransactionExecutionCost::default(),
     );
 
+    invoke_context
+        .transaction_context
+        .configure_next_instruction_for_tests(
+            program_idx,
+            instruction_accounts,
+            &input.instruction.data,
+        )
+        .unwrap();
+
     let result = if invoke_context.is_precompile(&input.instruction.program_id) {
         let instruction_data = input.instruction.data.iter().copied().collect::<Vec<_>>();
         invoke_context.process_precompile(
             &input.instruction.program_id,
             &input.instruction.data,
-            &instruction_accounts,
-            program_indices,
             [instruction_data.as_slice()].into_iter(),
         )
     } else {
-        invoke_context.process_instruction(
-            &input.instruction.data,
-            &instruction_accounts,
-            program_indices,
-            &mut compute_units_consumed,
-            &mut ExecuteTimings::default(),
-        )
+        invoke_context
+            .process_instruction(&mut compute_units_consumed, &mut ExecuteTimings::default())
     };
 
     #[cfg(feature = "core-bpf-conformance")]

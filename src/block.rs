@@ -1,7 +1,7 @@
 use crate::proto::{self};
 use crate::proto::{BlockContext, BlockEffects};
 use crate::utils::program::common::build_versioned_message;
-use crate::TOGGLE_DIRECT_MAPPING;
+// use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use prost::Message;
 #[allow(deprecated)]
@@ -19,6 +19,7 @@ use solana_entry::entry::{Entry, VerifyRecyclers};
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
 use solana_genesis_config::GenesisConfig;
+use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_inflation::Inflation;
 use solana_lattice_hash::lt_hash::LtHash;
@@ -29,16 +30,17 @@ use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
 use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
-use solana_rent_collector::RentCollector;
-use solana_runtime::bank::{null_tracer, Bank, BankFieldsToDeserialize, BankRc};
+use solana_runtime::bank::{null_tracer, Bank, BankFieldsToDeserialize, BankHashStats, BankRc};
 use solana_runtime::bank_forks::BankForks;
-use solana_runtime::epoch_stakes::EpochStakes;
+use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+use solana_runtime::rent_collector::RentCollector;
 use solana_runtime::runtime_config::RuntimeConfig;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
-use solana_runtime::stakes::{Stakes, StakesEnum};
+use solana_runtime::stakes::{SerdeStakesToStakeFormat, Stakes};
+use solana_sdk_ids::sysvar::stake_history;
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
 use solana_sysvar;
@@ -178,21 +180,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let slot_ctx = context.slot_ctx.unwrap();
     let epoch_ctx = context.epoch_ctx.unwrap();
     let fd_features = epoch_ctx.features.unwrap_or_default();
-    let mut feature_set = FeatureSet::from(&fd_features);
+    let feature_set = FeatureSet::from(&fd_features);
 
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            // Toggle the BPF direct mapping feature
-            if feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
-            {
-                feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
-            }
-        }
-    }
+    // direct mapping toggling removed in Agave 3.0
 
     let slot = slot_ctx.slot;
     let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap());
@@ -229,10 +219,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let stake_history: StakeHistory = context
         .acct_states
         .iter()
-        .find(|item| {
-            item.address.as_slice() == solana_sysvar::stake_history::id().as_ref()
-                && item.lamports > 0
-        })
+        .find(|item| item.address.as_slice() == stake_history::id().as_ref() && item.lamports > 0)
         .map(|account| bincode::deserialize(&account.data).unwrap())
         .unwrap();
     let genesis_config = GenesisConfig {
@@ -292,7 +279,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             (pubkey, account_data)
         })
         .collect::<Vec<_>>();
-    accounts.store_cached((slot.saturating_sub(1), &accounts_to_store[..]), None);
+    accounts.store_accounts_seq((slot.saturating_sub(1), &accounts_to_store[..]), None);
 
     /* Build the stakes separately */
     let epoch = epoch_schedule.get_epoch(slot);
@@ -344,26 +331,36 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
 
-    let mut epoch_stakes: HashMap<Epoch, EpochStakes> = HashMap::new();
+    let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
         epoch.saturating_sub(1),
-        EpochStakes::new(
-            Arc::new(StakesEnum::from(stake_accounts_t_2)),
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stake_accounts_t_2),
             epoch.saturating_sub(1),
         ),
     );
     epoch_stakes.insert(
         epoch,
-        EpochStakes::new(
-            Arc::new(StakesEnum::from(stake_accounts_t_1.clone())),
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stake_accounts_t_1.clone()),
             epoch,
         ),
     );
 
+    let stakes_current_accounts = Stakes::new(&stakes_t, |pubkey| {
+        context
+            .acct_states
+            .iter()
+            .find(|acct| {
+                Pubkey::new_from_array(acct.address.clone().try_into().unwrap()) == *pubkey
+            })
+            .map(AccountSharedData::from)
+    })
+    .unwrap();
     epoch_stakes.insert(
         epoch.saturating_add(1),
-        EpochStakes::new(
-            Arc::new(StakesEnum::from(stakes_t.clone())),
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stakes_current_accounts),
             epoch.saturating_add(1),
         ),
     );
@@ -376,7 +373,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         hash: Hash::default(),
         parent_hash: Hash::new_from_array(slot_ctx.parent_bank_hash.try_into().unwrap()),
         parent_slot: slot_ctx.prev_slot,
+        hard_forks: HardForks::default(),
+        transaction_count: 0,
+        hashes_per_tick: None,
         capitalization: slot_ctx.prev_epoch_capitalization,
+        signature_count: 0,
         tick_height: 64u64.saturating_mul(slot),
         max_tick_height: 64u64.saturating_mul(slot.saturating_add(1)),
         ticks_per_slot: 64u64,
@@ -386,6 +387,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         slot,
         epoch,
         block_height: slot_ctx.block_height,
+        collector_id: Pubkey::default(),
+        collector_fees: 0,
         fee_rate_governor: FeeRateGovernor::new_derived(
             &FeeRateGovernor {
                 lamports_per_signature,
@@ -406,9 +409,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         epoch_schedule,
         inflation: epoch_ctx.inflation.unwrap().into(),
         stakes: stakes_t,
-        epoch_stakes,
-        accounts_lt_hash: Some(AccountsLtHash(LtHash::identity())),
-        ..BankFieldsToDeserialize::default()
+        versioned_epoch_stakes: epoch_stakes,
+        is_delta: false,
+        accounts_data_len: 0,
+        accounts_lt_hash: AccountsLtHash(LtHash::identity()),
+        bank_hash_stats: BankHashStats::default(),
     };
 
     let bank_rc = BankRc::new(accounts);
@@ -423,6 +428,13 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         0,
         Some(feature_set),
     );
+
+    // Seed initial accounts into the bank
+    for account in &context.acct_states {
+        let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
+        let account_data = AccountSharedData::from(account);
+        bank.store_account(&pubkey, &account_data);
+    }
 
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
     let leader = leader_schedule

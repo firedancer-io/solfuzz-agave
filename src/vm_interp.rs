@@ -6,11 +6,10 @@ use crate::{
     },
     InstrContext, TOGGLE_DIRECT_MAPPING,
 };
-use agave_feature_set::bpf_account_data_direct_mapping;
+// feature removed from feature set surface in 3.0; direct mapping toggled via SVMFeatureSet flags
 use bincode::Error;
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
-use solana_log_collector::LogCollector;
 use solana_program_runtime::serialization::serialize_parameters;
 use solana_program_runtime::{
     invoke_context::{EnvironmentConfig, InvokeContext},
@@ -28,6 +27,7 @@ use solana_sbpf::{
     verifier::RequisiteVerifier,
     vm::{ContextObject, EbpfVm},
 };
+use solana_svm_log_collector::LogCollector;
 use std::{cell::RefCell, ffi::c_int};
 
 declare_builtin_function!(
@@ -164,25 +164,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     let instr = &instr_ctx.instruction;
 
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            // Toggle the BPF direct mapping feature
-            if instr_ctx
-                .feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
-            {
-                instr_ctx
-                    .feature_set
-                    .deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                instr_ctx
-                    .feature_set
-                    .activate(&bpf_account_data_direct_mapping::id(), 0);
-            }
-        }
-    }
-
     let log_collector = LogCollector::new_ref();
     let instr_accounts = crate::get_instr_accounts(&transaction_context, &instr.accounts);
     let runtime_features = instr_ctx.feature_set.runtime_features();
@@ -206,18 +187,22 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     let program_idx = invoke_ctx
         .transaction_context
-        .find_index_of_program_account(&instr_ctx.instruction.program_id)?;
+        .find_index_of_account(&instr_ctx.instruction.program_id)?;
 
-    let direct_mapping = invoke_ctx.get_feature_set().bpf_account_data_direct_mapping;
+    let mut direct_mapping = false;
+    unsafe {
+        if TOGGLE_DIRECT_MAPPING {
+            direct_mapping = !direct_mapping;
+        }
+    }
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
 
     invoke_ctx
         .transaction_context
-        .get_next_instruction_context()
-        .unwrap()
-        .configure(&[program_idx], instr_accounts.as_slice(), &instr.data);
+        .configure_next_instruction_for_tests(program_idx, instr_accounts, &instr.data)
+        .unwrap();
 
     match invoke_ctx.push() {
         Ok(_) => (),
@@ -231,9 +216,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .get_current_instruction_context()
         .unwrap();
     let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
-        invoke_ctx.transaction_context,
-        caller_instr_ctx,
-        !direct_mapping,
+        &caller_instr_ctx,
+        false,
+        direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )
     .unwrap();
@@ -324,13 +309,13 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .chain(input_memory_regions)
         .collect();
 
-    let Ok(memory_mapping) = MemoryMapping::new_with_cow(
+    let Ok(memory_mapping) = MemoryMapping::new_with_access_violation_handler(
         regions,
         &config,
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .account_data_write_access_handler(),
+            .access_violation_handler(false, direct_mapping),
     ) else {
         return None;
     };
@@ -344,13 +329,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     );
 
     // Setup registers.
-    // r1, r10, r11 are initialized by EbpfVm::new (r10) or EbpfVm::execute_program (r1, r11)
+    // r1, r10, r11 are initialized by EbpfVm::new (r10) or EbpfVm::execute_program (r11)
+    // r1 is initialized in Agave at ebpf::MM_INPUT_START.
     // Modifying them will most like break execution.
     // In syscalls we allow override them (especially r1) because that simulates the fact
     // that a program partially executed before reaching the syscall.
     // Here we want to test what happens when the program starts from the beginning.
     vm.registers[0] = vm_ctx.r0;
-    // vm.registers[1] = vm_ctx.r1; // do not override
+    vm.registers[1] = ebpf::MM_INPUT_START;
     vm.registers[2] = vm_ctx.r2;
     vm.registers[3] = vm_ctx.r3;
     vm.registers[4] = vm_ctx.r4;

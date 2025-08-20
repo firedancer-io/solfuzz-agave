@@ -1,7 +1,7 @@
 use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TxnContext, TxnResult};
 use crate::utils::program::common::{build_versioned_message, get_dummy_bpf_native_programs};
-use crate::TOGGLE_DIRECT_MAPPING;
+// use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
@@ -33,8 +33,8 @@ use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
+use solana_svm_timings::ExecuteTimings;
 use solana_sysvar;
-use solana_timings::ExecuteTimings;
 use solana_transaction::versioned::VersionedTransaction;
 use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::TransactionAccount;
@@ -159,25 +159,14 @@ impl From<TransactionAccount> for proto::AcctState {
 
 impl From<LoadedTransaction> for proto::ResultingState {
     fn from(value: LoadedTransaction) -> proto::ResultingState {
-        let rent_debits = value
-            .rent_debits
-            .into_unordered_rewards_iter()
-            .map(|(key, value)| proto::RentDebits {
-                pubkey: key.to_bytes().to_vec(),
-                rent_collected: value.lamports,
-            })
-            .collect::<Vec<proto::RentDebits>>();
-
         let mut acct_states: Vec<AcctState> = Vec::with_capacity(value.accounts.len());
-
         for item in value.accounts {
             acct_states.push(item.into());
         }
-
         proto::ResultingState {
             acct_states,
-            rent_debits,
-            transaction_rent: value.rent,
+            rent_debits: vec![],
+            transaction_rent: 0,
         }
     }
 }
@@ -226,10 +215,7 @@ fn output_txn_result_from_result(
                         (status, instr_err, custom_err_ret, instr_err_idx)
                     }
                 };
-            let rent = match txn {
-                ProcessedTransaction::Executed(executed_tx) => executed_tx.loaded_transaction.rent,
-                ProcessedTransaction::FeesOnly(_) => 0,
-            };
+            let rent = 0;
             let resulting_state: Option<ResultingState> = match txn {
                 ProcessedTransaction::Executed(executed_tx) => {
                     Some(executed_tx.loaded_transaction.clone().into())
@@ -239,7 +225,6 @@ fn output_txn_result_from_result(
                     collect_accounts_for_failed_tx(
                         &mut accounts,
                         &mut None,
-                        sanitized_message,
                         None,
                         &tx.rollback_accounts,
                     );
@@ -336,21 +321,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .map(|ctx| ctx.features.clone().unwrap_or_default())
         .unwrap_or_default();
 
-    let mut feature_set = FeatureSet::from(&fd_features);
+    let feature_set = FeatureSet::from(&fd_features);
 
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            // Toggle the BPF direct mapping feature
-            if feature_set
-                .active()
-                .contains_key(&bpf_account_data_direct_mapping::id())
-            {
-                feature_set.deactivate(&bpf_account_data_direct_mapping::id());
-            } else {
-                feature_set.activate(&bpf_account_data_direct_mapping::id(), 0);
-            }
-        }
-    }
+    // direct mapping toggling removed in Agave 3.0
 
     const FEE_COLLECTOR: Pubkey = Pubkey::from_str_const("1111111111111111111111111111111111");
 
@@ -392,7 +365,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     } else {
         context.blockhash_queue.clone()
     };
-    let genesis_hash = Some(Hash::new(blockhash_queue[0].as_slice()));
+    let genesis_hash = Some(Hash::new_from_array(
+        blockhash_queue[0].clone().try_into().unwrap(),
+    ));
 
     // Bank on slot 0
     let index = Some(AccountsIndexConfig {
@@ -438,11 +413,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             .unwrap()
             .insert(new_bank)
             .clone_without_scheduler();
-        bank.get_transaction_processor()
-            .program_cache
-            .write()
-            .unwrap()
-            .prune(slot, bank.epoch());
+        bank.prune_program_cache(slot, bank.epoch());
     }
 
     /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */

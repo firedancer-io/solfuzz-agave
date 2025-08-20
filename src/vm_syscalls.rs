@@ -4,11 +4,10 @@ use crate::{
     utils::vm::mem_regions,
     utils::vm::HEAP_MAX,
     utils::vm::STACK_SIZE,
-    InstrContext,
+    InstrContext, TOGGLE_DIRECT_MAPPING,
 };
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
-use solana_log_collector::LogCollector;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::serialization::serialize_parameters;
 use solana_program_runtime::sysvar_cache::SysvarCache;
@@ -25,6 +24,7 @@ use solana_sbpf::{
     vm::{ContextObject, EbpfVm},
 };
 use solana_svm_feature_set::SVMFeatureSet;
+use solana_svm_log_collector::LogCollector;
 use solana_transaction_context::TransactionContext;
 use std::{cell::RefCell, ffi::c_int};
 
@@ -134,7 +134,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let Some(program_idx) = invoke_ctx
         .transaction_context
-        .find_index_of_program_account(&instr_ctx.instruction.program_id)
+        .find_index_of_account(&instr_ctx.instruction.program_id)
     else {
         cleanup_static_ptrs(
             transaction_context_ptr,
@@ -145,15 +145,19 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         );
         return None;
     };
-    let direct_mapping = invoke_ctx.get_feature_set().bpf_account_data_direct_mapping;
+    let mut direct_mapping = false;
+    unsafe {
+        if TOGGLE_DIRECT_MAPPING {
+            direct_mapping = !direct_mapping;
+        }
+    };
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
     invoke_ctx
         .transaction_context
-        .get_next_instruction_context()
-        .unwrap()
-        .configure(&[program_idx], instr_accounts.as_slice(), &instr.data);
+        .configure_next_instruction_for_tests(program_idx, instr_accounts, &instr.data)
+        .unwrap();
 
     match invoke_ctx.push() {
         Ok(_) => (),
@@ -176,9 +180,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .get_current_instruction_context()
         .unwrap();
     let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
-        invoke_ctx.transaction_context,
-        caller_instr_ctx,
-        !direct_mapping,
+        &caller_instr_ctx,
+        false,
+        direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )
     .unwrap();
@@ -272,13 +276,13 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .chain(input_memory_regions)
         .collect();
 
-    let Ok(memory_mapping) = MemoryMapping::new_with_cow(
+    let Ok(memory_mapping) = MemoryMapping::new_with_access_violation_handler(
         regions,
         &config,
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .account_data_write_access_handler(),
+            .access_violation_handler(false, direct_mapping),
     ) else {
         cleanup_static_ptrs(
             transaction_context_ptr,
