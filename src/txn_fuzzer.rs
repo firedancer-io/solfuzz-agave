@@ -40,7 +40,7 @@ use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::TransactionAccount;
 use solana_transaction_error::TransactionError;
 use std::cmp::max;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
@@ -453,8 +453,20 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
     pubkeys are ignored. */
     bank.get_transaction_processor().reset_sysvar_cache();
+
+    let builtin_program_ids: HashSet<Pubkey> = solana_builtins::BUILTINS
+        .iter()
+        .map(|builtin| builtin.program_id)
+        .collect();
+
     for account in &context.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
+
+        /* builtin accounts are already loaded earlier, so we skip them */
+        if builtin_program_ids.contains(&pubkey) {
+            continue;
+        }
+
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
     }
