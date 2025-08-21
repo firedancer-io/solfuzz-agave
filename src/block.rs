@@ -434,8 +434,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let parent_epoch = bank.epoch_schedule().get_epoch(bank.parent_slot());
 
     bank.get_transaction_processor().reset_sysvar_cache();
-    bank.update_slot_hashes();
-    bank.update_stake_history(Some(parent_epoch));
     bank.update_clock(Some(parent_epoch));
     bank.update_last_restart_slot();
     bank.update_recent_blockhashes();
@@ -451,6 +449,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             null_tracer(),
         );
     }
+
+    bank.update_slot_hashes();
+    bank.update_stake_history(Some(parent_epoch));
 
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.write().unwrap().root_bank();
