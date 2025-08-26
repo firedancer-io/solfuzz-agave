@@ -180,6 +180,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     preserve_rent_epoch_for_rent_exempt_accounts,
     enable_bpf_loader_extend_program_ix,
     enable_early_verification_of_account_modifications,
+    skip_rent_rewrites,
     prevent_crediting_accounts_that_end_rent_paying,
     cap_bpf_program_instruction_accounts,
     loosen_cpi_size_restriction,
@@ -228,7 +229,6 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     revise_turbine_epoch_stakes,
     enable_poseidon_syscall,
     timely_vote_credits,
-    enable_loader_v4,
     require_rent_exempt_split_destination,
     better_error_codes_for_tx_lamport_check,
     enable_alt_bn128_compression_syscall,
@@ -249,6 +249,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_gossip_duplicate_proof_ingestion,
     enable_chained_merkle_shreds,
     remove_rounding_in_fee_calculation,
+    enable_tower_sync_ix,
     deprecate_unused_legacy_vote_plumbing,
     reward_full_priority_fee,
     disable_rent_fees_collection,
@@ -258,24 +259,23 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     ed25519_precompile_verify_strict,
     zk_elgamal_proof_program_enabled,
     move_stake_and_move_lamports_ixs,
-    deprecate_legacy_vote_ixs,
     partitioned_epoch_rewards_superfeature,
     get_sysvar_syscall_enabled,
     migrate_feature_gate_program_to_core_bpf,
     migrate_config_program_to_core_bpf,
     migrate_address_lookup_table_program_to_core_bpf,
     disable_account_loader_special_case,
+    remove_accounts_executable_flag_checks,
+    accounts_lt_hash,
+    remove_accounts_delta_hash,
+    snapshots_lt_hash,
     reserve_minimal_cus_for_builtin_instructions,
     raise_block_limits_to_50m,
     move_precompile_verification_to_svm,
     enable_transaction_loading_failure_fees,
-    enable_loader_v4,                       // custom hardcoded feature
-    remove_accounts_executable_flag_checks, // custom hardcoded feature
-    accounts_lt_hash,                       // custom hardcoded feature
-    remove_accounts_delta_hash,             // custom hardcoded feature
-    snapshots_lt_hash,                      // custom hardcoded feature
-    disable_partitioned_rent_collection,    // custom hardcoded feature
-    formalize_loaded_transaction_data_size, // SIMD-186, hardcoded as loaded account data size is poorly specified in Agave
+    disable_partitioned_rent_collection,
+    formalize_loaded_transaction_data_size,
+    enable_loader_v4, // custom hardcoded feature
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -283,28 +283,24 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // zk_token_sdk_enabled, // NOT supported in fd
     stake_raise_minimum_delegation_to_1_sol,
     stake_minimum_delegation_for_rewards,
-    skip_rent_rewrites,
     increase_tx_account_lock_limit,
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
-    // bpf_account_data_direct_mapping, // NOT finished in fd
-    include_loaded_accounts_data_size_in_fee_calculation,
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     enable_zk_transfer_with_fee,
     enable_zk_proof_from_account,
-    enable_tower_sync_ix,
     chained_merkle_conflict_duplicate_proofs,
+    deprecate_legacy_vote_ixs,
     enable_secp256r1_precompile,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
     enable_sbpf_v3_deployment_and_execution,
-    // migrate_stake_program_to_core_bpf, // NOT impl in fd
+    // migrate_stake_program_to_core_bpf, // NOT supported in fuzzing yet
     enable_get_epoch_stake_syscall,
     fix_alt_bn128_multiplication_input_length,
-    // lift_cpi_caller_restriction, // removed in Agave 3.0 feature-set crate surface
     vote_only_full_fec_sets,
     drop_unchained_merkle_shreds,
     verify_retransmitter_signature,
@@ -315,6 +311,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reenable_zk_elgamal_proof_program,
     enable_extend_program_checked,
     require_static_nonce_account,
+    enable_vote_address_leader_schedule,
+    enshrine_slashing_program,
 ];
 
 // If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
