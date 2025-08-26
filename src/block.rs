@@ -283,6 +283,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     /* Build the stakes separately */
     let epoch = epoch_schedule.get_epoch(slot);
+    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(slot);
     let stakes_t = build_latest_stake_delegations(&context.acct_states, epoch, &stake_history);
 
     let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
@@ -333,17 +334,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
-        epoch.saturating_sub(1),
+        leader_schedule_epoch.saturating_sub(2),
         VersionedEpochStakes::new(
             SerdeStakesToStakeFormat::from(stake_accounts_t_2),
-            epoch.saturating_sub(1),
+            leader_schedule_epoch.saturating_sub(2),
         ),
     );
     epoch_stakes.insert(
-        epoch,
+        leader_schedule_epoch.saturating_sub(1),
         VersionedEpochStakes::new(
             SerdeStakesToStakeFormat::from(stake_accounts_t_1.clone()),
-            epoch,
+            leader_schedule_epoch.saturating_sub(1),
         ),
     );
 
@@ -358,10 +359,10 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
     epoch_stakes.insert(
-        epoch.saturating_add(1),
+        leader_schedule_epoch,
         VersionedEpochStakes::new(
             SerdeStakesToStakeFormat::from(stakes_current_accounts),
-            epoch.saturating_add(1),
+            leader_schedule_epoch,
         ),
     );
 
