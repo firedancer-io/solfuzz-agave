@@ -1,7 +1,6 @@
 use crate::proto::{self};
 use crate::proto::{BlockContext, BlockEffects};
 use crate::utils::program::common::build_versioned_message;
-// use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use prost::Message;
 #[allow(deprecated)]
@@ -155,8 +154,8 @@ fn build_latest_stake_delegations(
 we use the provided votes cache instead of the latest input account states. */
 fn build_prev_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<Delegation> {
     let mut stakes = Stakes::<Delegation>::default();
-    vote_accounts.iter().for_each(|vote_account| {
-        let (pubkey, account) = vote_account
+    vote_accounts.iter().for_each(|input_vote_account| {
+        let (pubkey, account) = input_vote_account
             .vote_account
             .clone()
             .unwrap()
@@ -166,11 +165,9 @@ fn build_prev_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<
         /* Due to the way Agave and FD's stakes caches differ, we need to use the latest account states for the current epoch's stake delegations */
         let account_shared_data = AccountSharedData::from(account);
 
-        stakes.vote_accounts.insert(
-            pubkey,
-            VoteAccount::try_from(account_shared_data).unwrap(),
-            || vote_account.stake,
-        );
+        if let Ok(vote_account) = VoteAccount::try_from(account_shared_data) {
+            stakes.vote_accounts.insert(pubkey, vote_account, || input_vote_account.stake);
+        }
     });
     stakes
 }
@@ -181,9 +178,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let epoch_ctx = context.epoch_ctx.unwrap();
     let fd_features = epoch_ctx.features.unwrap_or_default();
     let feature_set = FeatureSet::from(&fd_features);
-
-    // direct mapping toggling removed in Agave 3.0
-
     let slot = slot_ctx.slot;
     let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap());
 
