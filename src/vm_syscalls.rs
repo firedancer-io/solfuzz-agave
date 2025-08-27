@@ -145,6 +145,10 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         );
         return None;
     };
+    if program_idx > 255 {
+        // TransactionContext::configure_next_instruction_for_tests() crashes if program_idx > 255
+        return None;
+    }
     let mut direct_mapping = false;
     unsafe {
         if TOGGLE_DIRECT_MAPPING {
