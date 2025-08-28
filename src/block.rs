@@ -152,7 +152,9 @@ fn build_latest_stake_delegations(
 
 /* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_deleations()` is that
 we use the provided votes cache instead of the latest input account states. */
-fn build_prev_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<Delegation> {
+fn build_prev_stake_delegations(
+    vote_accounts: &[proto::VoteAccount],
+) -> Stakes<stake_account::StakeAccount<Delegation>> {
     let mut stakes = Stakes::<Delegation>::default();
     vote_accounts.iter().for_each(|input_vote_account| {
         let (pubkey, account) = input_vote_account
@@ -169,7 +171,16 @@ fn build_prev_stake_delegations(vote_accounts: &[proto::VoteAccount]) -> Stakes<
             stakes.vote_accounts.insert(pubkey, vote_account, || input_vote_account.stake);
         }
     });
-    stakes
+
+    let stake_accounts: Stakes<stake_account::StakeAccount<Delegation>> =
+        Stakes::new(&stakes, |pubkey| {
+            stakes
+                .vote_accounts
+                .get(pubkey)
+                .map(|vote_account| vote_account.account().clone())
+        })
+        .unwrap();
+    stake_accounts
 }
 
 #[allow(deprecated)]
@@ -279,65 +290,21 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let epoch = epoch_schedule.get_epoch(slot);
     let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(slot);
     let stakes_t = build_latest_stake_delegations(&context.acct_states, epoch, &stake_history);
-
     let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
-    let stake_accounts_t_1 = Stakes::new(&stakes_t_1, |pubkey| {
-        let account = epoch_ctx
-            .vote_accounts_t_1
-            .iter()
-            .find(|vote_account| {
-                Pubkey::new_from_array(
-                    vote_account
-                        .vote_account
-                        .as_ref()
-                        .unwrap()
-                        .address
-                        .clone()
-                        .try_into()
-                        .unwrap(),
-                ) == *pubkey
-            })
-            .map(|vote_account| vote_account.vote_account.as_ref().unwrap().clone())
-            .unwrap();
-        Some(AccountSharedData::from(&account))
-    })
-    .unwrap();
-
     let stakes_t_2 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2);
-    let stake_accounts_t_2 = Stakes::new(&stakes_t_2, |pubkey| {
-        let account = epoch_ctx
-            .vote_accounts_t_2
-            .iter()
-            .find(|vote_account| {
-                Pubkey::new_from_array(
-                    vote_account
-                        .vote_account
-                        .as_ref()
-                        .unwrap()
-                        .address
-                        .clone()
-                        .try_into()
-                        .unwrap(),
-                ) == *pubkey
-            })
-            .map(|vote_account| vote_account.vote_account.as_ref().unwrap().clone())
-            .unwrap();
-        Some(AccountSharedData::from(&account))
-    })
-    .unwrap();
 
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
         leader_schedule_epoch.saturating_sub(2),
         VersionedEpochStakes::new(
-            SerdeStakesToStakeFormat::from(stake_accounts_t_2),
+            SerdeStakesToStakeFormat::from(stakes_t_2),
             leader_schedule_epoch.saturating_sub(2),
         ),
     );
     epoch_stakes.insert(
         leader_schedule_epoch.saturating_sub(1),
         VersionedEpochStakes::new(
-            SerdeStakesToStakeFormat::from(stake_accounts_t_1.clone()),
+            SerdeStakesToStakeFormat::from(stakes_t_1.clone()),
             leader_schedule_epoch.saturating_sub(1),
         ),
     );
@@ -469,7 +436,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             .txns
             .iter()
             .map(|txn| {
-                let message = build_versioned_message(txn.message.as_ref().unwrap());
+                let message = build_versioned_message(txn.message.as_ref()?);
                 let signatures = txn
                     .signatures
                     .iter()
@@ -485,13 +452,13 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
                     signatures,
                 };
 
-                Entry {
+                Some(Entry {
                     num_hashes: 1u64,
                     hash: Hash::default(),
                     transactions: vec![transaction],
-                }
+                })
             })
-            .collect::<Vec<Entry>>(),
+            .collect::<Option<Vec<Entry>>>()?,
     );
 
     let replay_tx_thread_pool = create_thread_pool(1);
