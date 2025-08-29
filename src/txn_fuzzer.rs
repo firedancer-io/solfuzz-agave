@@ -26,7 +26,7 @@ use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::runtime_config::RuntimeConfig;
-use solana_sdk_ids::{address_lookup_table, bpf_loader, config};
+use solana_sdk_ids::{address_lookup_table, config};
 use solana_signature::Signature;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
