@@ -10,6 +10,7 @@ use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_db::AccountsDbConfig;
 use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
+use solana_bpf_loader_program;
 use solana_clock::MAX_PROCESSING_AGE;
 use solana_epoch_schedule::EpochSchedule;
 use solana_genesis_config::GenesisConfig;
@@ -25,7 +26,7 @@ use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::runtime_config::RuntimeConfig;
-use solana_sdk_ids::{address_lookup_table, config};
+use solana_sdk_ids::{address_lookup_table, bpf_loader, config};
 use solana_signature::Signature;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
@@ -540,6 +541,21 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
 
+    let memory_log = solana_bpf_loader_program::get_memory_log();
+    solana_bpf_loader_program::reset_memory_log();
+    let memory_log_account = AcctState {
+        address: [0x41; 32].to_vec(),
+        lamports: 0,
+        data: memory_log
+            .into_iter()
+            .flat_map(|x| x.to_le_bytes().to_vec())
+            .collect(),
+        executable: false,
+        rent_epoch: u64::MAX,
+        owner: [0x41; 32].to_vec(),
+        seed_addr: None,
+    };
+
     let mut txn_result = output_txn_result_from_result(result, sanitized_transaction.message());
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
         let mut loaded_account_keys = AHashSet::<Pubkey>::new();
@@ -570,8 +586,15 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
             loaded_account_keys.contains(&pubkey)
         });
+        relevant_accounts.acct_states.push(memory_log_account);
 
         txn_result.resulting_state = Some(relevant_accounts.clone());
+    } else {
+        txn_result.resulting_state = Some(ResultingState {
+            acct_states: vec![memory_log_account],
+            rent_debits: vec![],
+            transaction_rent: 0,
+        });
     }
 
     Some(txn_result)
