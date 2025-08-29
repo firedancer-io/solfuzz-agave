@@ -541,8 +541,8 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
 
-    let memory_log = solana_bpf_loader_program::get_memory_log();
-    solana_bpf_loader_program::reset_memory_log();
+    let memory_log = solana_bpf_loader_program::sol_compat_get_memory_log();
+    solana_bpf_loader_program::sol_compat_reset_memory_log();
     let memory_log_account = AcctState {
         address: [0x41; 32].to_vec(),
         lamports: 0,
