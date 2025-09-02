@@ -307,7 +307,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .unwrap();
 
     // Set up the vm instance
-    let loader = std::sync::Arc::new(BuiltinProgram::new_mock());
+    let loader = std::sync::Arc::new(BuiltinProgram::new_loader(config.clone()));
     let mut vm = EbpfVm::new(
         loader,
         sbpf_version,
