@@ -155,6 +155,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             direct_mapping = !direct_mapping;
         }
     };
+    let stricter_abi_and_runtime_constraints = invoke_ctx
+        .get_feature_set()
+        .stricter_abi_and_runtime_constraints;
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
@@ -194,7 +197,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // The stack gap size is 0 iff direct mapping is enabled.
     let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
         &caller_instr_ctx,
-        false,
+        stricter_abi_and_runtime_constraints,
         direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )
@@ -277,7 +280,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .access_violation_handler(false, direct_mapping),
+            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
     ) else {
         cleanup_static_ptrs(
             transaction_context_ptr,

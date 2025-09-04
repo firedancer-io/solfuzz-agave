@@ -195,6 +195,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             direct_mapping = !direct_mapping;
         }
     }
+    let stricter_abi_and_runtime_constraints = invoke_ctx
+        .get_feature_set()
+        .stricter_abi_and_runtime_constraints;
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
@@ -217,7 +220,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .unwrap();
     let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
         &caller_instr_ctx,
-        false,
+        stricter_abi_and_runtime_constraints,
         direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )
@@ -315,7 +318,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .access_violation_handler(false, direct_mapping),
+            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
     ) else {
         return None;
     };
