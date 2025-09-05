@@ -435,6 +435,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
     bank.update_epoch_schedule();
     bank.update_rent();
+    bank.update_slot_hashes();
 
     let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
     let mut lamports_per_signature: Option<u64> = None;
