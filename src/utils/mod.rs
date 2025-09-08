@@ -35,6 +35,11 @@ impl From<&proto::FeatureSet> for FeatureSet {
         let mut feature_set = FeatureSet::default();
         for id in &input.features {
             if let Some(pubkey) = INDEXED_FEATURES.get(id) {
+                if !crate::SUPPORTED_FEATURES.contains(id)
+                    && !crate::HARDCODED_FEATURES.contains(id)
+                {
+                    panic!("Feature: ({}, {}) is not supported: ", pubkey, id);
+                }
                 feature_set.activate(pubkey, 0);
             }
         }
@@ -77,4 +82,14 @@ pub const fn pchash_inverse(hash: u32) -> u32 {
     x = x.rotate_right(15);
     x = x.wrapping_mul(0xdee13bb1);
     x
+}
+
+#[test]
+#[should_panic(expected = "is not supported")]
+fn test_reject_unsupported_feature() {
+    let unsupported_feature = feature_u64(&agave_feature_set::reenable_sbpf_v0_execution::id());
+    let proto_features = proto::FeatureSet {
+        features: vec![unsupported_feature],
+    };
+    let _ = FeatureSet::from(&proto_features);
 }
