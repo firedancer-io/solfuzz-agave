@@ -72,10 +72,18 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
+    if in_sz == 0 {
+        return 0;
+    }
+
     let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
     let Ok(elf_loader_ctx) = ElfLoaderCtx::decode(in_slice) else {
         return 0;
     };
+
+    if elf_loader_ctx.encoded_len() != in_sz as usize {
+        return 0;
+    }
 
     let Some(elf_loader_effects) = execute_elf_loader(elf_loader_ctx) else {
         return 0;
