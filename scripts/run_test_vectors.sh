@@ -26,13 +26,23 @@ else
   cd ../..
 fi
 
-find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_instr                > $LOG_PATH/test_exec_instr.log 2>&1
-find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_txn         > $LOG_PATH/test_exec_precompile.log 2>&1
-find dump/test-vectors/txn/fixtures/programs -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_txn           > $LOG_PATH/test_exec_txn.log 2>&1
-find dump/test-vectors/block/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_block                > $LOG_PATH/test_exec_block.log 2>&1
-find dump/test-vectors/syscall/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_vm_syscall         > $LOG_PATH/test_exec_vm_syscall.log 2>&1
-find dump/test-vectors/vm_interp/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_vm_interp > $LOG_PATH/test_exec_vm_interp.log 2>&1
-find dump/test-vectors/elf_loader/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_elf_loader      > $LOG_PATH/test_exec_elf_loader.log 2>&1
+run_test() {
+  local log_file="$1"
+  local cmd="$2"
+  
+  if ! eval "$cmd > $log_file 2>&1"; then
+    cat "$log_file"
+    exit 1
+  fi
+}
+
+run_test "$LOG_PATH/test_exec_instr.log" "find dump/test-vectors/instr/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_instr"
+run_test "$LOG_PATH/test_exec_precompile.log" "find dump/test-vectors/txn/fixtures/precompile -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_txn"
+run_test "$LOG_PATH/test_exec_txn.log" "find dump/test-vectors/txn/fixtures/programs -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_txn"
+run_test "$LOG_PATH/test_exec_block.log" "find dump/test-vectors/block/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_block"
+run_test "$LOG_PATH/test_exec_vm_syscall.log" "find dump/test-vectors/syscall/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_vm_syscall"
+run_test "$LOG_PATH/test_exec_vm_interp.log" "find dump/test-vectors/vm_interp/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_vm_interp"
+run_test "$LOG_PATH/test_exec_elf_loader.log" "find dump/test-vectors/elf_loader/fixtures -type f -name '*.fix' | xargs -P $NUM_PROCESSES -n 1000 ./target/release/test_exec_elf_loader"
 
 failed=`grep -wR FAIL $LOG_PATH | wc -l`
 passed=`grep -wR OK $LOG_PATH | wc -l`
