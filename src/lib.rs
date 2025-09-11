@@ -504,7 +504,6 @@ impl From<InstrEffects> for proto::InstrEffects {
                     lamports: account.lamports,
                     data: account.data.to_vec(),
                     executable: account.executable,
-                    rent_epoch: None,
                     seed_addr: None,
                 })
                 .collect(),
@@ -1206,7 +1205,6 @@ mod tests {
                     lamports: 1000,
                     data: vec![],
                     executable: false,
-                    rent_epoch: None,
                     seed_addr: None,
                 },
                 proto::AcctState {
@@ -1215,7 +1213,6 @@ mod tests {
                     lamports: 0,
                     data: vec![],
                     executable: false,
-                    rent_epoch: None,
                     seed_addr: None,
                 },
                 proto::AcctState {
@@ -1224,7 +1221,6 @@ mod tests {
                     lamports: 10000000,
                     data: b"Solana Program".to_vec(),
                     executable: true,
-                    rent_epoch: None,
                     seed_addr: None,
                 },
             ],
@@ -1262,7 +1258,6 @@ mod tests {
                         lamports: 999,
                         data: vec![],
                         executable: false,
-                        rent_epoch: None,
                         seed_addr: None,
                     },
                     proto::AcctState {
@@ -1271,7 +1266,6 @@ mod tests {
                         lamports: 1,
                         data: vec![],
                         executable: false,
-                        rent_epoch: None,
                         seed_addr: None,
                     },
                     proto::AcctState {
@@ -1280,7 +1274,6 @@ mod tests {
                         lamports: 10000000,
                         data: b"Solana Program".to_vec(),
                         executable: true,
-                        rent_epoch: None,
                         seed_addr: None,
                     },
                 ],
