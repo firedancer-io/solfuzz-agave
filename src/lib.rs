@@ -39,6 +39,7 @@ use solana_sdk_ids::{
 use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
+use solana_svm::rent_calculator::RENT_EXEMPT_RENT_EPOCH;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
@@ -503,7 +504,7 @@ impl From<InstrEffects> for proto::InstrEffects {
                     lamports: account.lamports,
                     data: account.data.to_vec(),
                     executable: account.executable,
-                    rent_epoch: account.rent_epoch,
+                    rent_epoch: None,
                     seed_addr: None,
                 })
                 .collect(),
@@ -1100,7 +1101,7 @@ impl TryFrom<proto::AcctState> for (Pubkey, Account) {
                 data: input.data,
                 owner,
                 executable: input.executable,
-                rent_epoch: input.rent_epoch,
+                rent_epoch: RENT_EXEMPT_RENT_EPOCH,
             },
         ))
     }
@@ -1205,7 +1206,7 @@ mod tests {
                     lamports: 1000,
                     data: vec![],
                     executable: false,
-                    rent_epoch: 0,
+                    rent_epoch: None,
                     seed_addr: None,
                 },
                 proto::AcctState {
@@ -1214,7 +1215,7 @@ mod tests {
                     lamports: 0,
                     data: vec![],
                     executable: false,
-                    rent_epoch: 0,
+                    rent_epoch: None,
                     seed_addr: None,
                 },
                 proto::AcctState {
@@ -1223,7 +1224,7 @@ mod tests {
                     lamports: 10000000,
                     data: b"Solana Program".to_vec(),
                     executable: true,
-                    rent_epoch: 0,
+                    rent_epoch: None,
                     seed_addr: None,
                 },
             ],
@@ -1261,7 +1262,7 @@ mod tests {
                         lamports: 999,
                         data: vec![],
                         executable: false,
-                        rent_epoch: 0,
+                        rent_epoch: None,
                         seed_addr: None,
                     },
                     proto::AcctState {
@@ -1270,7 +1271,7 @@ mod tests {
                         lamports: 1,
                         data: vec![],
                         executable: false,
-                        rent_epoch: 0,
+                        rent_epoch: None,
                         seed_addr: None,
                     },
                     proto::AcctState {
@@ -1279,7 +1280,7 @@ mod tests {
                         lamports: 10000000,
                         data: b"Solana Program".to_vec(),
                         executable: true,
-                        rent_epoch: 0,
+                        rent_epoch: None,
                         seed_addr: None,
                     },
                 ],
