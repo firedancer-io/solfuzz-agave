@@ -8,6 +8,7 @@ use ahash::AHashMap;
 use lazy_static::lazy_static;
 use solana_account::{AccountSharedData, WritableAccount};
 use solana_pubkey::Pubkey;
+use solana_svm::rent_calculator::RENT_EXEMPT_RENT_EPOCH;
 
 pub const fn feature_u64(feature: &Pubkey) -> u64 {
     let feature_id = feature.to_bytes();
@@ -52,7 +53,7 @@ impl From<&AcctState> for AccountSharedData {
             input.owner.clone().try_into().unwrap(),
         ));
         account_data.set_executable(input.executable);
-        account_data.set_rent_epoch(input.rent_epoch);
+        account_data.set_rent_epoch(RENT_EXEMPT_RENT_EPOCH);
 
         account_data
     }
