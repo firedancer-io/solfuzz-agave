@@ -53,7 +53,6 @@ fn get_clock_sysvar_account() -> AcctState {
         lamports: 1,
         data: bincode::serialize(&clock).unwrap(),
         executable: false,
-        rent_epoch: None,
         owner: native_loader::id().to_bytes().to_vec(),
         seed_addr: None,
     }
@@ -72,7 +71,6 @@ fn get_epoch_schedule_sysvar_account() -> AcctState {
         lamports: 1,
         data: bincode::serialize(&epoch_schedule).unwrap(),
         executable: false,
-        rent_epoch: None,
         owner: native_loader::id().to_bytes().to_vec(),
         seed_addr: None,
     }
@@ -89,7 +87,6 @@ fn get_rent_sysvar_account() -> AcctState {
         lamports: 1,
         data: bincode::serialize(&rent).unwrap(),
         executable: false,
-        rent_epoch: None,
         owner: native_loader::id().to_bytes().to_vec(),
         seed_addr: None,
     }
@@ -121,7 +118,6 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
         lamports: 25,
         data: bincode::serialize(&state).unwrap(),
         executable: true,
-        rent_epoch: None,
         owner: bpf_loader_upgradeable::id().to_bytes().to_vec(),
         seed_addr: None,
     };
@@ -147,7 +143,6 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
         lamports: 25,
         data: header,
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -199,7 +194,6 @@ fn test_txn_execute_clock() {
         lamports: 80000000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -318,7 +312,6 @@ fn test_simple_transfer() {
         lamports: 10000000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -329,7 +322,6 @@ fn test_simple_transfer() {
         lamports: 900000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -340,7 +332,6 @@ fn test_simple_transfer() {
         lamports: 900000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -475,7 +466,6 @@ fn test_lookup_table() {
         lamports: 10000000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -486,7 +476,6 @@ fn test_lookup_table() {
         lamports: 900000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -497,7 +486,6 @@ fn test_lookup_table() {
         lamports: 900000,
         data: vec![],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -508,7 +496,6 @@ fn test_lookup_table() {
         lamports: 2,
         data: vec![5, 0, 0, 0, 0, 0, 0, 0],
         executable: false,
-        rent_epoch: None,
         owner: vec![0; 32],
         seed_addr: None,
     };
@@ -543,7 +530,6 @@ fn test_lookup_table() {
         lamports: 1,
         data: alut_data,
         executable: false,
-        rent_epoch: None,
         owner: address_lookup_table::id().to_bytes().to_vec(),
         seed_addr: None,
     };

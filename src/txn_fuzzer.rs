@@ -150,7 +150,6 @@ impl From<TransactionAccount> for proto::AcctState {
             lamports: value.1.lamports(),
             data: value.1.data().to_vec(),
             executable: value.1.executable(),
-            rent_epoch: None,
             owner: value.1.owner().to_bytes().to_vec(),
             seed_addr: None,
         }
