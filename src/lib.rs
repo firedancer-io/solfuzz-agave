@@ -277,6 +277,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_partitioned_rent_collection,
     formalize_loaded_transaction_data_size,
     enable_loader_v4, // custom hardcoded feature
+    mask_out_rent_epoch_in_vm_serialization,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -307,7 +308,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     verify_retransmitter_signature,
     enable_turbine_extended_fanout_experiments,
     vote_only_retransmitter_signed_fec_sets,
-    mask_out_rent_epoch_in_vm_serialization,
     disable_zk_elgamal_proof_program,
     reenable_zk_elgamal_proof_program,
     enable_extend_program_checked,
