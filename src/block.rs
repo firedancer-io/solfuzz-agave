@@ -479,10 +479,15 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     );
 
     no_schedule_bank.freeze();
+    let cost_tracker = no_schedule_bank.read_cost_tracker().unwrap();
 
     Some(BlockEffects {
         has_error: result.is_err(),
         slot_capitalization: no_schedule_bank.capitalization(),
         bank_hash: no_schedule_bank.hash().to_bytes().to_vec(),
+        cost_tracker: Some(proto::CostTracker {
+            block_cost: cost_tracker.block_cost(),
+            vote_cost: cost_tracker.vote_cost(),
+        }),
     })
 }
