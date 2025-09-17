@@ -484,6 +484,7 @@ pub struct InstrEffects {
     pub modified_accounts: Vec<(Pubkey, Account)>,
     pub cu_avail: u64,
     pub return_data: Vec<u8>,
+    pub log: Vec<u8>,
 }
 
 impl From<InstrEffects> for proto::InstrEffects {
@@ -509,6 +510,7 @@ impl From<InstrEffects> for proto::InstrEffects {
                 .collect(),
             cu_avail: val.cu_avail,
             return_data: val.return_data,
+            log: val.log,
         }
     }
 }
@@ -941,6 +943,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             .process_instruction(&mut compute_units_consumed, &mut ExecuteTimings::default())
     };
 
+    let log = invoke_context
+        .get_log_collector()?
+        .borrow()
+        .get_recorded_content()
+        .join("\n")
+        .into_bytes();
+
     #[cfg(feature = "core-bpf-conformance")]
     // To keep alignment with a builtin run, deduct only the CUs the builtin
     // version would have consumed, so the fixture realizes the same CU
@@ -1073,6 +1082,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             .collect(),
         cu_avail,
         return_data,
+        log,
     })
 }
 
