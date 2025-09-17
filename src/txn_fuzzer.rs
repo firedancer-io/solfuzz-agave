@@ -25,7 +25,7 @@ use solana_runtime::account_saver::collect_accounts_for_failed_tx;
 use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::runtime_config::RuntimeConfig;
-use solana_sdk_ids::{address_lookup_table, config};
+use solana_sdk_ids::{address_lookup_table, config, stake};
 use solana_signature::Signature;
 use solana_svm::account_loader::LoadedTransaction;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
@@ -418,6 +418,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */
     bank.store_account(&address_lookup_table::id(), &AccountSharedData::default());
     bank.store_account(&config::id(), &AccountSharedData::default());
+    bank.store_account(&stake::id(), &AccountSharedData::default());
 
     /* Load accounts + sysvars
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen

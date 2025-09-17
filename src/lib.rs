@@ -265,6 +265,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     migrate_feature_gate_program_to_core_bpf,
     migrate_config_program_to_core_bpf,
     migrate_address_lookup_table_program_to_core_bpf,
+    migrate_stake_program_to_core_bpf,
     disable_account_loader_special_case,
     remove_accounts_executable_flag_checks,
     accounts_lt_hash,
@@ -299,7 +300,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
     enable_sbpf_v3_deployment_and_execution,
-    // migrate_stake_program_to_core_bpf, // NOT supported in fuzzing yet
     enable_get_epoch_stake_syscall,
     fix_alt_bn128_multiplication_input_length,
     vote_only_full_fec_sets,
@@ -563,14 +563,6 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
             0u64,
             0usize,
             solana_compute_budget_program::Entrypoint::vm,
-        )),
-    );
-    cache.replenish(
-        solana_stake_program::id(),
-        Arc::new(ProgramCacheEntry::new_builtin(
-            0u64,
-            0usize,
-            solana_stake_program::stake_instruction::Entrypoint::vm,
         )),
     );
     cache.replenish(
