@@ -1,6 +1,6 @@
-use crate::proto::{self};
+use crate::proto::{self, AcctState};
 use crate::proto::{BlockContext, BlockEffects};
-use crate::utils::program::common::build_versioned_message;
+use crate::utils::program::common::{build_versioned_message, get_sysvar};
 use agave_feature_set::*;
 use prost::Message;
 #[allow(deprecated)]
@@ -266,38 +266,23 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     /* HACK: Because there are three different schedules and rent instances, we need to find and deserialize
     them from the account states first. Technically these different rent / epoch schedules should be fuzzed,
     but that will be out of scope for this fuzzer. */
-    let rent: Rent = context
+    let sysvar_accounts: HashMap<&[u8], &AcctState> = context
         .acct_states
         .iter()
-        .find(|item| {
-            item.address.as_slice() == solana_sysvar::rent::id().as_ref() && item.lamports > 0
-        })
-        .map(|account| bincode::deserialize(&account.data).unwrap())
-        .unwrap();
-    let epoch_schedule: EpochSchedule = context
-        .acct_states
-        .iter()
-        .find(|item| {
-            item.address.as_slice() == solana_sysvar::epoch_schedule::id().as_ref()
-                && item.lamports > 0
-        })
-        .map(|account| bincode::deserialize(&account.data).unwrap())
-        .unwrap();
-    let recent_blockhashes: RecentBlockhashes = context
-        .acct_states
-        .iter()
-        .find(|item| {
-            item.address.as_slice() == solana_sysvar::recent_blockhashes::id().as_ref()
-                && item.lamports > 0
-        })
-        .map(|account| bincode::deserialize(&account.data).unwrap())
-        .unwrap();
-    let stake_history: StakeHistory = context
-        .acct_states
-        .iter()
-        .find(|item| item.address.as_slice() == stake_history::id().as_ref() && item.lamports > 0)
-        .map(|account| bincode::deserialize(&account.data).unwrap())
-        .unwrap();
+        .filter(|item| item.lamports > 0)
+        .map(|item| (item.address.as_slice(), item))
+        .collect();
+    let rent: Rent = get_sysvar(&sysvar_accounts, solana_sysvar::rent::id().as_ref());
+    let epoch_schedule: EpochSchedule = get_sysvar(
+        &sysvar_accounts,
+        solana_sysvar::epoch_schedule::id().as_ref(),
+    );
+    let recent_blockhashes: RecentBlockhashes = get_sysvar(
+        &sysvar_accounts,
+        solana_sysvar::recent_blockhashes::id().as_ref(),
+    );
+    let stake_history: StakeHistory = get_sysvar(&sysvar_accounts, stake_history::id().as_ref());
+
     let genesis_config = GenesisConfig {
         creation_time: epoch_ctx.genesis_creation_time as i64,
         inflation: epoch_ctx.inflation.unwrap().into(),

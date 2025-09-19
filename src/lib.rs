@@ -16,10 +16,8 @@ use agave_precompiles::get_precompile;
 use agave_precompiles::is_precompile;
 use prost::Message;
 use solana_account::{Account, AccountSharedData};
-use solana_clock::Clock;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
-use solana_epoch_schedule::EpochSchedule;
 use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
 use solana_instruction::AccountMeta;
@@ -31,7 +29,6 @@ use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_pubkey::Pubkey;
-use solana_rent::Rent;
 use solana_runtime::rent_collector::RentCollector;
 use solana_sdk_ids::{
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
@@ -43,8 +40,6 @@ use solana_svm::rent_calculator::RENT_EXEMPT_RENT_EPOCH;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
-use solana_sysvar::last_restart_slot;
-use solana_sysvar_id::SysvarId;
 use solana_transaction_context::{
     IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
 };
@@ -659,75 +654,17 @@ fn create_invoke_context_fields(
     sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
         if let Some(account) = input.accounts.iter().find(|(key, _)| key == pubkey) {
             if account.1.lamports > 0 {
-                #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
-                // BPF versions of programs, such as Address Lookup Table, rely
-                // on the new `SolGetSysvar` syscall. However, APIs for
-                // querying slot hashes built on top of `SolGetSysvar` are
-                // designed with the assumption that the `SlotHashes` data
-                // stored in the sysvar cache is `SlotHashes::size_of()` in
-                // length.
-                // See https://github.com/anza-xyz/agave/blob/96249691b4b7c873220b27376f271ead38392541/sdk/program/src/sysvar/slot_hashes.rs#L101.
-                //
-                // Fixtures may provide an incorrect sized slot hashes account,
-                // so this step is to rectify it by extending the buffer with
-                // all zeroes before adding it to the sysvar cache.
-                if &input.instruction.program_id == &solana_address_lookup_table::program::id()
-                    && pubkey == &SlotHashes::id()
-                {
-                    let data_len = account.1.data.len();
-                    if (data_len > 8 && (data_len - 8) % std::mem::size_of::<SlotHash>() == 0)
-                        || data_len == 8
-                    {
-                        if data_len < SlotHashes::size_of() {
-                            // Extend the data to the right size.
-                            let mut data = vec![0; SlotHashes::size_of()];
-                            data[..data_len].copy_from_slice(&account.1.data);
-                            return callbackback(&data);
-                        }
-                    }
-                }
                 callbackback(&account.1.data);
             }
         }
     });
 
-    // Any default values for missing sysvar values should be set here
-    sysvar_cache.fill_missing_entries(|pubkey, callbackback| {
-        if *pubkey == Clock::id() {
-            // Set the default clock slot to something arbitrary beyond 0
-            // This prevents DelayedVisibility errors when executing BPF programs
-            let default_clock = Clock {
-                slot: 10,
-                ..Default::default()
-            };
-            let clock_data = bincode::serialize(&default_clock).unwrap();
-            callbackback(&clock_data);
-        }
-        if *pubkey == EpochSchedule::id() {
-            callbackback(&bincode::serialize(&EpochSchedule::default()).unwrap());
-        }
-        if *pubkey == Rent::id() {
-            callbackback(&bincode::serialize(&Rent::default()).unwrap());
-        }
-        if *pubkey == last_restart_slot::id() {
-            let slot_val = 5000_u64;
-            callbackback(&bincode::serialize(&slot_val).unwrap());
-        }
-    });
-
+    /* Sysvars must exist in the input */
     let clock = sysvar_cache.get_clock().unwrap();
     let epoch_schedule = sysvar_cache.get_epoch_schedule().unwrap();
-
-    // Add checks for rent boundaries
-    let rent_ = sysvar_cache.get_rent().unwrap();
-    let rent = (*rent_).clone();
-    if rent.lamports_per_byte_year > u32::MAX.into()
-        || rent.exemption_threshold > 999.0
-        || rent.exemption_threshold < 0.0
-        || rent.burn_percent > 100
-    {
-        return None;
-    };
+    let rent = sysvar_cache.get_rent().unwrap();
+    #[allow(deprecated)]
+    let recent_blockhashes = sysvar_cache.get_recent_blockhashes().unwrap();
 
     if !input
         .accounts
@@ -772,7 +709,7 @@ fn create_invoke_context_fields(
 
     let transaction_context = TransactionContext::new(
         transaction_accounts.clone(),
-        rent,
+        (*rent).clone(),
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
     );
@@ -798,10 +735,9 @@ fn create_invoke_context_fields(
     initialize_program_cache(&mut program_cache_for_tx_batch, &input.feature_set);
 
     #[allow(deprecated)]
-    let (blockhash, lamports_per_signature) = sysvar_cache
-        .get_recent_blockhashes()
-        .ok()
-        .and_then(|x| (*x).last().cloned())
+    let (blockhash, lamports_per_signature) = (*recent_blockhashes)
+        .last()
+        .cloned()
         .map(|x| (x.blockhash, x.fee_calculator.lamports_per_signature))
         .unwrap_or_default();
 
@@ -809,7 +745,7 @@ fn create_invoke_context_fields(
     input.lamports_per_signature = lamports_per_signature;
     input.rent_collector.epoch = clock.epoch;
     input.rent_collector.epoch_schedule = (*epoch_schedule).clone();
-    input.rent_collector.rent = (*rent_).clone();
+    input.rent_collector.rent = (*rent).clone();
 
     let mut newly_loaded_programs = HashSet::<Pubkey>::new();
 
@@ -1181,7 +1117,45 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use solana_clock::Clock;
+    use solana_epoch_schedule::EpochSchedule;
+    use solana_rent::Rent;
     use solana_sdk_ids::native_loader;
+    #[allow(deprecated)]
+    use solana_sysvar::recent_blockhashes::RecentBlockhashes;
+    use solana_sysvar::SysvarSerialize;
+
+    fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> proto::AcctState {
+        proto::AcctState {
+            address: id.to_bytes().to_vec(),
+            owner: solana_sysvar_id::id().to_bytes().to_vec(),
+            lamports: 1,
+            data: bincode::serialize(&sysvar).unwrap(),
+            executable: false,
+            seed_addr: None,
+        }
+    }
+
+    fn make_sysvar_accounts() -> Vec<proto::AcctState> {
+        vec![
+            create_sysvar_account(&solana_sysvar::clock::id(), Clock::default()),
+            create_sysvar_account(&solana_sysvar::rent::id(), Rent::default()),
+            create_sysvar_account(
+                &solana_sysvar::epoch_schedule::id(),
+                EpochSchedule::default(),
+            ),
+            #[allow(deprecated)]
+            create_sysvar_account(
+                &solana_sysvar::recent_blockhashes::id(),
+                RecentBlockhashes::default(),
+            ),
+        ]
+    }
+
+    fn with_sysvars(mut v: Vec<proto::AcctState>) -> Vec<proto::AcctState> {
+        v.extend(make_sysvar_accounts());
+        v
+    }
 
     #[test]
     fn test_system_program_exec() {
@@ -1190,7 +1164,7 @@ mod tests {
         // Ensure that a basic account transfer works
         let input = proto::InstrContext {
             program_id: vec![0u8; 32],
-            accounts: vec![
+            accounts: with_sysvars(vec![
                 proto::AcctState {
                     address: vec![1u8; 32],
                     owner: vec![0u8; 32],
@@ -1215,7 +1189,7 @@ mod tests {
                     executable: true,
                     seed_addr: None,
                 },
-            ],
+            ]),
             instr_accounts: vec![
                 proto::InstrAcct {
                     index: 0,
@@ -1243,7 +1217,7 @@ mod tests {
             Some(proto::InstrEffects {
                 result: 0,
                 custom_err: 0,
-                modified_accounts: vec![
+                modified_accounts: with_sysvars(vec![
                     proto::AcctState {
                         address: vec![1u8; 32],
                         owner: vec![0u8; 32],
@@ -1268,7 +1242,7 @@ mod tests {
                         executable: true,
                         seed_addr: None,
                     },
-                ],
+                ]),
                 cu_avail: 9850u64,
                 return_data: vec![],
             })
