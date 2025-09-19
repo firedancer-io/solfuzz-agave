@@ -29,6 +29,7 @@ use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
 use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
+use solana_runtime::bank::bank_hash_details::{BankHashDetails, SlotDetails};
 use solana_runtime::bank::{null_tracer, Bank, BankFieldsToDeserialize, BankHashStats, BankRc};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
@@ -50,6 +51,7 @@ use solana_vote::vote_account::VoteAccount;
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
+use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
@@ -480,6 +482,19 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     no_schedule_bank.freeze();
     let cost_tracker = no_schedule_bank.read_cost_tracker().unwrap();
+
+    if std::env::var("AGAVE_SOLCAP_DIR").is_ok() {
+        let slot_details = SlotDetails::new_from_bank(no_schedule_bank.as_ref(), true).unwrap();
+        let details = BankHashDetails::new(vec![slot_details]);
+        let parent_dir: PathBuf = std::env::var("AGAVE_SOLCAP_DIR").unwrap().into();
+        let path = parent_dir.join(details.filename().unwrap());
+        if !path.exists() {
+            _ = std::fs::create_dir_all(parent_dir);
+            let file = std::fs::File::create(&path).unwrap();
+            let writer = std::io::BufWriter::new(file);
+            serde_json::to_writer_pretty(writer, &details).unwrap();
+        }
+    }
 
     Some(BlockEffects {
         has_error: result.is_err(),
