@@ -4,7 +4,7 @@ use crate::utils::program::common::build_versioned_message;
 use agave_feature_set::*;
 use prost::Message;
 #[allow(deprecated)]
-use solana_account::AccountSharedData;
+use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
@@ -29,7 +29,9 @@ use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
 use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
-use solana_runtime::bank::bank_hash_details::{BankHashDetails, SlotDetails};
+use solana_runtime::bank::bank_hash_details::{
+    AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
+};
 use solana_runtime::bank::{null_tracer, Bank, BankFieldsToDeserialize, BankHashStats, BankRc};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
@@ -183,6 +185,73 @@ fn build_prev_stake_delegations(
         })
         .unwrap();
     stake_accounts
+}
+
+fn get_changed_accounts(
+    initial_accounts: &[proto::AcctState],
+    bank: &Bank,
+) -> Vec<(Pubkey, AccountSharedData)> {
+    let mut changed_accounts = Vec::new();
+
+    for initial_account in initial_accounts {
+        let pubkey = Pubkey::new_from_array(initial_account.address.clone().try_into().unwrap());
+        let initial_account_data = AccountSharedData::from(initial_account);
+
+        if let Some(current_account_data) = bank.get_account(&pubkey) {
+            if accounts_differ(&initial_account_data, &current_account_data) {
+                changed_accounts.push((pubkey, current_account_data));
+            }
+        } else if initial_account.lamports > 0 {
+            changed_accounts.push((pubkey, AccountSharedData::default()));
+        }
+    }
+
+    changed_accounts
+}
+
+fn accounts_differ(account1: &AccountSharedData, account2: &AccountSharedData) -> bool {
+    account1.lamports() != account2.lamports()
+        || account1.data() != account2.data()
+        || account1.owner() != account2.owner()
+        || account1.executable() != account2.executable()
+}
+
+fn create_changed_accounts_bank_hash_details(
+    bank: &Bank,
+    initial_accounts: &[proto::AcctState],
+) -> Result<BankHashDetails, String> {
+    let slot = bank.slot();
+    if !bank.is_frozen() {
+        return Err(format!(
+            "Bank {slot} must be frozen in order to get bank hash details"
+        ));
+    }
+
+    let full_slot_details = SlotDetails::new_from_bank(bank, true)?;
+    let accounts_lt_hash_checksum = full_slot_details
+        .bank_hash_components
+        .as_ref()
+        .map(|components| components.accounts_lt_hash_checksum.clone())
+        .unwrap_or_else(|| "unavailable".to_string());
+
+    let changed_accounts = get_changed_accounts(initial_accounts, bank);
+
+    let slot_details = SlotDetails {
+        slot,
+        bank_hash: bank.hash().to_string(),
+        bank_hash_components: Some(BankHashComponents {
+            parent_bank_hash: bank.parent_hash().to_string(),
+            signature_count: bank.signature_count(),
+            last_blockhash: bank.last_blockhash().to_string(),
+            accounts_lt_hash_checksum,
+            accounts: AccountsDetails {
+                accounts: changed_accounts,
+            },
+        }),
+        transactions: Vec::new(),
+    };
+
+    Ok(BankHashDetails::new(vec![slot_details]))
 }
 
 #[allow(deprecated)]
@@ -484,16 +553,18 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let cost_tracker = no_schedule_bank.read_cost_tracker().unwrap();
 
     if std::env::var("AGAVE_SOLCAP_DIR").is_ok() {
-        let slot_details = SlotDetails::new_from_bank(no_schedule_bank.as_ref(), true).unwrap();
-        let details = BankHashDetails::new(vec![slot_details]);
+        let details = create_changed_accounts_bank_hash_details(
+            bank_forks.read().unwrap().working_bank().as_ref(),
+            &context.acct_states,
+        )
+        .unwrap();
+
         let parent_dir: PathBuf = std::env::var("AGAVE_SOLCAP_DIR").unwrap().into();
         let path = parent_dir.join(details.filename().unwrap());
-        if !path.exists() {
-            _ = std::fs::create_dir_all(parent_dir);
-            let file = std::fs::File::create(&path).unwrap();
-            let writer = std::io::BufWriter::new(file);
-            serde_json::to_writer_pretty(writer, &details).unwrap();
-        }
+        _ = std::fs::create_dir_all(parent_dir);
+        let file = std::fs::File::create(&path).unwrap();
+        let writer = std::io::BufWriter::new(file);
+        serde_json::to_writer_pretty(writer, &details).unwrap();
     }
 
     Some(BlockEffects {
