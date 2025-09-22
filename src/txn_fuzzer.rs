@@ -1,6 +1,8 @@
 use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TxnContext, TxnResult};
-use crate::utils::program::common::{build_versioned_message, get_dummy_bpf_native_programs};
+use crate::utils::program::common::{
+    build_versioned_message, get_dummy_bpf_native_programs, get_sysvar,
+};
 // use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
@@ -299,17 +301,6 @@ fn output_txn_result_from_result(
         }),
         loaded_accounts_data_size: loaded_accounts_data_size as u64,
     }
-}
-
-// Helper function to deserialize sysvar data
-fn get_sysvar<T: serde::de::DeserializeOwned + Default>(
-    accounts: &HashMap<&[u8], &AcctState>,
-    sysvar_id: &[u8],
-) -> T {
-    accounts
-        .get(sysvar_id)
-        .and_then(|account| bincode::deserialize(&account.data).ok())
-        .unwrap_or_default()
 }
 
 #[allow(deprecated)]

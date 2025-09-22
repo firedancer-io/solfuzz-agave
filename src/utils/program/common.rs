@@ -1,4 +1,6 @@
-use crate::proto::TransactionMessage;
+use std::collections::HashMap;
+
+use crate::proto::{AcctState, TransactionMessage};
 use solana_account::AccountSharedData;
 use solana_hash::Hash;
 use solana_message::compiled_instruction::CompiledInstruction;
@@ -6,6 +8,18 @@ use solana_message::v0::MessageAddressTableLookup;
 use solana_message::{legacy, v0, MessageHeader, VersionedMessage};
 use solana_pubkey::Pubkey;
 use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, config, stake};
+
+/* Helper function to deserialize sysvar data. Panics if the sysvar is not found
+or cannot be deserialized. */
+pub fn get_sysvar<T: serde::de::DeserializeOwned + Default>(
+    accounts: &HashMap<&[u8], &AcctState>,
+    sysvar_id: &[u8],
+) -> T {
+    accounts
+        .get(sysvar_id)
+        .and_then(|account| bincode::deserialize(&account.data).ok())
+        .unwrap()
+}
 
 pub fn get_dummy_bpf_native_programs() -> Vec<(Pubkey, AccountSharedData)> {
     vec![
