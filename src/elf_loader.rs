@@ -1,30 +1,20 @@
+use crate::proto;
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
-// use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use agave_syscalls::create_program_runtime_environment_v1;
-use ahash::{AHashMap, AHashSet};
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionBudget;
-use solana_pubkey::Pubkey;
 use solana_sbpf::{ebpf, elf::Executable};
 use std::collections::BTreeSet;
 
 use std::ffi::c_int;
 
-pub const ACTIVATE_FEATURES: &[Pubkey] = &[
-    switch_to_new_elf_parser::id(),
-    error_on_syscall_bpf_function_hash_collisions::id(),
-];
-
-pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffects> {
-    let mut feature_set = FeatureSet::new(AHashMap::new(), AHashSet::new());
-
-    for feature in ACTIVATE_FEATURES.iter() {
-        feature_set.activate(feature, 0);
-    }
-
-    // direct mapping toggling removed in Agave 3.0
-
+pub fn load_elf(
+    elf_bytes: &[u8],
+    features: Option<proto::FeatureSet>,
+    deploy_checks: bool,
+) -> Option<ElfLoaderEffects> {
+    let feature_set = FeatureSet::from(&features.unwrap_or_default());
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set.runtime_features(),
         &SVMTransactionExecutionBudget::default(),
@@ -105,6 +95,6 @@ pub fn execute_elf_loader(input: ElfLoaderCtx) -> Option<ElfLoaderEffects> {
         None => return None,
     };
 
-    let elf_loader_effects = load_elf(elf_bytes.as_slice(), input.deploy_checks)?;
+    let elf_loader_effects = load_elf(elf_bytes.as_slice(), input.features, input.deploy_checks)?;
     Some(elf_loader_effects)
 }
