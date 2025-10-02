@@ -722,7 +722,7 @@ fn create_invoke_context_fields(
         &input.feature_set.runtime_features(),
         &compute_budget.to_budget(),
         false, /* deployment */
-        false, /* debugging_features */
+        std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
     )
     .unwrap();
     let environments = ProgramRuntimeEnvironments {

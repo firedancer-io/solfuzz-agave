@@ -29,7 +29,7 @@ pub fn load_elf(elf_bytes: &[u8], deploy_checks: bool) -> Option<ElfLoaderEffect
         &feature_set.runtime_features(),
         &SVMTransactionExecutionBudget::default(),
         deploy_checks,
-        false,
+        std::env::var("ENABLE_VM_TRACING").is_ok(),
     )
     .unwrap();
 
