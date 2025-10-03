@@ -721,7 +721,7 @@ fn create_invoke_context_fields(
     let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
         &input.feature_set.runtime_features(),
         &compute_budget.to_budget(),
-        false, /* deployment */
+        false,                                      /* deployment */
         std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
     )
     .unwrap();
