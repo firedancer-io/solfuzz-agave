@@ -11,10 +11,10 @@ use std::ffi::c_int;
 
 pub fn load_elf(
     elf_bytes: &[u8],
-    features: Option<proto::FeatureSet>,
+    features: Option<&proto::FeatureSet>,
     deploy_checks: bool,
 ) -> Option<ElfLoaderEffects> {
-    let feature_set = FeatureSet::from(&features.unwrap_or_default());
+    let feature_set = FeatureSet::from(features.unwrap_or(&proto::FeatureSet::default()));
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set.runtime_features(),
         &SVMTransactionExecutionBudget::default(),
@@ -75,7 +75,7 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
         return 0;
     }
 
-    let Some(elf_loader_effects) = execute_elf_loader(elf_loader_ctx) else {
+    let Some(elf_loader_effects) = execute_elf_loader(&elf_loader_ctx) else {
         return 0;
     };
 
@@ -89,12 +89,7 @@ pub unsafe extern "C" fn sol_compat_elf_loader_v1(
     1
 }
 
-pub fn execute_elf_loader(input: ElfLoaderCtx) -> Option<ElfLoaderEffects> {
-    let elf_bytes = match input.elf {
-        Some(elf) => elf.data,
-        None => return None,
-    };
-
-    let elf_loader_effects = load_elf(elf_bytes.as_slice(), input.features, input.deploy_checks)?;
-    Some(elf_loader_effects)
+pub fn execute_elf_loader(input: &ElfLoaderCtx) -> Option<ElfLoaderEffects> {
+    let elf_bytes = input.elf.as_ref()?.data.as_slice();
+    load_elf(elf_bytes, input.features.as_ref(), input.deploy_checks)
 }
