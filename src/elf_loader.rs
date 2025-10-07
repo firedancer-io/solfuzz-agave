@@ -1,5 +1,6 @@
 use crate::proto;
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
+use crate::utils::err_map::elf_err_to_num;
 use agave_feature_set::*;
 use agave_syscalls::create_program_runtime_environment_v1;
 use prost::Message;
@@ -26,11 +27,17 @@ pub fn load_elf(
     let mut elf_effects = ElfLoaderEffects::default();
 
     // load the elf
-    let Ok(elf_exec) = Executable::load(
+    let elf_exec = match Executable::load(
         elf_bytes,
         std::sync::Arc::new(program_runtime_environment_v1),
-    ) else {
-        return Some(elf_effects);
+    ) {
+        Ok(exec) => exec,
+        Err(err) => {
+            return Some(ElfLoaderEffects {
+                error: elf_err_to_num(&err),
+                ..Default::default()
+            });
+        }
     };
 
     let ro_section = elf_exec.get_ro_section();
@@ -46,6 +53,7 @@ pub fn load_elf(
         calldests.insert(fn_addr as u64);
     }
 
+    elf_effects.error = 0;
     elf_effects.rodata = ro_section.to_vec();
     elf_effects.rodata_sz = ro_section.len() as u64;
     elf_effects.entry_pc = elf_exec.get_entrypoint_instruction_offset() as u64;
