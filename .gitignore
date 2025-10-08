@@ -6,3 +6,4 @@ test/self_test
 *.so
 dump
 protosol
+env/
