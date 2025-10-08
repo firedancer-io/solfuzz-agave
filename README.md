@@ -64,7 +64,7 @@ $ nm -D target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so | grep '__sa
                  U __sanitizer_cov_trace_pc_indir
 ```
 
-**Note:** You may have to periodically run `make build` to ensure that Protobuf definitions stay in sync with [Protosol](https://github.com/firedancer-io/protosol/). Alternatively, you can run `./scripts/fetch_proto.sh` to keep Protosol up to date.
+**Note:** You may have to periodically run `make build` to ensure that Protobuf definitions stay in sync with [Protosol](https://github.com/firedancer-io/protosol/). Alternatively, you can run `./scripts/fetch_proto.sh` to keep Protosol up to date. Maintainers are expected to bump the `PROTO_VERSION` corresponding to the versioned git tag of the protosol repository when staging new protobuf changes.
 
 ## Building Targets with Core BPF Programs
 

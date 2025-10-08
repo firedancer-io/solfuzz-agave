@@ -1,5 +1,6 @@
 use crate::proto::{self, AcctState};
 use crate::proto::{BlockContext, BlockEffects};
+use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{build_versioned_message, get_sysvar};
 use agave_feature_set::*;
 use prost::Message;
@@ -58,6 +59,9 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
+
+// Firedancer-compatible seed for leader schedule hashing
+const LEADER_SCHEDULE_HASH_SEED: u64 = 0xDEADFACE;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_block_execute_v1(
@@ -255,6 +259,95 @@ fn create_changed_accounts_bank_hash_details(
     Ok(BankHashDetails::new(vec![slot_details]))
 }
 
+/// Single-pass mapping during dedup (rotation-compressed).
+/// - Build (Pubkey, rotation_idx) entries from the schedule (sampling every 4 slots).
+/// - Sort entries by Pubkey bytes for deterministic order.
+/// - Dedup in one pass and write mapped indices directly into sched_mapped[rotation_idx].
+/// - Hash unique pubkeys and mapped indices into out[0..8] and out[8..16].
+///   Returns the number of unique leaders.
+pub fn hash_epoch_leaders(
+    leader_schedule: &[Pubkey], // per-slot leaders for the whole epoch
+    seed: u64,
+    out: &mut [u8; 16],
+) -> usize {
+    // Build composite entries: one per 4-slot rotation
+    #[derive(Clone, Copy)]
+    struct Entry {
+        pk: Pubkey,
+        rot_idx: usize,
+    }
+
+    let mut entries: Vec<Entry> = leader_schedule
+        .iter()
+        .step_by(4) // one representative per rotation
+        .enumerate()
+        .map(|(rot_idx, pk)| Entry { pk: *pk, rot_idx })
+        .collect();
+
+    if entries.is_empty() {
+        out.fill(0);
+        return 0;
+    }
+
+    // Sort by pubkey bytes deterministically
+    entries.sort_unstable_by(|a, b| a.pk.to_bytes().cmp(&b.pk.to_bytes()));
+
+    // Dedup + write mapping in a single pass
+    let rotations = entries.len();
+    let mut sched_mapped: Vec<u32> = vec![0u32; rotations];
+
+    let mut uniq_cnt = 0usize;
+    let mut prev_bytes: Option<[u8; 32]> = None;
+
+    for e in &entries {
+        let bytes = e.pk.to_bytes();
+        if prev_bytes != Some(bytes) {
+            uniq_cnt = uniq_cnt.saturating_add(1);
+            prev_bytes = Some(bytes);
+        }
+        // uniq index is uniq_cnt - 1
+        sched_mapped[e.rot_idx] = uniq_cnt.saturating_sub(1) as u32;
+    }
+
+    // Build unique_pubkeys for hashing (exact size = uniq_cnt)
+    let mut unique_pubkeys: Vec<Pubkey> = Vec::with_capacity(uniq_cnt);
+    prev_bytes = None;
+    for e in &entries {
+        let bytes = e.pk.to_bytes();
+        if prev_bytes != Some(bytes) {
+            unique_pubkeys.push(e.pk);
+            prev_bytes = Some(bytes);
+        }
+    }
+
+    // Hash unique pubkeys
+    let pub_bytes: &[u8] = unsafe {
+        core::slice::from_raw_parts(
+            unique_pubkeys.as_ptr() as *const u8,
+            unique_pubkeys
+                .len()
+                .saturating_mul(core::mem::size_of::<Pubkey>()),
+        )
+    };
+    let h1 = fd_hash(seed, pub_bytes);
+    out[0..8].copy_from_slice(&h1.to_le_bytes());
+
+    // Part 2 (last 64 bits): Hash of the compressed schedule (leader indices)
+    // This captures the scheduled order of the leaders throughout the epoch
+    let sched_bytes: &[u8] = unsafe {
+        core::slice::from_raw_parts(
+            sched_mapped.as_ptr() as *const u8,
+            sched_mapped
+                .len()
+                .saturating_mul(core::mem::size_of::<u32>()),
+        )
+    };
+    let h2 = fd_hash(seed, sched_bytes);
+    out[8..16].copy_from_slice(&h2.to_le_bytes());
+
+    uniq_cnt
+}
+
 #[allow(deprecated)]
 pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let slot_ctx = context.slot_ctx.unwrap();
@@ -396,6 +489,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     for (i, chunk) in slot_ctx.parent_lthash.chunks_exact(2).enumerate() {
         parent_lthash.0[i] = u16::from_le_bytes(chunk.try_into().unwrap());
     }
+
+    // Clone epoch_schedule for later use since it will be moved into bank_fields
+    let epoch_schedule_for_effects: EpochSchedule = epoch_schedule.clone();
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
@@ -580,6 +676,60 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         serde_json::to_writer_pretty(writer, &details).unwrap();
     }
 
+    // Build leader_schedule_effects for consensus verification:
+
+    // The leader schedule determines which validator is allowed to produce blocks
+    // for each slot in an epoch. This section computes metadata and a hash of the
+    // schedule to enable cross-implementation verification (e.g., Agave vs Firedancer).
+
+    // Calculate the epoch boundaries:
+    // - leader_schedule_epoch: The epoch for which the leader schedule applies
+    // - first_slot: The absolute slot number where this epoch begins
+    // - slots_in_epoch: Total number of slots in this epoch (can vary by epoch)
+    let first_slot = epoch_schedule_for_effects.get_first_slot_in_epoch(leader_schedule_epoch);
+    let slots_in_epoch = epoch_schedule_for_effects.get_slots_in_epoch(leader_schedule_epoch);
+
+    // Attempt to retrieve the leader schedule for this epoch from the cache
+    let leader_schedule_effects =
+        if let Some(schedule) = leader_schedule.get_epoch_leader_schedule(leader_schedule_epoch) {
+            // Schedule found, obtain effects and hash
+            // Generate a deterministic 128-bit hash of the entire leader schedule
+            // This hash encodes both WHO the leaders are and WHEN they lead.
+            // We use a fixed seed for reproducibility across implementations.
+            let mut schedule_hash = [0u8; 16];
+            let schedule_pubkeys: Vec<Pubkey> = (0..slots_in_epoch)
+                .map(|slot_offset| schedule[slot_offset])
+                .collect();
+
+            let unique_cnt = hash_epoch_leaders(
+                &schedule_pubkeys,
+                LEADER_SCHEDULE_HASH_SEED,
+                &mut schedule_hash,
+            );
+
+            // Package all the schedule metadata for output
+            proto::LeaderScheduleEffects {
+                leaders_epoch: leader_schedule_epoch, // Which epoch this schedule applies to
+                leaders_slot0: first_slot,            // First absolute slot in this epoch
+                leaders_slot_cnt: slots_in_epoch as u64, // Total slots in this epoch
+                leader_pub_cnt: unique_cnt as u64,    // Number of unique leader validators
+                leaders_sched_cnt: slots_in_epoch as u64, // Number of scheduled leader slots (verification field)
+                leader_schedule_hash: schedule_hash.to_vec(), // 128-bit fingerprint of the schedule
+            }
+        } else {
+            // No schedule found for this epoch, return empty/zero values
+            // This can happen during bootstrapping or if the epoch is too far in the future
+            proto::LeaderScheduleEffects {
+                leaders_epoch: 0,
+                leaders_slot0: 0,
+                leaders_slot_cnt: 0,
+                leader_pub_cnt: 0,
+                leaders_sched_cnt: 0,
+                leader_schedule_hash: vec![],
+            }
+        };
+
+    // Then include in the output
     Some(BlockEffects {
         has_error: result.is_err(),
         slot_capitalization: no_schedule_bank.capitalization(),
@@ -588,5 +738,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             block_cost: cost_tracker.block_cost(),
             vote_cost: cost_tracker.vote_cost(),
         }),
+        leader_schedule: Some(leader_schedule_effects),
     })
 }
