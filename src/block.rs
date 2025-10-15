@@ -29,6 +29,7 @@ use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
 use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
+use solana_runtime::bank::accounts_lt_hash::CacheValue as AccountsLtHashCacheValue;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
 };
@@ -260,7 +261,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let epoch_ctx = context.epoch_ctx.unwrap();
     let fd_features = epoch_ctx.features.unwrap_or_default();
     let feature_set = FeatureSet::from(&fd_features);
-    let slot = slot_ctx.slot;
+    let current_slot = slot_ctx.slot;
+    let parent_slot = slot_ctx.prev_slot;
     let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap());
 
     /* HACK: Because there are three different schedules and rent instances, we need to find and deserialize
@@ -307,8 +309,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     });
 
     let mut ancestors = AncestorsForSerialization::default();
-    ancestors.insert(slot.saturating_sub(1), 1);
-    ancestors.insert(slot, 1);
+    ancestors.insert(current_slot.saturating_sub(1), 1);
+    ancestors.insert(current_slot, 1);
 
     /* Accounts DB config and initialization */
     let index = Some(AccountsIndexConfig {
@@ -340,12 +342,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             (pubkey, account_data)
         })
         .collect::<Vec<_>>();
-    accounts.store_accounts_seq((slot.saturating_sub(1), &accounts_to_store[..]), None);
+    accounts.store_accounts_seq(
+        (current_slot.saturating_sub(1), &accounts_to_store[..]),
+        None,
+    );
 
     /* Build the stakes separately */
-    let epoch = epoch_schedule.get_epoch(slot);
-    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(slot);
-    let stakes_t = build_latest_stake_delegations(&context.acct_states, epoch, &stake_history);
+    let current_epoch = epoch_schedule.get_epoch(current_slot);
+    let parent_epoch = epoch_schedule.get_epoch(parent_slot);
+    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
+    let stakes_t =
+        build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history);
     let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
     let stakes_t_2 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2);
 
@@ -385,6 +392,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let fee_rate_governor = slot_ctx.fee_rate_governor.unwrap();
 
+    let mut parent_lthash = LtHash::identity();
+    for (i, chunk) in slot_ctx.parent_lthash.chunks_exact(2).enumerate() {
+        parent_lthash.0[i] = u16::from_le_bytes(chunk.try_into().unwrap());
+    }
+
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
         ancestors,
@@ -396,14 +408,14 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         hashes_per_tick: None,
         capitalization: slot_ctx.prev_epoch_capitalization,
         signature_count: 0,
-        tick_height: 64u64.saturating_mul(slot),
-        max_tick_height: 64u64.saturating_mul(slot.saturating_add(1)),
+        tick_height: 64u64.saturating_mul(current_slot),
+        max_tick_height: 64u64.saturating_mul(current_slot.saturating_add(1)),
         ticks_per_slot: 64u64,
         ns_per_slot: genesis_config.ns_per_slot(),
         genesis_creation_time: epoch_ctx.genesis_creation_time as i64,
         slots_per_year: genesis_config.slots_per_year(),
-        slot,
-        epoch,
+        slot: current_slot,
+        epoch: current_epoch,
         block_height: slot_ctx.block_height,
         collector_id: Pubkey::default(),
         collector_fees: 0,
@@ -419,7 +431,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             slot_ctx.parent_signature_count,
         ),
         rent_collector: RentCollector {
-            epoch: epoch_schedule.get_epoch(slot),
+            epoch: epoch_schedule.get_epoch(parent_slot),
             epoch_schedule: epoch_schedule.clone(),
             slots_per_year: epoch_ctx.slots_per_year,
             rent,
@@ -430,7 +442,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         versioned_epoch_stakes: epoch_stakes,
         is_delta: false,
         accounts_data_len: 0,
-        accounts_lt_hash: AccountsLtHash(LtHash::identity()),
+        accounts_lt_hash: AccountsLtHash(parent_lthash),
         bank_hash_stats: BankHashStats::default(),
     };
 
@@ -456,23 +468,21 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
     let leader = leader_schedule
-        .slot_leader_at(slot, None)
+        .slot_leader_at(current_slot, Some(&bank))
         .unwrap_or_default();
     bank.set_collector_id_for_tests(leader);
-
-    let current_epoch = bank.epoch_schedule().get_epoch(bank.slot());
-    let parent_epoch = bank.epoch_schedule().get_epoch(bank.parent_slot());
 
     /* Have we crossed an epoch boundary? */
     if parent_epoch < current_epoch {
         bank.process_new_epoch(
             parent_epoch,
-            current_epoch,
+            parent_slot,
             bank.block_height(),
             null_tracer(),
         );
+    } else {
+        bank.distribute_partitioned_epoch_rewards();
     }
-    bank.distribute_partitioned_epoch_rewards();
 
     bank.get_transaction_processor().reset_sysvar_cache();
     bank.update_slot_hashes();
@@ -482,6 +492,24 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     bank.update_recent_blockhashes();
     bank.get_transaction_processor()
         .fill_missing_sysvar_cache_entries(&bank);
+
+    /* See this comment to understand why we need to populate the lthash
+    cache before executing:
+    https://github.com/anza-xyz/agave/blob/v3.0.3/runtime/src/bank.rs#L1409-L1423
+
+    Ideally, caches shouldn't have consensus-relevant effects, and a
+    cache miss would just result in a slow fetch insteead of an
+    outright divergence... */
+    let accounts_modified_this_slot = bank
+        .rc
+        .accounts
+        .accounts_db
+        .get_pubkeys_for_slot(current_slot);
+    for pubkey in accounts_modified_this_slot {
+        bank.cache_for_accounts_lt_hash
+            .entry(pubkey)
+            .or_insert(AccountsLtHashCacheValue::BankNew);
+    }
 
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.write().unwrap().root_bank();
