@@ -4,7 +4,7 @@ use crate::{
         err_map,
         vm::{mem_regions, HEAP_MAX, STACK_SIZE},
     },
-    InstrContext, TOGGLE_DIRECT_MAPPING,
+    InstrContext,
 };
 // feature removed from feature set surface in 3.0; direct mapping toggled via SVMFeatureSet flags
 use bincode::Error;
@@ -189,12 +189,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .transaction_context
         .find_index_of_account(&instr_ctx.instruction.program_id)?;
 
-    let mut direct_mapping = false;
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            direct_mapping = !direct_mapping;
-        }
-    }
+    let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
+    let stricter_abi_and_runtime_constraints = invoke_ctx
+        .get_feature_set()
+        .stricter_abi_and_runtime_constraints;
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
@@ -217,7 +215,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .unwrap();
     let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
         &caller_instr_ctx,
-        false,
+        stricter_abi_and_runtime_constraints,
         direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )
@@ -315,7 +313,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .access_violation_handler(false, direct_mapping),
+            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
     ) else {
         return None;
     };

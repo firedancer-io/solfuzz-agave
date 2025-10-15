@@ -3,7 +3,6 @@ use crate::proto::{AcctState, TxnContext, TxnResult};
 use crate::utils::program::common::{
     build_versioned_message, get_dummy_bpf_native_programs, get_sysvar,
 };
-// use crate::TOGGLE_DIRECT_MAPPING;
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;

@@ -4,7 +4,7 @@ use crate::{
     utils::vm::mem_regions,
     utils::vm::HEAP_MAX,
     utils::vm::STACK_SIZE,
-    InstrContext, TOGGLE_DIRECT_MAPPING,
+    InstrContext,
 };
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
@@ -149,12 +149,10 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         // TransactionContext::configure_next_instruction_for_tests() crashes if program_idx > 255
         return None;
     }
-    let mut direct_mapping = false;
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            direct_mapping = !direct_mapping;
-        }
-    };
+    let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
+    let stricter_abi_and_runtime_constraints = invoke_ctx
+        .get_feature_set()
+        .stricter_abi_and_runtime_constraints;
     let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
@@ -183,9 +181,18 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .transaction_context
         .get_current_instruction_context()
         .unwrap();
+    // Memory regions.
+    // In Agave all memory regions are AlignedMemory::<HOST_ALIGN> == AlignedMemory::<16>,
+    // i.e. they're all 16-byte aligned in the host.
+    // The memory regions are:
+    //   1. program rodata
+    //   2. stack
+    //   3. heap
+    //   4. input data aka accounts
+    // The stack gap size is 0 iff direct mapping is enabled.
     let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
         &caller_instr_ctx,
-        false,
+        stricter_abi_and_runtime_constraints,
         direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )
@@ -209,24 +216,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         return None;
     }
 
-    // Memory regions.
-    // In Agave all memory regions are AlignedMemory::<HOST_ALIGN> == AlignedMemory::<16>,
-    // i.e. they're all 16-byte aligned in the host.
-    // The memory regions are:
-    //   1. program rodata
-    //   2. stack
-    //   3. heap
-    //   4. input data aka accounts
-    // The stack gap is size is 0 iff direct mapping is enabled.
-    // There's some extra quirks:
-    //   - heap size is MIN_HEAP_FRAME_BYTES..=MAX_HEAP_FRAME_BYTES
-    //   - input data (at least when direct mapping is off) is 1 single map of all
-    //     serialized accounts (and each account is serialized to a multiple of 16 bytes)
-    // In this implementation, however:
-    //   - heap can be smaller than MIN_HEAP_FRAME_BYTES
-    //   - input data is made of multiple regions, and regions don't necessarily have
-    //     length multiple of 16, i.e. virtual addresses may be unaligned
-    // These differences allow us to test more edge cases.
     let mut invoke_ctx = invoke_context.borrow_mut();
     let config = invoke_ctx
         .program_cache_for_tx_batch
@@ -286,7 +275,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .access_violation_handler(false, direct_mapping),
+            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
     ) else {
         cleanup_static_ptrs(
             transaction_context_ptr,
@@ -301,7 +290,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     invoke_ctx
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
             allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
-            accounts_metadata: acc_metadatas, // TODO: accounts metadata for direct mapping support
+            accounts_metadata: acc_metadatas,
             trace_log: Vec::new(),
         })
         .unwrap();
