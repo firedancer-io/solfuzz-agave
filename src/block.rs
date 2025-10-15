@@ -264,7 +264,7 @@ fn create_changed_accounts_bank_hash_details(
 /// - Sort entries by Pubkey bytes for deterministic order.
 /// - Dedup in one pass and write mapped indices directly into sched_mapped[rotation_idx].
 /// - Hash unique pubkeys and mapped indices into out[0..8] and out[8..16].
-/// Returns the number of unique leaders.
+///   Returns the number of unique leaders.
 pub fn hash_epoch_leaders(
     leader_schedule: &[Pubkey], // per-slot leaders for the whole epoch
     seed: u64,
@@ -301,12 +301,12 @@ pub fn hash_epoch_leaders(
 
     for e in &entries {
         let bytes = e.pk.to_bytes();
-        if prev_bytes.map_or(true, |p| p != bytes) {
-            uniq_cnt += 1;
+        if prev_bytes != Some(bytes) {
+            uniq_cnt = uniq_cnt.saturating_add(1);
             prev_bytes = Some(bytes);
         }
         // uniq index is uniq_cnt - 1
-        sched_mapped[e.rot_idx] = (uniq_cnt - 1) as u32;
+        sched_mapped[e.rot_idx] = uniq_cnt.saturating_sub(1) as u32;
     }
 
     // Build unique_pubkeys for hashing (exact size = uniq_cnt)
@@ -314,7 +314,7 @@ pub fn hash_epoch_leaders(
     prev_bytes = None;
     for e in &entries {
         let bytes = e.pk.to_bytes();
-        if prev_bytes.map_or(true, |p| p != bytes) {
+        if prev_bytes != Some(bytes) {
             unique_pubkeys.push(e.pk);
             prev_bytes = Some(bytes);
         }
@@ -324,7 +324,9 @@ pub fn hash_epoch_leaders(
     let pub_bytes: &[u8] = unsafe {
         core::slice::from_raw_parts(
             unique_pubkeys.as_ptr() as *const u8,
-            unique_pubkeys.len() * core::mem::size_of::<Pubkey>(),
+            unique_pubkeys
+                .len()
+                .saturating_mul(core::mem::size_of::<Pubkey>()),
         )
     };
     let h1 = fd_hash(seed, pub_bytes);
@@ -335,7 +337,9 @@ pub fn hash_epoch_leaders(
     let sched_bytes: &[u8] = unsafe {
         core::slice::from_raw_parts(
             sched_mapped.as_ptr() as *const u8,
-            sched_mapped.len() * core::mem::size_of::<u32>(),
+            sched_mapped
+                .len()
+                .saturating_mul(core::mem::size_of::<u32>()),
         )
     };
     let h2 = fd_hash(seed, sched_bytes);
@@ -697,15 +701,19 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
                 .map(|slot_offset| schedule[slot_offset])
                 .collect();
 
-            let unique_cnt = hash_epoch_leaders(&schedule_pubkeys, LEADER_SCHEDULE_HASH_SEED, &mut schedule_hash);
+            let unique_cnt = hash_epoch_leaders(
+                &schedule_pubkeys,
+                LEADER_SCHEDULE_HASH_SEED,
+                &mut schedule_hash,
+            );
 
             // Package all the schedule metadata for output
             proto::LeaderScheduleEffects {
                 leaders_epoch: leader_schedule_epoch, // Which epoch this schedule applies to
                 leaders_slot0: first_slot,            // First absolute slot in this epoch
-                leaders_slot_cnt: slots_in_epoch as u64,     // Total slots in this epoch
-                leader_pub_cnt: unique_cnt as u64,          // Number of unique leader validators
-                leaders_sched_cnt: slots_in_epoch as u64,    // Number of scheduled leader slots (verification field)
+                leaders_slot_cnt: slots_in_epoch as u64, // Total slots in this epoch
+                leader_pub_cnt: unique_cnt as u64,    // Number of unique leader validators
+                leaders_sched_cnt: slots_in_epoch as u64, // Number of scheduled leader slots (verification field)
                 leader_schedule_hash: schedule_hash.to_vec(), // 128-bit fingerprint of the schedule
             }
         } else {
