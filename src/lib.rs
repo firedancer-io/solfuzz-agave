@@ -309,6 +309,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     require_static_nonce_account,
     enable_vote_address_leader_schedule,
     enshrine_slashing_program,
+    stricter_abi_and_runtime_constraints,
+    account_data_direct_mapping,
 ];
 
 // If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
