@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Allow overriding proto version; default pinned
-PROTO_VERSION="${PROTO_VERSION:-v1.0.3}"
+PROTO_VERSION="${PROTO_VERSION:-v1.0.4}"
 
 # Fetch protosol at specified tag/branch
 if [ ! -d protosol ]; then
