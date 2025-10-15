@@ -313,10 +313,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     account_data_direct_mapping,
 ];
 
-// If `TOGGLE_DIRECT_MAPPING=1` is set, the direct mapping feature will be inverted, testing with and without direct mapping.
-// In solfuzz, this can be done by copying the shared object and configuring the environment variable in one target e.g. `TARGET0_TOGGLE_DIRECT_MAPPING=1`.
-static mut TOGGLE_DIRECT_MAPPING: bool = false;
-
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
 // units used by the program's builtin version.
 //
@@ -1040,9 +1036,6 @@ impl TryFrom<proto::AcctState> for (Pubkey, Account) {
 pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
     env::set_var("SOLANA_RAYON_THREADS", "1");
     env::set_var("RAYON_NUM_THREADS", "1");
-    if env::var("TOGGLE_DIRECT_MAPPING").is_ok() {
-        TOGGLE_DIRECT_MAPPING = true;
-    }
     if env::var("ENABLE_SOLANA_LOGGER").is_ok() {
         /* Pairs with RUST_LOG={trace,debug,info,etc} */
         solana_logger::setup();

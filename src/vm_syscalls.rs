@@ -4,7 +4,7 @@ use crate::{
     utils::vm::mem_regions,
     utils::vm::HEAP_MAX,
     utils::vm::STACK_SIZE,
-    InstrContext, TOGGLE_DIRECT_MAPPING,
+    InstrContext,
 };
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
@@ -149,12 +149,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         // TransactionContext::configure_next_instruction_for_tests() crashes if program_idx > 255
         return None;
     }
-    let mut direct_mapping = false;
-    unsafe {
-        if TOGGLE_DIRECT_MAPPING {
-            direct_mapping = !direct_mapping;
-        }
-    };
+    let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
     let stricter_abi_and_runtime_constraints = invoke_ctx
         .get_feature_set()
         .stricter_abi_and_runtime_constraints;
