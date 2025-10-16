@@ -358,17 +358,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
-        leader_schedule_epoch.saturating_sub(2),
+        leader_schedule_epoch.saturating_sub(1),
         VersionedEpochStakes::new(
             SerdeStakesToStakeFormat::from(stakes_t_2),
-            leader_schedule_epoch.saturating_sub(2),
+            leader_schedule_epoch.saturating_sub(1),
         ),
     );
     epoch_stakes.insert(
-        leader_schedule_epoch.saturating_sub(1),
+        leader_schedule_epoch,
         VersionedEpochStakes::new(
             SerdeStakesToStakeFormat::from(stakes_t_1.clone()),
-            leader_schedule_epoch.saturating_sub(1),
+            leader_schedule_epoch,
         ),
     );
 
@@ -383,10 +383,10 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
     epoch_stakes.insert(
-        leader_schedule_epoch,
+        leader_schedule_epoch.saturating_add(1),
         VersionedEpochStakes::new(
             SerdeStakesToStakeFormat::from(stakes_current_accounts),
-            leader_schedule_epoch,
+            leader_schedule_epoch.saturating_add(1),
         ),
     );
 
@@ -480,9 +480,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             bank.block_height(),
             null_tracer(),
         );
-    } else {
-        bank.distribute_partitioned_epoch_rewards();
     }
+
+    bank.distribute_partitioned_epoch_rewards();
 
     bank.get_transaction_processor().reset_sysvar_cache();
     bank.update_slot_hashes();
