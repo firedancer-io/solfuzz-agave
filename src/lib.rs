@@ -11,6 +11,8 @@ pub mod utils;
 pub mod vm_interp;
 pub mod vm_syscalls;
 
+pub use utils::fd_hash::fd_hash;
+
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use agave_precompiles::is_precompile;
