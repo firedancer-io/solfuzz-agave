@@ -12,6 +12,7 @@ fn rotate_left(x: u64, r: u32) -> u64 {
 }
 
 /// Rust port of Firedancer's fd_hash
+/// https://github.com/firedancer-io/firedancer/blob/main/src/util/fd_hash.c
 pub fn fd_hash(seed: u64, buf: &[u8]) -> u64 {
     let mut p = buf;
     let sz = buf.len() as u64;
