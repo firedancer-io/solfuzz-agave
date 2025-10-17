@@ -1,5 +1,6 @@
 use crate::proto::{self, ResultingState};
 use crate::proto::{AcctState, TxnContext, TxnResult};
+use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{
     build_versioned_message, get_dummy_bpf_native_programs, get_sysvar,
 };
@@ -160,8 +161,10 @@ impl From<TransactionAccount> for proto::AcctState {
 impl From<LoadedTransaction> for proto::ResultingState {
     fn from(value: LoadedTransaction) -> proto::ResultingState {
         let mut acct_states: Vec<AcctState> = Vec::with_capacity(value.accounts.len());
-        for item in value.accounts {
-            acct_states.push(item.into());
+        for (address, mut account) in value.accounts {
+            let hash = fd_hash(0, account.data());
+            account.set_data_from_slice(&hash.to_le_bytes().as_slice());
+            acct_states.push((address, account).into());
         }
         proto::ResultingState {
             acct_states,
@@ -230,8 +233,13 @@ fn output_txn_result_from_result(
                     );
                     Some(ResultingState {
                         acct_states: accounts
-                            .iter()
-                            .map(|&(pubkey, acct)| (*pubkey, acct.clone()).into())
+                            .iter_mut()
+                            .map(|(pubkey, acct)| {
+                                let mut cloned = acct.clone();
+                                let hash = fd_hash(0, cloned.data());
+                                cloned.set_data_from_slice(hash.to_le_bytes().as_slice());
+                                (**pubkey, cloned).into()
+                            })
                             .collect(),
                         rent_debits: vec![],
                         transaction_rent: 0,
@@ -247,6 +255,7 @@ fn output_txn_result_from_result(
                     .unwrap_or_default(),
                 ProcessedTransaction::FeesOnly(_) => vec![],
             };
+            let return_data_hash: [u8; 8] = fd_hash(0, return_data.as_slice()).to_le_bytes();
             (
                 execution_results.was_processed_with_successful_result(),
                 false,
@@ -255,7 +264,7 @@ fn output_txn_result_from_result(
                 instr_err_idx,
                 custom_err,
                 txn.executed_units(),
-                return_data,
+                return_data_hash.into(),
                 Some(txn.fee_details()),
                 rent,
                 txn.loaded_accounts_data_size(),

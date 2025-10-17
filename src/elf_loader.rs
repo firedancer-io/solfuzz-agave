@@ -1,6 +1,7 @@
 use crate::proto;
 use crate::proto::{ElfLoaderCtx, ElfLoaderEffects};
 use crate::utils::err_map::elf_err_to_num;
+use crate::utils::fd_hash::fd_hash;
 use agave_feature_set::*;
 use agave_syscalls::create_program_runtime_environment_v1;
 use prost::Message;
@@ -53,8 +54,10 @@ pub fn load_elf(
         calldests.insert(fn_addr as u64);
     }
 
+    let ro_section_hash: [u8; 8] = fd_hash(0, ro_section).to_le_bytes();
+
     elf_effects.error = 0;
-    elf_effects.rodata = ro_section.to_vec();
+    elf_effects.rodata = ro_section_hash.to_vec();
     elf_effects.rodata_sz = ro_section.len() as u64;
     elf_effects.entry_pc = elf_exec.get_entrypoint_instruction_offset() as u64;
     elf_effects.text_off = text_vaddr.saturating_sub(ebpf::MM_RODATA_START);

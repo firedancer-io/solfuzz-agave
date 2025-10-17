@@ -15,6 +15,7 @@ use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use agave_precompiles::is_precompile;
 use prost::Message;
+use solana_account::ReadableAccount;
 use solana_account::{Account, AccountSharedData};
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
@@ -45,6 +46,7 @@ use solana_transaction_context::{
 };
 
 use crate::utils::err_map::instr_err_to_num;
+use crate::utils::fd_hash::fd_hash;
 use crate::utils::feature_u64;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::{
@@ -887,6 +889,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         })
         .collect::<Vec<_>>();
 
+    let return_data_hash: [u8; 8] = fd_hash(0, return_data.as_slice()).to_le_bytes();
+
     Some(InstrEffects {
         custom_err: if let Err(InstructionError::Custom(code)) = result {
             #[cfg(feature = "core-bpf-conformance")]
@@ -977,7 +981,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             .unwrap()
             .into_iter()
             .zip(account_keys)
-            .map(|(account, key)| {
+            .map(|(mut account, key)| {
                 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
                 // Fixtures provide the program account as a builtin account
                 // (owned by native loader).
@@ -994,11 +998,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 {
                     return (program_account.0, program_account.1.clone());
                 }
+                let hash = fd_hash(0, account.data());
+                account.set_data_from_slice(&hash.to_le_bytes().as_slice());
                 (key, account.into())
             })
             .collect(),
         cu_avail,
-        return_data,
+        return_data: return_data_hash.into(),
     })
 }
 

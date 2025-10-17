@@ -1,8 +1,7 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects, VmContext},
     utils::{
-        err_map,
-        vm::{mem_regions, HEAP_MAX, STACK_SIZE},
+        err_map, fd_hash::fd_hash, vm::{mem_regions, HEAP_MAX, STACK_SIZE}
     },
     InstrContext,
 };
@@ -378,6 +377,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         });
     }
 
+    let heap_hash: [u8; 8] = fd_hash(0, heap.as_slice()).to_le_bytes().try_into().unwrap();
+    let stack_hash: [u8; 8] = fd_hash(0, stack.as_slice()).to_le_bytes().try_into().unwrap();
+    let rodata_hash: [u8; 8] = fd_hash(0, rodata.as_slice()).to_le_bytes().try_into().unwrap();
+
     Some(SyscallEffects {
         error: match result {
             StableResult::Ok(_) => 0,
@@ -396,12 +399,11 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         r10: out_registers[10],
         cu_avail: vm.context_object_pointer.get_remaining(),
         frame_count: vm.call_depth,
-        heap: heap.as_slice().into(),
+        heap: heap_hash.into(),
         /* Compress stack by removing right-most 0s, mainly to save 256kB space when stack is unused */
-        stack: vec_rtrim_zeros(stack.as_slice()),
-        rodata: rodata.as_slice().into(),
+        stack: stack_hash.into(),
+        rodata: rodata_hash.into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
-        log: vec![],
         pc: match vm.context_object_pointer.trace_log.last() {
             Some(regs) => regs[11],
             None => vm.registers[11],

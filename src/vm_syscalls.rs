@@ -1,9 +1,6 @@
 use crate::{
     proto::{SyscallContext, SyscallEffects},
-    utils::err_map::unpack_stable_result,
-    utils::vm::mem_regions,
-    utils::vm::HEAP_MAX,
-    utils::vm::STACK_SIZE,
+    utils::{err_map::unpack_stable_result, fd_hash::fd_hash, vm::{mem_regions, HEAP_MAX, STACK_SIZE}},
     InstrContext,
 };
 use prost::Message;
@@ -339,6 +336,10 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         runtime_features_ptr,
     );
 
+    let heap_hash: [u8; 8] = fd_hash(0, heap.as_slice()).to_le_bytes().try_into().unwrap();
+    let stack_hash: [u8; 8] = fd_hash(0, stack.as_slice()).to_le_bytes().try_into().unwrap();
+    let rodata_hash: [u8; 8] = fd_hash(0, rodata.as_slice()).to_le_bytes().try_into().unwrap();
+
     Some(SyscallEffects {
         // Register 0 doesn't seem to contain the result, maybe we're missing some code from agave.
         // Regardless, the result is available in vm.program_result, so we can return it from there.
@@ -355,11 +356,11 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         r9: 0,
         r10: 0,
         cu_avail: vm.context_object_pointer.get_remaining(),
-        heap: heap.as_slice().into(),
-        stack: stack.as_slice().into(),
+        heap: heap_hash.into(),
+        stack: stack_hash.into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         inputdata: vec![], // deprecated
-        rodata: rodata.as_slice().into(),
+        rodata: rodata_hash.into(),
         frame_count: vm.call_depth,
         error,
         error_kind: error_kind as i32,

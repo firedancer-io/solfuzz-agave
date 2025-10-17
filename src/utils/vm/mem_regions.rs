@@ -3,7 +3,7 @@ use solana_sbpf::{
     memory_region::{MemoryMapping, MemoryRegion},
 };
 
-use crate::proto::InputDataRegion;
+use crate::{proto::InputDataRegion, utils::fd_hash::fd_hash};
 
 /* From a MemoryMapping, extract the input data regions and convert
 them into InputDataRegions. The regions themselves are not copied,
@@ -42,10 +42,11 @@ pub fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {
 }
 
 fn mem_region_to_input_data_region(region: &MemoryRegion) -> InputDataRegion {
+    let content =
+        unsafe { std::slice::from_raw_parts(region.host_addr as *const u8, region.len as usize) };
+    let content_hash: [u8; 8] = fd_hash(0, content).to_le_bytes();
     InputDataRegion {
-        content: unsafe {
-            std::slice::from_raw_parts(region.host_addr as *const u8, region.len as usize).to_vec()
-        },
+        content: content_hash.into(),
         offset: region.vm_addr.saturating_sub(ebpf::MM_INPUT_START),
         is_writable: region.writable,
     }
