@@ -19,8 +19,10 @@ mkdir -p dump
 
 # Fetch/update test-vectors repo
 if [ ! -d dump/test-vectors ]; then
+  echo "Cloning test-vectors repository..."
   (cd dump && git clone --depth=1 -q https://github.com/firedancer-io/test-vectors.git)
 else
+  echo "Updating test-vectors repository..."
   (cd dump/test-vectors && git pull -q)
 fi
 
@@ -65,7 +67,7 @@ run_fixtures_per_file() {
         if "$bin" -- "$file" >> "$pf" 2>&1; then
           # Fallback: some binaries may still print FAIL but exit 0.
           if grep -w -q FAIL "$pf"; then
-            printf "%s\n" "$file" >> "$fail_log"
+            echo "$file" >> "$fail_log"
             sf="${pf}.fail.txt"
             {
               printf "==== FAIL: %s ====\n" "$file"
@@ -78,11 +80,11 @@ run_fixtures_per_file() {
               printf "\n"
             } > "$sf"
           else
-            printf "%s\n" "$file" >> "$ok_log"
+            echo "$file" >> "$ok_log"
           fi
         else
           # Non-zero exit => failure
-          printf "%s\n" "$file" >> "$fail_log"
+          echo "$file" >> "$fail_log"
           sf="${pf}.fail.txt"
           {
             printf "==== FAIL: %s ====\n" "$file"
