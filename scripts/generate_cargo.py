@@ -11,6 +11,9 @@ import re
 import os
 import subprocess
 
+# NOTE: this needs bumped with schema version upgrades of the protocol
+PROTOSOL_VERSION_TAG = "v1.0.4"
+
 def replace_path_with_git_rev(toml_data, git_url, rev):
     """
     Recursively process the TOML data to replace path with git and rev,
@@ -78,6 +81,7 @@ def parse_toml_file(file_path):
         return parse(f.read())
 
 def main():
+    global PROTOSOL_VERSION_TAG
 
     parser = argparse.ArgumentParser(description="Process input files.")
 
@@ -85,8 +89,15 @@ def main():
     parser.add_argument("--commit", "-c", help="Commit in firedancer-io/agave to use")
     parser.add_argument("--agave-path", "-p", help="Commit in firedancer-io/agave to use")
     parser.add_argument("--output", "-o", help="Path to the output file")
+    parser.add_argument("--version", "-v", help=f"Protosol version to use (e.g. \"{PROTOSOL_VERSION_TAG}\")")
 
     args = parser.parse_args()
+    if args.version:
+        PROTOSOL_VERSION_TAG = args.version
+        # Prepend 'v' if not already present
+        if not PROTOSOL_VERSION_TAG.startswith('v'):
+            PROTOSOL_VERSION_TAG = 'v' + PROTOSOL_VERSION_TAG
+    print(f"Using protosol version: {PROTOSOL_VERSION_TAG}")
 
     if args.agave_path:
         toml_data = parse_toml_file(args.agave_path + "/Cargo.toml")
@@ -116,6 +127,20 @@ def main():
     for patch_to_remove in ["crossbeam-epoch",]:
         if patch_to_remove in toml_data.get("patch", {}).get("crates-io", {}):
             del toml_data["patch"]["crates-io"][patch_to_remove]
+
+    # Add protosol dependency (deduped if already present)
+    if "dependencies" not in toml_data:
+        toml_data["dependencies"] = table()
+    
+    # Remove existing protosol if present to ensure we use the correct version
+    if "protosol" in toml_data["dependencies"]:
+        del toml_data["dependencies"]["protosol"]
+    
+    # Add the required protosol dependency
+    protosol_dep = inline_table()
+    protosol_dep["git"] = "https://github.com/firedancer-io/protosol"
+    protosol_dep["tag"] = PROTOSOL_VERSION_TAG
+    toml_data["dependencies"]["protosol"] = protosol_dep
 
     # add required solfuzz-agave added configurations
     solfuzz_agave_config = parse_toml_file("solfuzz_agave.toml")

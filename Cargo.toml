@@ -518,6 +518,7 @@ winapi = "0.3.8"
 x509-parser = "0.14.0"
 zeroize = { version = "1.7", default-features = false }
 zstd = "0.13.3"
+protosol = {git = "https://github.com/firedancer-io/protosol", tag = "v1.0.4"}
 solfuzz-agave-macro = { path = "macro" }
 once_cell = "1.21.3"
 lazy_static = "1.5.0"
