@@ -70,7 +70,7 @@ run_fixtures_per_file() {
             echo "$file" >> "$fail_log"
             sf="${pf}.fail.txt"
             {
-              printf "==== FAIL: %s ====\n" "$file"
+              printf "==== FAIL: %s ====\n" -- "$file"
               printf "Per-fixture log: %s\n" "$pf"
               printf "--- Expected/Actual (pattern: %s / %s) ---\n" "$EXPECT_REGEX" "$ACTUAL_REGEX"
               grep -E -i "$EXPECT_REGEX" "$pf" || true
@@ -87,7 +87,7 @@ run_fixtures_per_file() {
           echo "$file" >> "$fail_log"
           sf="${pf}.fail.txt"
           {
-            printf "==== FAIL: %s ====\n" "$file"
+            printf "==== FAIL: %s ====\n" -- "$file"
             printf "Per-fixture log: %s\n" "$pf"
             printf "--- Expected/Actual (pattern: %s / %s) ---\n" "$EXPECT_REGEX" "$ACTUAL_REGEX"
             grep -E -i "$EXPECT_REGEX" "$pf" || true
