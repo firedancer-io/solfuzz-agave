@@ -41,6 +41,18 @@ jobs:
       - name: Make binaries
         run: make binaries
 
+      - name: Log Cargo.toml
+        run: |
+          echo "=== Cargo.toml ==="
+          cat Cargo.toml
+          echo "=================="
+
+      - name: Log Cargo.lock
+        run: |
+          echo "=== Cargo.lock ==="
+          cat Cargo.lock
+          echo "=================="
+
       - name: Run test-vectors
         run: |
           ./scripts/run_test_vectors.sh

@@ -34,6 +34,8 @@ fn exec(input: &PathBuf) -> bool {
         println!("OK: {:?}", input);
     } else {
         println!("FAIL: {:?}", input);
+        println!("Expected: {:?}", expected);
+        println!("Actual: {:?}", effects);
     }
     ok
 }
