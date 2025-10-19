@@ -25,10 +25,19 @@ apt install libudev-dev protobuf-compiler pkg-config
 
 Running with a local copy of Agave (for easily adding print statements):
 ```sh
-pip3 install tomlkit
-python3 scripts/generate_cargo.py -p <your_local_agave_path> -o Cargo.toml
+./scripts/generate_cargo.py -p <your_local_agave_path> -o Cargo.toml
 ```
 
+Running with a specific Agave commit:
+```sh
+./scripts/generate_cargo.py -c <commit_hash> -o Cargo.toml
+```
+
+Running with a specific protosol version:
+```sh
+./scripts/generate_cargo.py -c <commit_hash> -v <version> -o Cargo.toml
+# Example: ./scripts/generate_cargo.py -c <commit_hash> -v 1.0.4 -o Cargo.toml
+```
 
 Check and test:
 
@@ -64,7 +73,7 @@ $ nm -D target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so | grep '__sa
                  U __sanitizer_cov_trace_pc_indir
 ```
 
-**Note:** You may have to periodically run `make build` to ensure that Protobuf definitions stay in sync with [Protosol](https://github.com/firedancer-io/protosol/). Alternatively, you can run `./scripts/fetch_proto.sh` to keep Protosol up to date. Maintainers are expected to bump the `PROTO_VERSION` corresponding to the versioned git tag of the protosol repository when staging new protobuf changes.
+**Note:** Protobuf definitions are now managed through the `protosol` Rust crate dependency. The `protosol` crate is automatically included in the generated Cargo.toml with a specific version tag. When protobuf schema changes are needed, maintainers should update the `PROTOSOL_VERSION_TAG` in `scripts/generate_cargo.py` to the appropriate version tag from the [protosol repository](https://github.com/firedancer-io/protosol/).
 
 ## Building Targets with Core BPF Programs
 

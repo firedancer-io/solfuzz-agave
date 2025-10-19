@@ -17,17 +17,14 @@ CC:=clang
 
 CARGO?=cargo
 
-.PHONY: build clean binaries shared_obj fetch_proto
+.PHONY: build clean binaries shared_obj
 
-all: | fetch_proto shared_obj binaries
+all: | shared_obj binaries
 
 # Alias for backwards compatibility
-build: | fetch_proto shared_obj
+build: | shared_obj
 
-conformance: | fetch_proto shared_obj_debug
-
-fetch_proto:
-	./scripts/fetch_proto.sh
+conformance: | shared_obj_debug
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib

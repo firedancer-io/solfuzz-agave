@@ -5159,6 +5159,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "protosol"
+version = "1.0.1"
+source = "git+https://github.com/firedancer-io/protosol?tag=v1.0.4#72fb79f2a24e60a55d392c386c1ac7c2d15c13a4"
+dependencies = [
+ "prost 0.11.9",
+ "prost-build 0.11.9",
+]
+
+[[package]]
 name = "qstring"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10681,6 +10690,7 @@ dependencies = [
  "prost-build 0.13.5",
  "prost-types 0.11.9",
  "protobuf-src",
+ "protosol",
  "qstring",
  "qualifier_attr",
  "quinn",
