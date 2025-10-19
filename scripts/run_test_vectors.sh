@@ -20,9 +20,6 @@ mkdir -p dump
 # Show the commit hashes being used
 repo_commit=$(git rev-parse HEAD)
 echo "Using repo commit: $repo_commit"
-protosol_commit=$(cd protosol && git rev-parse HEAD)
-protosol_tag=$(cd protosol && git describe --tags --exact-match 2>/dev/null || echo "<no tag>")
-echo "Using protosol commit: $protosol_commit (tag: $protosol_tag)"
 
 # Fetch/update test-vectors repo
 if [ ! -d dump/test-vectors ]; then
