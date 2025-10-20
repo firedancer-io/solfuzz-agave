@@ -1,10 +1,14 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod block;
+pub mod block_flatbuffers;
 pub mod elf_loader;
+pub mod elf_loader_flatbuffers;
 pub mod pack;
 mod shred_parse;
 pub mod txn_fuzzer;
+pub mod transaction_flatbuffers;
+pub mod instr_flatbuffers;
 mod types;
 pub mod types_fuzzer;
 pub mod utils;
@@ -50,6 +54,7 @@ use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::{
     declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
 };
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::env;
 use std::ffi::c_int;
@@ -64,6 +69,12 @@ use thiserror::Error;
 use solana_account::WritableAccount;
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
 use solana_slot_hashes::{SlotHash, SlotHashes};
+
+/* TODO: Consider migrating this to a custom allocator with true zero-copy behavior. */
+thread_local! {
+    static FBB: RefCell<flatbuffers::FlatBufferBuilder<'static>> =
+        RefCell::new(flatbuffers::FlatBufferBuilder::with_capacity(1 << 12usize));
+}
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 #[macro_export]
@@ -322,6 +333,54 @@ declare_core_bpf_default_compute_units!();
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod block_generated {
+    include!(concat!(env!("OUT_DIR"), "/block_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod context_generated {
+    include!(concat!(env!("OUT_DIR"), "/context_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod elf_generated {
+    include!(concat!(env!("OUT_DIR"), "/elf_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod instr_generated {
+    include!(concat!(env!("OUT_DIR"), "/instr_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod metadata_generated {
+    include!(concat!(env!("OUT_DIR"), "/metadata_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod shred_generated {
+    include!(concat!(env!("OUT_DIR"), "/shred_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod txn_generated {
+    include!(concat!(env!("OUT_DIR"), "/txn_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
+}
+
+#[allow(unused_imports, dead_code)]
+pub mod vm_generated {
+    include!(concat!(env!("OUT_DIR"), "/vm_generated.rs"));
+    pub use self::org::solana::sealevel::v_2::*;
 }
 
 #[derive(Debug, Error, PartialEq)]

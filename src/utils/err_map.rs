@@ -18,7 +18,7 @@ use solana_pubkey::Pubkey;
 //   When an err str is truncated in Firedancer, it should be explicit in this mapping,
 //   otherwise error.to_string() is the expected value.
 
-pub fn elf_err_to_num(error: &ElfError) -> i32 {
+pub fn elf_err_to_num(error: &ElfError) -> u8 {
     match error {
         ElfError::FailedToParse(_) => 1,
         ElfError::EntrypointOutOfBounds => 2,

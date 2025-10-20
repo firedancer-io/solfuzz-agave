@@ -1,38 +1,37 @@
 use std::{env, fs, path::PathBuf};
+extern crate flatc_rust;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Tells rustc to recompile the `load_core_bpf_program!` macro if either
-    // of the required environment variables has changed.
-    println!("cargo:rerun-if-env-changed=CORE_BPF_PROGRAM_ID");
-    println!("cargo:rerun-if-env-changed=CORE_BPF_TARGET");
-    // Sometimes, the environment variables may be exactly the same, but the
-    // program binary itself may have changed. One can provide a
-    // `FORCE_RECOMPILE=true` to force the macro to re-compile.
-    if std::env::var("FORCE_RECOMPILE").as_deref() == Ok("true") {
-        println!("cargo:rerun-if-changed=force_rebuild");
-    }
+fn monitor_and_get_files(
+    env_var: &str,
+    extension: &str,
+) -> Result<(Vec<PathBuf>, PathBuf), Box<dyn std::error::Error>> {
+    // Get absolute dir from producer
+    let dir = PathBuf::from(env::var(env_var).expect(&format!(
+        "protosol did not expose {}, did protosol build.rs run first?",
+        env_var
+    )));
 
-    // Get absolute proto dir from producer
-    let proto_dir = PathBuf::from(
-        env::var("DEP_PROTOSOL_PROTO_DIR")
-            .expect("protosol did not expose PROTO_DIR, did protosol build.rs run first?"),
-    );
+    println!("cargo:rerun-if-env-changed={}", env_var);
+    println!("cargo:rerun-if-changed={}", dir.display());
 
-    println!("cargo:rerun-if-env-changed=DEP_PROTOSOL_PROTO_DIR");
-    println!("cargo:rerun-if-changed={}", proto_dir.display());
-
-    // Collect absolute .proto paths
-    let mut proto_files = vec![];
-    for entry in fs::read_dir(&proto_dir)? {
+    // Collect absolute paths
+    let mut files = vec![];
+    for entry in fs::read_dir(&dir)? {
         let path = entry?.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("proto") {
+        if path.extension().and_then(|e| e.to_str()) == Some(extension) {
             println!("cargo:rerun-if-changed={}", path.display());
-            proto_files.push(path);
+            files.push(path);
         }
     }
 
     // Ensure deterministic order for rebuilds
-    proto_files.sort();
+    files.sort();
+
+    Ok((files, dir))
+}
+
+fn compile_protos() -> Result<(), Box<dyn std::error::Error>> {
+    let (proto_files, proto_dir) = monitor_and_get_files("DEP_PROTOSOL_PROTO_DIR", "proto")?;
 
     // Compile protos into Rust
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
@@ -46,6 +45,44 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>(),
         &[proto_dir.to_str().unwrap()],
     )?;
+
+    Ok(())
+}
+
+fn compile_flatbuffers() -> Result<(), Box<dyn std::error::Error>> {
+    let (flatbuffer_files, flatbuffer_dir) =
+        monitor_and_get_files("DEP_PROTOSOL_FLATBUFFERS_DIR", "fbs")?;
+
+    // Compile flatbuffers into Rust
+    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
+    flatc_rust::run(flatc_rust::Args {
+        lang: "rust",
+        inputs: flatbuffer_files
+            .iter()
+            .map(|p| p.as_path())
+            .collect::<Vec<_>>()
+            .as_slice(),
+        out_dir: out_dir.as_path(),
+        includes: &[flatbuffer_dir.as_path()],
+        ..Default::default()
+    })?;
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Tells rustc to recompile the `load_core_bpf_program!` macro if either
+    // of the required environment variables has changed.
+    println!("cargo:rerun-if-env-changed=CORE_BPF_PROGRAM_ID");
+    println!("cargo:rerun-if-env-changed=CORE_BPF_TARGET");
+    // Sometimes, the environment variables may be exactly the same, but the
+    // program binary itself may have changed. One can provide a
+    // `FORCE_RECOMPILE=true` to force the macro to re-compile.
+    if std::env::var("FORCE_RECOMPILE").as_deref() == Ok("true") {
+        println!("cargo:rerun-if-changed=force_rebuild");
+    }
+
+    compile_protos()?;
+    compile_flatbuffers()?;
 
     Ok(())
 }

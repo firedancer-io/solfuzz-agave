@@ -1,4 +1,5 @@
 pub mod err_map;
+pub mod err_map_flatbuffers;
 pub mod fd_hash;
 pub mod program;
 pub mod vm;
