@@ -12,7 +12,7 @@ import os
 import subprocess
 
 # NOTE: this needs bumped with schema version upgrades of the protocol
-PROTOSOL_VERSION_TAG = "v1.0.4"
+PROTOSOL_VERSION_TAG = "v1.0.5"
 
 def replace_path_with_git_rev(toml_data, git_url, rev):
     """
@@ -131,11 +131,11 @@ def main():
     # Add protosol dependency (deduped if already present)
     if "dependencies" not in toml_data:
         toml_data["dependencies"] = table()
-    
+
     # Remove existing protosol if present to ensure we use the correct version
     if "protosol" in toml_data["dependencies"]:
         del toml_data["dependencies"]["protosol"]
-    
+
     # Add the required protosol dependency
     protosol_dep = inline_table()
     protosol_dep["git"] = "https://github.com/firedancer-io/protosol"

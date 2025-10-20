@@ -497,7 +497,6 @@ impl From<InstrEffects> for proto::InstrEffects {
                     lamports: account.lamports,
                     data: account.data.to_vec(),
                     executable: account.executable,
-                    seed_addr: None,
                 })
                 .collect(),
             cu_avail: val.cu_avail,
@@ -1127,7 +1126,6 @@ mod tests {
             lamports: 1,
             data: bincode::serialize(&sysvar).unwrap(),
             executable: false,
-            seed_addr: None,
         }
     }
 
@@ -1166,7 +1164,6 @@ mod tests {
                     lamports: 1000,
                     data: vec![],
                     executable: false,
-                    seed_addr: None,
                 },
                 proto::AcctState {
                     address: vec![2u8; 32],
@@ -1174,7 +1171,6 @@ mod tests {
                     lamports: 0,
                     data: vec![],
                     executable: false,
-                    seed_addr: None,
                 },
                 proto::AcctState {
                     address: vec![0u8; 32],
@@ -1182,7 +1178,6 @@ mod tests {
                     lamports: 10000000,
                     data: b"Solana Program".to_vec(),
                     executable: true,
-                    seed_addr: None,
                 },
             ]),
             instr_accounts: vec![
@@ -1219,7 +1214,6 @@ mod tests {
                         lamports: 999,
                         data: vec![],
                         executable: false,
-                        seed_addr: None,
                     },
                     proto::AcctState {
                         address: vec![2u8; 32],
@@ -1227,7 +1221,6 @@ mod tests {
                         lamports: 1,
                         data: vec![],
                         executable: false,
-                        seed_addr: None,
                     },
                     proto::AcctState {
                         address: vec![0u8; 32],
@@ -1235,7 +1228,6 @@ mod tests {
                         lamports: 10000000,
                         data: b"Solana Program".to_vec(),
                         executable: true,
-                        seed_addr: None,
                     },
                 ]),
                 cu_avail: 9850u64,
