@@ -54,7 +54,6 @@ fn get_clock_sysvar_account() -> AcctState {
         data: bincode::serialize(&clock).unwrap(),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
-        seed_addr: None,
     }
 }
 
@@ -72,7 +71,6 @@ fn get_epoch_schedule_sysvar_account() -> AcctState {
         data: bincode::serialize(&epoch_schedule).unwrap(),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
-        seed_addr: None,
     }
 }
 
@@ -88,7 +86,6 @@ fn get_rent_sysvar_account() -> AcctState {
         data: bincode::serialize(&rent).unwrap(),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
-        seed_addr: None,
     }
 }
 
@@ -119,7 +116,6 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
         data: bincode::serialize(&state).unwrap(),
         executable: true,
         owner: bpf_loader_upgradeable::id().to_bytes().to_vec(),
-        seed_addr: None,
     };
 
     let state = UpgradeableLoaderState::ProgramData {
@@ -144,7 +140,6 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
         data: header,
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     [
@@ -196,7 +191,6 @@ fn test_txn_execute_clock() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let mut program_info = deploy_program("clock-sysvar".to_string());
@@ -315,7 +309,6 @@ fn test_simple_transfer() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let sender = Pubkey::new_unique();
@@ -325,7 +318,6 @@ fn test_simple_transfer() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let recipient = Pubkey::new_unique();
@@ -335,7 +327,6 @@ fn test_simple_transfer() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let mut program_info = deploy_program("simple-transfer".to_string());
@@ -470,7 +461,6 @@ fn test_lookup_table() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let sender = Pubkey::new_unique();
@@ -480,7 +470,6 @@ fn test_lookup_table() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let recipient = Pubkey::new_unique();
@@ -490,7 +479,6 @@ fn test_lookup_table() {
         data: vec![],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let extra_account = Pubkey::new_unique();
@@ -500,7 +488,6 @@ fn test_lookup_table() {
         data: vec![5, 0, 0, 0, 0, 0, 0, 0],
         executable: false,
         owner: vec![0; 32],
-        seed_addr: None,
     };
 
     let mut program_info = deploy_program("complex-transfer".to_string());
@@ -534,7 +521,6 @@ fn test_lookup_table() {
         data: alut_data,
         executable: false,
         owner: address_lookup_table::id().to_bytes().to_vec(),
-        seed_addr: None,
     };
 
     let blockhash_queue = vec![

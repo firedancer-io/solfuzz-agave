@@ -152,7 +152,6 @@ impl From<TransactionAccount> for proto::AcctState {
             data: value.1.data().to_vec(),
             executable: value.1.executable(),
             owner: value.1.owner().to_bytes().to_vec(),
-            seed_addr: None,
         }
     }
 }
