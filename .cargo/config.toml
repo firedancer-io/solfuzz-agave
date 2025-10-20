@@ -1,0 +1,3 @@
+[env]
+PROTOC_EXECUTABLE = { value = "opt/bin/protoc", relative = true }
+FLATC_EXECUTABLE = { value = "opt/bin/flatc", relative = true }

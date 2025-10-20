@@ -94,3 +94,13 @@ pub fn fd_hash(seed: u64, buf: &[u8]) -> u64 {
 
     h
 }
+
+pub fn fd_hash_without_seed(buf: &[u8]) -> u64 {
+    fd_hash(0, buf)
+}
+
+pub unsafe fn fd_hash_u64_without_seed(buf: &[u64]) -> u64 {
+    let u8_buf =
+        core::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len().saturating_mul(8));
+    fd_hash(0, u8_buf)
+}
