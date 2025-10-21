@@ -538,3 +538,6 @@ prost-build = "0.13.1"
 core-bpf = []
 core-bpf-conformance = []
 bpf-program-conformance = []
+
+[workspace.dependencies]
+solana-bn254 = "=3.0.0"
