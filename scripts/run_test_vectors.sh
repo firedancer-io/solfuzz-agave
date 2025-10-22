@@ -17,76 +17,35 @@ echo "LOG_PATH: $LOG_PATH"
 
 mkdir -p dump
 
-# Show the repo commit being tested
+# Show the commit hashes being used
 repo_commit=$(git rev-parse HEAD)
 echo "Using repo commit: $repo_commit"
 
-# Pin test-vectors to a specific commit (same mechanism as run_test_vectors.sh)
-GIT_REF="${GIT_REF:-$(cat scripts/test-vectors-commit-sha.txt)}"
-REPO_URL="https://github.com/firedancer-io/test-vectors.git"
+# Get commit SHA from file or env
+GIT_REF=${GIT_REF:-$(cat ./scripts/test-vectors-commit-sha.txt)}
 echo "Using test-vectors commit: $GIT_REF"
 
-# Prepare local repo for test-vectors and ensure exact commit is checked out
+# Fetch/update test-vectors repo
 if [ ! -d dump/test-vectors ]; then
   echo "Cloning test-vectors repository..."
-  (cd dump && git clone -q --no-tags --depth=1 "$REPO_URL" test-vectors)
-fi
-cd dump/test-vectors
-
-safe_checkout() {
-  local ref="$1"
-
-  # Remove stale git lock if present
-  [ -f .git/index.lock ] && rm -f .git/index.lock
-
-  # Ensure remote URL is correct
-  if git remote get-url origin >/dev/null 2>&1; then
-    git remote set-url origin "$REPO_URL"
-  else
-    git remote add origin "$REPO_URL"
-  fi
-
-  # Clean any outstanding changes or spurious files
-  git reset -q --hard || true
-  git clean -q -fdx || true
-
-  # Fetch the exact commit (shallow first, fallback to full)
-  if ! git fetch -q --no-tags --depth=1 origin "$ref"; then
-    git fetch -q --no-tags origin "$ref"
-  fi
-
-  # Force detached checkout to the commit
-  git config advice.detachedHead false || true
-  if ! git checkout --detach -f -q "$ref"; then
-    git fetch -q --no-tags --prune origin || true
-    git checkout --detach -f -q "$ref"
-  fi
-
-  # Verify HEAD matches the requested commit
-  local head
-  head="$(git rev-parse HEAD 2>/dev/null || echo "")"
-  if [ "$head" != "$ref" ]; then
-    echo "Failed to checkout exact commit (HEAD=$head, expected $ref)"
-    return 1
-  fi
-  return 0
-}
-
-# Only perform checkout if not already at the desired commit
-current="$(git rev-parse HEAD || echo '')"
-if [ "$current" != "$GIT_REF" ]; then
-  tries=3
-  while ! safe_checkout "$GIT_REF"; do
-    tries=$((tries-1))
-    [ $tries -le 0 ] && { echo "Failed to checkout $GIT_REF"; exit 128; }
-    echo "Retrying checkout ($tries retries left)…"
-    sleep 1
-  done
+  (cd dump && git clone --depth=1 -q https://github.com/firedancer-io/test-vectors.git)
+else
+  echo "Updating test-vectors repository..."
+  (cd dump/test-vectors && git fetch -q origin "$GIT_REF" || true)
 fi
 
-# Capture the exact commit we ended up at
-test_vectors_commit=$(git rev-parse HEAD)
-cd ../..
+# Checkout specific commit non-destructively
+(
+  cd dump/test-vectors
+  if ! git cat-file -e "$GIT_REF"^{commit} 2>/dev/null; then
+    echo "Fetching test vectors commit $GIT_REF..."
+    git fetch -q origin "$GIT_REF"
+  fi
+  git checkout -q --detach "$GIT_REF"
+)
+
+# Show the commit hashes being used
+test_vectors_commit=$(cd dump/test-vectors && git rev-parse HEAD)
 echo "Using test-vectors commit: $test_vectors_commit"
 
 # Run one fixture per process, capture per-fixture output, and collect failures/successes.
