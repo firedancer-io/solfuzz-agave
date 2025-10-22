@@ -7,6 +7,7 @@ RUSTFLAGS+=-Cllvm-args=-sanitizer-coverage-pc-table
 RUSTFLAGS+=-Clink-dead-code
 RUSTFLAGS+=-Cforce-frame-pointers=yes
 RUSTFLAGS+=-Ctarget-feature=-crt-static
+RUSTFLAGS+=-Cdebug-assertions=on
 
 ifeq ($(ENABLE_COVERAGE),1)
 RUSTFLAGS+=-Cinstrument-coverage
