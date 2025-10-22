@@ -85,6 +85,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "agave-cargo-registry"
+version = "3.0.3"
+source = "git+https://github.com/firedancer-io/agave?rev=5ca585786b6e0f95914c0866c7e40a257290f61c#5ca585786b6e0f95914c0866c7e40a257290f61c"
+dependencies = [
+ "clap 2.34.0",
+ "flate2",
+ "hex",
+ "hyper 0.14.32",
+ "log",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.9",
+ "solana-clap-utils",
+ "solana-cli",
+ "solana-cli-config",
+ "solana-cli-output",
+ "solana-commitment-config",
+ "solana-keypair",
+ "solana-logger",
+ "solana-pubkey 3.0.0",
+ "solana-remote-wallet",
+ "solana-rpc-client",
+ "solana-rpc-client-api",
+ "solana-signer",
+ "solana-version",
+ "tar",
+ "tempfile",
+ "tokio",
+ "toml 0.8.23",
+]
+
+[[package]]
 name = "agave-feature-set"
 version = "3.0.3"
 source = "git+https://github.com/firedancer-io/agave?rev=5ca585786b6e0f95914c0866c7e40a257290f61c#5ca585786b6e0f95914c0866c7e40a257290f61c"
@@ -1446,6 +1479,7 @@ checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
 dependencies = [
  "atty",
  "bitflags 1.3.2",
+ "clap_derive 3.2.25",
  "clap_lex 0.2.4",
  "indexmap 1.9.3",
  "once_cell",
@@ -1461,7 +1495,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fc0e74a703892159f5ae7d3aac52c8e6c392f5ae5f359c70b5881d60aaac318"
 dependencies = [
  "clap_builder",
- "clap_derive",
+ "clap_derive 4.5.45",
 ]
 
 [[package]]
@@ -5623,7 +5657,7 @@ dependencies = [
  "tokio-rustls 0.24.1",
  "tokio-util 0.7.16",
  "tower-service",
- "url 2.5.7",
+ "url 2.5.6",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -5666,7 +5700,7 @@ dependencies = [
  "tower 0.5.2",
  "tower-http",
  "tower-service",
- "url 2.5.7",
+ "url 2.5.6",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -6507,6 +6541,8 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "82f4691b69b172c687d218dd2f1f23fc7ea5e9aa79df9ac26dab3d8dd829ce48"
 dependencies = [
+ "bincode",
+ "serde",
  "solana-program-error",
  "solana-program-memory",
  "solana-pubkey 3.0.0",
@@ -6951,7 +6987,7 @@ dependencies = [
  "thiserror 2.0.16",
  "tiny-bip39",
  "uriparse",
- "url 2.5.7",
+ "url 2.5.6",
 ]
 
 [[package]]
@@ -6980,7 +7016,7 @@ dependencies = [
  "thiserror 2.0.16",
  "tiny-bip39",
  "uriparse",
- "url 2.5.7",
+ "url 2.5.6",
 ]
 
 [[package]]
@@ -7081,7 +7117,7 @@ dependencies = [
  "serde_yaml",
  "solana-clap-utils",
  "solana-commitment-config",
- "url 2.5.7",
+ "url 2.5.6",
 ]
 
 [[package]]
@@ -7645,6 +7681,16 @@ dependencies = [
  "solana-sdk-ids 3.0.0",
  "solana-sdk-macro",
  "solana-sysvar-id",
+]
+
+[[package]]
+name = "solana-epoch-stake"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc6693d0ea833b880514b9b88d95afb80b42762dca98b0712465d1fcbbcb89e"
+dependencies = [
+ "solana-define-syscall 3.0.0",
+ "solana-pubkey 3.0.0",
 ]
 
 [[package]]
@@ -8453,7 +8499,7 @@ dependencies = [
  "socket2 0.6.0",
  "solana-serde",
  "tokio",
- "url 2.5.7",
+ "url 2.5.6",
 ]
 
 [[package]]
@@ -8634,6 +8680,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-program"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91b12305dd81045d705f427acd0435a2e46444b65367d7179d7bdcfc3bc5f5eb"
+dependencies = [
+ "memoffset",
+ "solana-account-info",
+ "solana-big-mod-exp",
+ "solana-blake3-hasher",
+ "solana-clock",
+ "solana-cpi",
+ "solana-define-syscall 3.0.0",
+ "solana-epoch-rewards",
+ "solana-epoch-schedule",
+ "solana-epoch-stake",
+ "solana-example-mocks",
+ "solana-fee-calculator",
+ "solana-hash 3.0.0",
+ "solana-instruction",
+ "solana-instruction-error",
+ "solana-instructions-sysvar",
+ "solana-keccak-hasher",
+ "solana-last-restart-slot",
+ "solana-msg",
+ "solana-native-token",
+ "solana-program-entrypoint",
+ "solana-program-error",
+ "solana-program-memory",
+ "solana-program-option",
+ "solana-program-pack",
+ "solana-pubkey 3.0.0",
+ "solana-rent",
+ "solana-sdk-ids 3.0.0",
+ "solana-secp256k1-recover",
+ "solana-serde-varint",
+ "solana-serialize-utils",
+ "solana-sha256-hasher 3.0.0",
+ "solana-short-vec",
+ "solana-slot-hashes",
+ "solana-slot-history",
+ "solana-stable-layout",
+ "solana-sysvar",
+ "solana-sysvar-id",
+]
+
+[[package]]
 name = "solana-program-entrypoint"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8653,6 +8745,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1af32c995a7b692a915bb7414d5f8e838450cf7c70414e763d8abcae7b51f28"
 dependencies = [
  "borsh",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]
@@ -8834,7 +8928,7 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite",
  "tungstenite",
- "url 2.5.7",
+ "url 2.5.6",
 ]
 
 [[package]]
@@ -9877,6 +9971,8 @@ checksum = "63205e68d680bcc315337dec311b616ab32fea0a612db3b883ce4de02e0953f9"
 dependencies = [
  "base64 0.22.1",
  "bincode",
+ "bytemuck",
+ "bytemuck_derive",
  "lazy_static",
  "serde",
  "serde_derive",
@@ -10467,6 +10563,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-zk-keygen"
+version = "3.0.3"
+source = "git+https://github.com/firedancer-io/agave?rev=5ca585786b6e0f95914c0866c7e40a257290f61c#5ca585786b6e0f95914c0866c7e40a257290f61c"
+dependencies = [
+ "bs58",
+ "clap 3.2.25",
+ "dirs-next",
+ "solana-clap-v3-utils",
+ "solana-remote-wallet",
+ "solana-seed-derivable",
+ "solana-signer",
+ "solana-version",
+ "solana-zk-sdk",
+ "thiserror 2.0.16",
+ "tiny-bip39",
+]
+
+[[package]]
 name = "solana-zk-sdk"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10560,6 +10674,7 @@ dependencies = [
  "Inflector",
  "aes-gcm-siv",
  "agave-banking-stage-ingress-types",
+ "agave-cargo-registry",
  "agave-feature-set",
  "agave-geyser-plugin-interface",
  "agave-io-uring",
@@ -10849,6 +10964,7 @@ dependencies = [
  "solana-poseidon",
  "solana-precompile-error",
  "solana-presigner",
+ "solana-program",
  "solana-program-entrypoint",
  "solana-program-error",
  "solana-program-memory",
@@ -10932,6 +11048,7 @@ dependencies = [
  "solana-vote-program",
  "solana-wen-restart",
  "solana-zk-elgamal-proof-program",
+ "solana-zk-keygen",
  "solana-zk-sdk",
  "solana-zk-token-proof-program",
  "solana-zk-token-sdk",
@@ -10978,7 +11095,7 @@ dependencies = [
  "tungstenite",
  "unwrap_none",
  "uriparse",
- "url 2.5.7",
+ "url 2.5.6",
  "vec_extract_if_polyfill",
  "wasm-bindgen",
  "winapi 0.3.9",
@@ -12178,7 +12295,7 @@ dependencies = [
  "rustls 0.21.12",
  "sha1",
  "thiserror 1.0.69",
- "url 2.5.7",
+ "url 2.5.6",
  "utf-8",
  "webpki-roots 0.24.0",
 ]
@@ -12318,14 +12435,13 @@ dependencies = [
 
 [[package]]
 name = "url"
-version = "2.5.7"
+version = "2.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08bc136a29a3d1758e07a9cca267be308aeebf5cfd5a10f3f67ab2097683ef5b"
+checksum = "137a3c834eaf7139b73688502f3f1141a0337c5d8e4d9b536f9b8c796e26a7c4"
 dependencies = [
  "form_urlencoded",
  "idna 1.1.0",
  "percent-encoding 2.3.2",
- "serde",
 ]
 
 [[package]]

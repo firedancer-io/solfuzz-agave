@@ -25,9 +25,9 @@ git = "https://github.com/firedancer-io/agave"
 rev = "5ca585786b6e0f95914c0866c7e40a257290f61c"
 
 [package]
-name = "solfuzz-agave"
 version = "0.1.0"
 edition = "2021"
+name = "solfuzz-agave"
 
 [lints.rust]
 warnings = "deny"
