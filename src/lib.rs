@@ -429,10 +429,6 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        if instruction_accounts.len() > 128 {
-            return Err(Error::InvalidFixtureInput);
-        }
-
         let instruction = StableInstruction {
             accounts: instruction_accounts.into(),
             data: input.data.into(),
