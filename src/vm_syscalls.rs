@@ -26,7 +26,7 @@ use solana_sbpf::{
 use solana_svm_feature_set::SVMFeatureSet;
 use solana_svm_log_collector::LogCollector;
 use solana_transaction_context::TransactionContext;
-use std::{cell::RefCell, ffi::c_int};
+use std::ffi::c_int;
 
 #[no_mangle]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
@@ -115,7 +115,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let log_collector = LogCollector::new_ref();
     let instr_accounts = crate::get_instr_accounts(transaction_context, &instr.accounts);
 
-    let invoke_context = RefCell::new(InvokeContext::new(
+    let mut invoke_ctx = InvokeContext::new(
         transaction_context,
         program_cache_for_tx_batch,
         EnvironmentConfig::new(
@@ -128,9 +128,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         Some(log_collector.clone()),
         compute_budget.to_budget(),
         SVMTransactionExecutionCost::default(),
-    ));
-
-    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+    );
 
     let Some(program_idx) = invoke_ctx
         .transaction_context
@@ -174,9 +172,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             return None;
         }
     }
-    drop(invoke_ctx);
 
-    let invoke_ctx = invoke_context.borrow_mut();
     let caller_instr_ctx = invoke_ctx
         .transaction_context
         .get_current_instruction_context()
@@ -198,8 +194,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     )
     .unwrap();
 
-    drop(invoke_ctx);
-
     let sbpf_version = SBPFVersion::V0;
 
     // Set up memory mapping
@@ -216,7 +210,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         return None;
     }
 
-    let mut invoke_ctx = invoke_context.borrow_mut();
     let config = invoke_ctx
         .program_cache_for_tx_batch
         .environments
@@ -300,7 +293,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut vm = EbpfVm::new(
         loader,
         sbpf_version,
-        &mut *invoke_ctx,
+        &mut invoke_ctx,
         memory_mapping,
         STACK_SIZE,
     );
