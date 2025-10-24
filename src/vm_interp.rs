@@ -28,7 +28,7 @@ use solana_sbpf::{
     vm::{ContextObject, EbpfVm},
 };
 use solana_svm_log_collector::LogCollector;
-use std::{cell::RefCell, ffi::c_int};
+use std::ffi::c_int;
 
 declare_builtin_function!(
     SyscallStub,
@@ -168,7 +168,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     let instr_accounts = crate::get_instr_accounts(&transaction_context, &instr.accounts);
     let runtime_features = instr_ctx.feature_set.runtime_features();
 
-    let invoke_context = RefCell::new(InvokeContext::new(
+    let mut invoke_ctx = InvokeContext::new(
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
         EnvironmentConfig::new(
@@ -181,9 +181,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         Some(log_collector.clone()),
         compute_budget.to_budget(),
         SVMTransactionExecutionCost::default(),
-    ));
-
-    let mut invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
+    );
 
     let program_idx = invoke_ctx
         .transaction_context
@@ -206,9 +204,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         Ok(_) => (),
         Err(_) => return None,
     }
-    drop(invoke_ctx);
 
-    let invoke_ctx: std::cell::RefMut<'_, InvokeContext<'_>> = invoke_context.borrow_mut();
     let caller_instr_ctx = invoke_ctx
         .transaction_context
         .get_current_instruction_context()
@@ -230,9 +226,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     config.enable_instruction_tracing = true;
     config.enabled_sbpf_versions = SBPFVersion::V0..=sbpf_version;
 
-    drop(invoke_ctx);
-
-    let mut invoke_ctx = invoke_context.borrow_mut();
     invoke_ctx
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
             allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
