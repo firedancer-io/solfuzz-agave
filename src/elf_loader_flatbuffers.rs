@@ -1,13 +1,11 @@
 use crate::context_generated;
 use crate::elf_generated;
 use crate::utils::err_map::elf_err_to_num;
-use crate::FBB;
 use agave_feature_set::*;
 use agave_syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionBudget;
 use solana_sbpf::{ebpf, elf::Executable};
 use std::collections::BTreeSet;
-use std::ffi::c_int;
 
 pub fn load_elf<'ctx, 'buf>(
     elf_bytes: &[u8],
@@ -77,36 +75,6 @@ pub fn load_elf<'ctx, 'buf>(
         },
     );
     builder.finish_minimal(effects);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn sol_compat_elf_loader_v2(
-    out_ptr: *mut u8,
-    out_psz: *mut u64,
-    in_ptr: *mut u8,
-    in_sz: u64,
-) -> c_int {
-    if in_sz == 0 {
-        return 0;
-    }
-
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let Ok(elf_loader_ctx) = flatbuffers::root::<elf_generated::ELFLoaderCtx<'_>>(in_slice) else {
-        return 0;
-    };
-
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
-    FBB.with(|fbb| {
-        let mut effects_builder = fbb.borrow_mut();
-        effects_builder.reset();
-        execute_elf_loader(&elf_loader_ctx, &mut effects_builder);
-
-        let out_data = effects_builder.finished_data();
-        out_slice[..out_data.len()].copy_from_slice(out_data);
-        *out_psz = out_data.len() as u64;
-    });
-
-    return 1;
 }
 
 pub fn execute_elf_loader<'ctx, 'buf>(

@@ -33,13 +33,11 @@ use solana_transaction_context::{
 use crate::instr_generated;
 use crate::utils::err_map_flatbuffers::instr_err_to_num;
 use crate::utils::program::common_flatbuffers::build_output_account;
-use crate::FBB;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::{
     declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
 };
 use std::collections::HashSet;
-use std::ffi::c_int;
 use std::sync::Arc;
 
 #[cfg(any(
@@ -95,35 +93,6 @@ impl TransactionProcessingCallback for InstrContext {
             .find(|(found_pubkey, _)| *found_pubkey == *pubkey)
             .map(|(_, account)| (AccountSharedData::from(account.clone()), 0u64))
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn sol_compat_instr_execute_v2(
-    out_ptr: *mut u8,
-    out_psz: *mut u64,
-    in_ptr: *mut u8,
-    in_sz: u64,
-) -> c_int {
-    if in_ptr.is_null() || in_sz == 0 {
-        return 0;
-    }
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let Ok(instr_context) = flatbuffers::root::<instr_generated::InstrContext<'_>>(in_slice) else {
-        return 0;
-    };
-
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
-    FBB.with(|fbb| {
-        let mut effects_builder = fbb.borrow_mut();
-        effects_builder.reset();
-        execute_instr(&instr_context, &mut effects_builder);
-
-        let out_data = effects_builder.finished_data();
-        out_slice[..out_data.len()].copy_from_slice(out_data);
-        *out_psz = out_data.len() as u64;
-    });
-
-    return 1;
 }
 
 pub fn get_instr_accounts(

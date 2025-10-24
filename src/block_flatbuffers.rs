@@ -2,7 +2,6 @@ use crate::block_generated;
 use crate::context_generated;
 use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common_flatbuffers::{build_versioned_transaction, get_sysvar};
-use crate::FBB;
 use agave_feature_set::*;
 #[allow(deprecated)]
 use solana_account::AccountSharedData;
@@ -50,7 +49,6 @@ use solana_sysvar;
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;
 use solana_vote::vote_account::VoteAccount;
 use std::collections::HashMap;
-use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
@@ -59,35 +57,6 @@ use std::time::Duration;
 
 // Firedancer-compatible seed for leader schedule hashing
 const LEADER_SCHEDULE_HASH_SEED: u64 = 0xDEADFACE;
-
-#[no_mangle]
-pub unsafe extern "C" fn sol_compat_block_execute_v2(
-    out_ptr: *mut u8,
-    out_psz: *mut u64,
-    in_ptr: *mut u8,
-    in_sz: u64,
-) -> c_int {
-    if in_ptr.is_null() || in_sz == 0 {
-        return 0;
-    }
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let Ok(block_context) = flatbuffers::root::<block_generated::BlockContext<'_>>(in_slice) else {
-        return 0;
-    };
-
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
-    FBB.with(|fbb| {
-        let mut effects_builder = fbb.borrow_mut();
-        effects_builder.reset();
-        execute_block(&block_context, &mut effects_builder);
-
-        let out_data = effects_builder.finished_data();
-        out_slice[..out_data.len()].copy_from_slice(out_data);
-        *out_psz = out_data.len() as u64;
-    });
-
-    return 1;
-}
 
 /* This is a little bit hacky because there's no direct Agave API that gets us a populated Stakes<Delegation> object
 from a set of account states. Fine, I'll do it myself... */

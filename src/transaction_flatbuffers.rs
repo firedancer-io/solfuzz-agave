@@ -5,7 +5,6 @@ use crate::utils::program::common_flatbuffers::build_output_account;
 use crate::utils::program::common_flatbuffers::{
     build_versioned_transaction, get_dummy_bpf_native_programs, get_sysvar,
 };
-use crate::FBB;
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
@@ -34,39 +33,9 @@ use solana_sysvar;
 use solana_transaction::TransactionVerificationMode;
 use solana_transaction_error::TransactionError;
 use std::collections::HashMap;
-use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-
-#[no_mangle]
-pub unsafe extern "C" fn sol_compat_txn_execute_v2(
-    out_ptr: *mut u8,
-    out_psz: *mut u64,
-    in_ptr: *mut u8,
-    in_sz: u64,
-) -> c_int {
-    if in_ptr.is_null() || in_sz == 0 {
-        return 0;
-    }
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
-    let Ok(txn_context) = flatbuffers::root::<txn_generated::TxnContext<'_>>(in_slice) else {
-        return 0;
-    };
-
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
-    FBB.with(|fbb| {
-        let mut effects_builder = fbb.borrow_mut();
-        effects_builder.reset();
-        execute_transaction(&txn_context, &mut effects_builder);
-
-        let out_data = effects_builder.finished_data();
-        out_slice[..out_data.len()].copy_from_slice(out_data);
-        *out_psz = out_data.len() as u64;
-    });
-
-    return 1;
-}
 
 /* Returns (txn_err, instr_err, custom_err, instr_err_idx) */
 fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u8, u8, u32, u8) {
