@@ -16,6 +16,7 @@ pub mod utils;
 pub mod vm_interp;
 pub mod vm_interp_flatbuffers;
 pub mod vm_syscalls;
+pub mod vm_syscalls_flatbuffers;
 
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;

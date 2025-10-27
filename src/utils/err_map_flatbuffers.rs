@@ -1,4 +1,3 @@
-use crate::proto::ErrKind;
 use agave_syscalls::SyscallError;
 use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{invoke_context::InvokeContext, stable_log};
@@ -7,6 +6,7 @@ use solana_sbpf::{
     error::{EbpfError, StableResult},
 };
 
+use crate::vm_generated;
 use solana_instruction::error::InstructionError;
 use solana_pubkey::Pubkey;
 use solana_transaction_error::TransactionError;
@@ -213,9 +213,9 @@ pub fn unpack_stable_result(
     program_result: StableResult<u64, EbpfError>,
     invoke_context: &InvokeContext,
     program_id: &Pubkey,
-) -> (i64, ErrKind, u64) {
+) -> (u8, vm_generated::ErrKind, u64) {
     match program_result {
-        StableResult::Ok(n) => (0, ErrKind::Unspecified, n),
+        StableResult::Ok(n) => (0, vm_generated::ErrKind::UNSPECIFIED, n),
         StableResult::Err(ref err) => {
             // Agave/rust propagates errors with additional data, and eventually BPF Loader
             // logs an error message that depends on the type of error and contains data:
@@ -232,29 +232,35 @@ pub fn unpack_stable_result(
             let (err_no, err_kind) = if let EbpfError::SyscallError(syscall_error) = err {
                 if let Some(instruction_err) = syscall_error.downcast_ref::<InstructionError>() {
                     stable_log::program_failure(&logger, program_id, &instruction_err.to_string());
-                    (instr_err_to_num(instruction_err), ErrKind::Instruction)
+                    (
+                        instr_err_to_num(instruction_err),
+                        vm_generated::ErrKind::INSTRUCTION,
+                    )
                 } else if let Some(syscall_error) = syscall_error.downcast_ref::<SyscallError>() {
                     stable_log::program_failure(&logger, program_id, &syscall_error.to_string());
-                    (syscall_err_to_num(syscall_error), ErrKind::Syscall)
+                    (
+                        syscall_err_to_num(syscall_error),
+                        vm_generated::ErrKind::SYSCALL,
+                    )
                 } else if let Some(ebpf_error) = syscall_error.downcast_ref::<EbpfError>() {
                     stable_log::program_failure(&logger, program_id, &ebpf_error.to_string());
-                    (ebpf_err_to_num(ebpf_error), ErrKind::Ebpf)
+                    (ebpf_err_to_num(ebpf_error), vm_generated::ErrKind::EBPF)
                 } else if syscall_error
                     .downcast_ref::<PoseidonSyscallError>()
                     .is_some()
                 {
                     // Don't bother logging PoseidonSyscallError, it's not logged in Agave
-                    (0xFF, ErrKind::Syscall)
+                    (0xFF, vm_generated::ErrKind::SYSCALL)
                 } else {
                     // This should never happen, so we return -1 to highlight an unknown error
                     stable_log::program_failure(&logger, program_id, &err.to_string());
-                    (0xFF, ErrKind::Unspecified)
+                    (0xFF, vm_generated::ErrKind::UNSPECIFIED)
                 }
             } else {
                 stable_log::program_failure(&logger, program_id, &err.to_string());
-                (ebpf_err_to_num(err), ErrKind::Ebpf)
+                (ebpf_err_to_num(err), vm_generated::ErrKind::EBPF)
             };
-            (err_no as i64, err_kind, 0)
+            (err_no, err_kind, 0)
         }
     }
 }

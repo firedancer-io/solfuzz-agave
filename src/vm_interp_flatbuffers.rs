@@ -1,6 +1,7 @@
 use crate::instr_flatbuffers;
 use crate::utils::err_map_flatbuffers;
-use crate::utils::vm::{mem_regions, mem_regions_flatbuffers, STACK_SIZE};
+use crate::utils::vm::mem_regions_flatbuffers::vec_rtrim_zeros;
+use crate::utils::vm::{mem_regions_flatbuffers, STACK_SIZE};
 // feature removed from feature set surface in 3.0; direct mapping toggled via SVMFeatureSet flags
 use crate::vm_generated;
 use bincode::Error;
@@ -156,13 +157,6 @@ fn setup_internal_fn_registry(
     }
 
     fn_reg
-}
-
-pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
-    if let Some(i) = v.iter().rposition(|x| *x != 0) {
-        return v[..i.saturating_add(1)].into();
-    }
-    vec![]
 }
 
 // We are actually executing the JIT-compiled program here
@@ -380,8 +374,14 @@ pub fn execute_vm_interp<'a>(
     // vm.registers[10] = vm_ctx.r10; // do not override
     // vm.registers[11] = vm_ctx.r11; // do not override
 
-    mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix().bytes());
-    mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix().bytes());
+    mem_regions_flatbuffers::copy_memory_prefix(
+        heap.as_slice_mut(),
+        &syscall_inv.heap_prefix().bytes(),
+    );
+    mem_regions_flatbuffers::copy_memory_prefix(
+        stack.as_slice_mut(),
+        &syscall_inv.stack_prefix().bytes(),
+    );
 
     let (_, result) = vm.execute_program(
         &executable,
@@ -462,5 +462,4 @@ pub fn execute_vm_interp<'a>(
         },
     );
     builder.finish_minimal(effects);
-    return;
 }

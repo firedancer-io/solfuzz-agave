@@ -30,7 +30,7 @@ pub fn extract_input_data_regions<'a, 'b>(
                 .get_regions()
                 .iter()
                 .filter(|region| region.vm_addr >= ebpf::MM_INPUT_START)
-                .sorted_by_key(|region| region.vm_addr)
+                .sorted_by_key(|region| region.vm_addr.saturating_sub(ebpf::MM_INPUT_START))
                 .map(|region| mem_region_to_input_data_region(region, builder))
                 .collect::<Vec<_>>()
         }
@@ -58,4 +58,11 @@ fn mem_region_to_input_data_region<'a>(
             is_writable: region.writable,
         },
     )
+}
+
+pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
+    if let Some(i) = v.iter().rposition(|x| *x != 0) {
+        return v[..i.saturating_add(1)].into();
+    }
+    vec![]
 }

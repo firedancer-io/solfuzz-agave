@@ -1,0 +1,293 @@
+use crate::utils::vm::mem_regions_flatbuffers::{self, vec_rtrim_zeros};
+use crate::{
+    instr_flatbuffers, utils::err_map_flatbuffers::unpack_stable_result, utils::vm::HEAP_MAX,
+    utils::vm::STACK_SIZE, vm_generated,
+};
+use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
+use solana_program_runtime::invoke_context::EnvironmentConfig;
+use solana_program_runtime::serialization::serialize_parameters;
+use solana_program_runtime::sysvar_cache::SysvarCache;
+use solana_program_runtime::{
+    invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch, mem_pool::VmMemoryPool,
+};
+use solana_sbpf::{
+    aligned_memory::AlignedMemory,
+    ebpf,
+    ebpf::HOST_ALIGN,
+    memory_region::{MemoryMapping, MemoryRegion},
+    program::{BuiltinProgram, SBPFVersion},
+    vm::{ContextObject, EbpfVm},
+};
+use solana_svm_feature_set::SVMFeatureSet;
+use solana_svm_log_collector::LogCollector;
+use solana_transaction_context::TransactionContext;
+
+/* Drop the 'static objects created at the beginning of the function to avoid memory leaks */
+fn cleanup_static_ptrs(
+    transaction_context_ptr: usize,
+    sysvar_cache_ptr: usize,
+    program_cache_for_tx_batch_ptr: usize,
+    instr_ctx_ptr: usize,
+    runtime_features_ptr: usize,
+) {
+    unsafe {
+        let _transaction_context_droppable =
+            Box::from_raw(transaction_context_ptr as *mut TransactionContext);
+        let _sysvar_cache_droppable = Box::from_raw(sysvar_cache_ptr as *mut SysvarCache);
+        let _program_cache_for_tx_batch_droppable =
+            Box::from_raw(program_cache_for_tx_batch_ptr as *mut ProgramCacheForTxBatch);
+        let _instr_ctx_droppable =
+            Box::from_raw(instr_ctx_ptr as *mut instr_flatbuffers::InstrContext);
+        let _runtime_features_droppable = Box::from_raw(runtime_features_ptr as *mut SVMFeatureSet);
+    }
+}
+
+pub fn execute_vm_syscall<'a>(
+    syscall_context: &vm_generated::SyscallContext<'a>,
+    builder: &mut flatbuffers::FlatBufferBuilder<'a>,
+) {
+    let mut instr_ctx = instr_flatbuffers::InstrContext::from(&syscall_context.instr_ctx());
+    let vm_ctx = syscall_context.vm_ctx();
+    let runtime_feature_set = instr_ctx.feature_set.runtime_features();
+
+    let (
+        transaction_context,
+        sysvar_cache,
+        program_cache_for_tx_batch,
+        blockhash,
+        lamports_per_signature,
+        compute_budget,
+    ) = instr_flatbuffers::create_invoke_context_fields(&mut instr_ctx);
+
+    /* MemoryCowCallback requires moved objects to have the 'static lifetime
+      so we promote them to 'static and drop at the end as we are sure they are not used anymore
+    */
+    let transaction_context = Box::leak(Box::new(transaction_context));
+    let transaction_context_ptr = transaction_context as *mut TransactionContext as usize;
+    let sysvar_cache = Box::leak(Box::new(sysvar_cache));
+    let sysvar_cache_ptr = sysvar_cache as *mut SysvarCache as usize;
+    let program_cache_for_tx_batch = Box::leak(Box::new(program_cache_for_tx_batch));
+    let program_cache_for_tx_batch_ptr =
+        program_cache_for_tx_batch as *mut ProgramCacheForTxBatch as usize;
+    let instr_ctx = Box::leak(Box::new(instr_ctx));
+    let instr_ctx_ptr = instr_ctx as *mut instr_flatbuffers::InstrContext as usize;
+    let runtime_features = Box::leak(Box::new(runtime_feature_set));
+    let runtime_features_ptr = runtime_features as *const SVMFeatureSet as usize;
+
+    let instr = &instr_ctx.instruction;
+
+    if let Some(return_data) = vm_ctx.return_data() {
+        transaction_context
+            .set_return_data(
+                return_data.program_id().into(),
+                return_data.data().bytes().to_vec(),
+            )
+            .unwrap();
+    }
+
+    let log_collector = LogCollector::new_ref();
+    let instr_accounts = crate::get_instr_accounts(transaction_context, &instr.accounts);
+
+    let mut invoke_ctx = InvokeContext::new(
+        transaction_context,
+        program_cache_for_tx_batch,
+        EnvironmentConfig::new(
+            blockhash,
+            lamports_per_signature,
+            instr_ctx,
+            runtime_features,
+            sysvar_cache,
+        ),
+        Some(log_collector.clone()),
+        compute_budget.to_budget(),
+        SVMTransactionExecutionCost::default(),
+    );
+
+    let program_idx = invoke_ctx
+        .transaction_context
+        .find_index_of_account(&instr_ctx.instruction.program_id)
+        .expect("Invariant violation: program account not found in transaction context");
+
+    if program_idx > 255 {
+        panic!("Invariant violation: program index must be <= 255");
+    }
+
+    let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
+    let stricter_abi_and_runtime_constraints = invoke_ctx
+        .get_feature_set()
+        .stricter_abi_and_runtime_constraints;
+    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
+        .get_feature_set()
+        .mask_out_rent_epoch_in_vm_serialization;
+    invoke_ctx
+        .transaction_context
+        .configure_next_instruction_for_tests(program_idx, instr_accounts, &instr.data)
+        .unwrap();
+
+    invoke_ctx
+        .push()
+        .expect("Invariant violation: stack frame push should not fail");
+
+    let caller_instr_ctx = invoke_ctx
+        .transaction_context
+        .get_current_instruction_context()
+        .unwrap();
+    // Memory regions.
+    // In Agave all memory regions are AlignedMemory::<HOST_ALIGN> == AlignedMemory::<16>,
+    // i.e. they're all 16-byte aligned in the host.
+    // The memory regions are:
+    //   1. program rodata
+    //   2. stack
+    //   3. heap
+    //   4. input data aka accounts
+    // The stack gap size is 0 iff direct mapping is enabled.
+    let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
+        &caller_instr_ctx,
+        stricter_abi_and_runtime_constraints,
+        direct_mapping,
+        mask_out_rent_epoch_in_vm_serialization,
+    )
+    .unwrap();
+
+    let sbpf_version = SBPFVersion::V0;
+
+    // Set up memory mapping
+    if vm_ctx.heap_max() as usize > HEAP_MAX {
+        panic!("Invariant violation: heap max must be <= {}", HEAP_MAX);
+    }
+
+    let config = invoke_ctx
+        .program_cache_for_tx_batch
+        .environments
+        .program_runtime_v1
+        .get_config()
+        .clone();
+    let (_, syscall_func) = invoke_ctx
+        .program_cache_for_tx_batch
+        .environments
+        .program_runtime_v1
+        .get_function_registry()
+        .lookup_by_name(
+            syscall_context
+                .syscall_invocation()
+                .function_name()
+                .as_bytes(),
+        )
+        .expect("Invariant violation: syscall function not found");
+
+    let mut mempool = VmMemoryPool::new();
+    let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata().bytes());
+    let mut stack = mempool.get_stack(STACK_SIZE);
+    // let mut heap = mempool.get_heap(heap_max); // this would force MIN_HEAP_FRAME_BYTES
+    let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max() as usize]);
+    let rodata_stack_heap = vec![
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
+        MemoryRegion::new_writable_gapped(
+            stack.as_slice_mut(),
+            ebpf::MM_STACK_START,
+            if !sbpf_version.dynamic_stack_frames() && config.enable_stack_frame_gaps {
+                config.stack_frame_size as u64
+            } else {
+                0
+            },
+        ),
+        MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
+    ];
+    let regions = rodata_stack_heap
+        .into_iter()
+        .chain(input_memory_regions)
+        .collect();
+
+    let memory_mapping = MemoryMapping::new_with_access_violation_handler(
+        regions,
+        &config,
+        sbpf_version,
+        invoke_ctx
+            .transaction_context
+            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
+    )
+    .expect("Memory mapping construction should not fail");
+
+    invoke_ctx
+        .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
+            allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max()),
+            accounts_metadata: acc_metadatas,
+            trace_log: Vec::new(),
+        })
+        .unwrap();
+
+    // Set up the vm instance
+    let loader = std::sync::Arc::new(BuiltinProgram::new_loader(config.clone()));
+    let mut vm = EbpfVm::new(
+        loader,
+        sbpf_version,
+        &mut invoke_ctx,
+        memory_mapping,
+        STACK_SIZE,
+    );
+    vm.registers[0] = vm_ctx.r0();
+    vm.registers[1] = vm_ctx.r1();
+    vm.registers[2] = vm_ctx.r2();
+    vm.registers[3] = vm_ctx.r3();
+    vm.registers[4] = vm_ctx.r4();
+    vm.registers[5] = vm_ctx.r5();
+    vm.registers[6] = vm_ctx.r6();
+    vm.registers[7] = vm_ctx.r7();
+    vm.registers[8] = vm_ctx.r8();
+    vm.registers[9] = vm_ctx.r9();
+    vm.registers[10] = vm_ctx.r10();
+    vm.registers[11] = vm_ctx.r11();
+
+    mem_regions_flatbuffers::copy_memory_prefix(
+        heap.as_slice_mut(),
+        &syscall_context.syscall_invocation().heap_prefix().bytes(),
+    );
+    mem_regions_flatbuffers::copy_memory_prefix(
+        stack.as_slice_mut(),
+        &syscall_context.syscall_invocation().stack_prefix().bytes(),
+    );
+
+    // Invoke the syscall
+    vm.invoke_function(syscall_func);
+
+    // Unwrap and return the effects of the syscall
+    let program_id = instr_ctx.instruction.program_id;
+    let program_result = vm.program_result;
+    let (error, error_kind, r0) =
+        unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
+
+    cleanup_static_ptrs(
+        transaction_context_ptr,
+        sysvar_cache_ptr,
+        program_cache_for_tx_batch_ptr,
+        instr_ctx_ptr,
+        runtime_features_ptr,
+    );
+
+    let heap_output = builder.create_vector(heap.as_slice());
+    let stack_output = builder.create_vector_from_iter(vec_rtrim_zeros(stack.as_slice()).iter());
+    let rodata_output = builder.create_vector(rodata.as_slice());
+    let input_data_regions_vector =
+        mem_regions_flatbuffers::extract_input_data_regions(&vm.memory_mapping, builder);
+    let input_data_regions_output = builder.create_vector(input_data_regions_vector.as_slice());
+    let log_output =
+        builder.create_string(&log_collector.borrow().get_recorded_content().join("\n"));
+
+    let effects = vm_generated::SyscallEffects::create(
+        builder,
+        &vm_generated::SyscallEffectsArgs {
+            r0, // only set r0 in effects for syscalls
+            err_code: error as i8,
+            err_kind: error_kind,
+            cu_avail: vm.context_object_pointer.get_remaining(),
+            frame_count: vm.call_depth,
+            heap: Some(heap_output),
+            stack: Some(stack_output),
+            rodata: Some(rodata_output),
+            input_data_regions: Some(input_data_regions_output),
+            log: Some(log_output),
+            ..Default::default()
+        },
+    );
+    builder.finish_minimal(effects);
+}

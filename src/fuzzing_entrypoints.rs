@@ -1,6 +1,7 @@
 use crate::{
     block_flatbuffers::execute_block, elf_loader_flatbuffers::execute_elf_loader,
-    instr_flatbuffers::execute_instr, transaction_flatbuffers::execute_transaction, vm_interp_flatbuffers::execute_vm_interp,
+    instr_flatbuffers::execute_instr, transaction_flatbuffers::execute_transaction,
+    vm_interp_flatbuffers::execute_vm_interp, vm_syscalls_flatbuffers::execute_vm_syscall,
 };
 
 /// Macro to generate `sol_compat_*_execute_v2` FFI functions
@@ -99,5 +100,13 @@ define_sol_compat_execute_v2!(
     sol_compat_vm_interp_v2,
     SyscallContext,
     execute_vm_interp,
+    crate::vm_generated
+);
+
+/* Syscalls */
+define_sol_compat_execute_v2!(
+    sol_compat_vm_syscall_execute_v2,
+    SyscallContext,
+    execute_vm_syscall,
     crate::vm_generated
 );
