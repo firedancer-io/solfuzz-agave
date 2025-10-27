@@ -1,5 +1,6 @@
 pub mod err_map;
 pub mod mem_regions;
+pub mod mem_regions_flatbuffers;
 
 pub const STACK_SIZE: usize = 64 * STACK_GAP_SIZE as usize;
 pub const STACK_GAP_SIZE: u64 = 4_096;

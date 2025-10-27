@@ -1,5 +1,6 @@
 use crate::instr_flatbuffers;
-use crate::utils::vm::STACK_SIZE;
+use crate::utils::err_map_flatbuffers;
+use crate::utils::vm::{mem_regions, mem_regions_flatbuffers, STACK_SIZE};
 // feature removed from feature set surface in 3.0; direct mapping toggled via SVMFeatureSet flags
 use crate::vm_generated;
 use bincode::Error;
@@ -97,6 +98,65 @@ const USE_INTERPRETER: bool = false;
 execution (dumped after execution). Please leave disabled
 for fuzzing. */
 const ENABLE_TRACE_DUMP: bool = false;
+
+/* This sets up a function registry based on a Firedancer-loaded SBPF program.
+The key difference is call immediates are hashed based on their target pc,
+not the function symbol. Firedancer maintains a bit vector of all valid call
+destinations[1], which the interpreter uses during the CALL_IMM instruction.
+
+To mimic that behavior here, we iterate through the valid call destinations
+in vm_ctx.call_whitelist, and register the pc hash as an entry in the registry.
+
+This effectively behaves the same as the FD bit vector, but with some technical
+differences that may cause issues. Most notably, FunctionRegistry operates as
+a AHashMap, while FD's bit vector is a simple array. Out of bounds queries are
+non-issue here, but require explicit handling in FD. This causes a slight
+difference in error checks in CALL_IMM, which we handle in process_result.
+
+[1](https://github.com/firedancer-io/firedancer/blob/93cea434dfe2f728f2ab4746590972644c06b863/src/ballet/sbpf/fd_sbpf_loader.h#L27). */
+fn setup_internal_fn_registry(
+    vm_ctx: &vm_generated::VmContext,
+    sbpf_version: SBPFVersion,
+) -> FunctionRegistry<usize> {
+    let mut fn_reg = FunctionRegistry::default();
+    let max_pc = vm_ctx.rodata().len() / 8;
+
+    // register entry point
+    let entry_pc = (vm_ctx.entry_pc() as usize).min(max_pc.saturating_sub(1));
+    let hash = if sbpf_version.enable_stricter_elf_headers() {
+        entry_pc as u32
+    } else {
+        ebpf::hash_symbol_name(b"entrypoint")
+    };
+    let _ = fn_reg.register_function(hash, b"entrypoint", entry_pc);
+
+    let call_whitelist = &vm_ctx.calldests().bytes();
+    for (byte_idx, byte) in call_whitelist.iter().enumerate() {
+        for bit_idx in 0..8 {
+            if (byte & (1 << bit_idx)) != 0 {
+                let pc = byte_idx.saturating_mul(8).saturating_add(bit_idx);
+                // ignore invalid pc, i.e. assume the test was set up correctly.
+                // registering fn beyond max_pc segfaults inside the JIT.
+                if pc < max_pc {
+                    let hash = if sbpf_version.enable_stricter_elf_headers() {
+                        pc as u32
+                    } else {
+                        ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64))
+                    };
+                    let _ = fn_reg.register_function(hash, b"fn", pc);
+                }
+            }
+        }
+    }
+
+    // https://github.com/anza-xyz/sbpf/blob/v0.11.1/src/elf.rs#L529
+    // in vm v3, the function at 0 is always registered
+    if sbpf_version.enable_stricter_elf_headers() {
+        let _ = fn_reg.register_function(0, b"fn0", 0);
+    }
+
+    fn_reg
+}
 
 pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
     if let Some(i) = v.iter().rposition(|x| *x != 0) {
@@ -280,16 +340,17 @@ pub fn execute_vm_interp<'a>(
         .chain(input_memory_regions)
         .collect();
 
-    let Ok(memory_mapping) = MemoryMapping::new_with_access_violation_handler(
+    /* The VM ranges for the constructed memory regions are well-formed,
+    so this call can't fail. */
+    let memory_mapping = MemoryMapping::new_with_access_violation_handler(
         regions,
         &config,
         sbpf_version,
         invoke_ctx
             .transaction_context
             .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
-    ) else {
-        return None;
-    };
+    )
+    .expect("Memory mapping construction should not fail");
 
     let mut vm = EbpfVm::new(
         executable.get_loader().clone(),
@@ -306,21 +367,21 @@ pub fn execute_vm_interp<'a>(
     // In syscalls we allow override them (especially r1) because that simulates the fact
     // that a program partially executed before reaching the syscall.
     // Here we want to test what happens when the program starts from the beginning.
-    vm.registers[0] = vm_ctx.r0;
+    vm.registers[0] = vm_ctx.r0();
     vm.registers[1] = ebpf::MM_INPUT_START;
-    vm.registers[2] = vm_ctx.r2;
-    vm.registers[3] = vm_ctx.r3;
-    vm.registers[4] = vm_ctx.r4;
-    vm.registers[5] = vm_ctx.r5;
-    vm.registers[6] = vm_ctx.r6;
-    vm.registers[7] = vm_ctx.r7;
-    vm.registers[8] = vm_ctx.r8;
-    vm.registers[9] = vm_ctx.r9;
+    vm.registers[2] = vm_ctx.r2();
+    vm.registers[3] = vm_ctx.r3();
+    vm.registers[4] = vm_ctx.r4();
+    vm.registers[5] = vm_ctx.r5();
+    vm.registers[6] = vm_ctx.r6();
+    vm.registers[7] = vm_ctx.r7();
+    vm.registers[8] = vm_ctx.r8();
+    vm.registers[9] = vm_ctx.r9();
     // vm.registers[10] = vm_ctx.r10; // do not override
     // vm.registers[11] = vm_ctx.r11; // do not override
 
-    mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix);
-    mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix);
+    mem_regions::copy_memory_prefix(heap.as_slice_mut(), &syscall_inv.heap_prefix().bytes());
+    mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_inv.stack_prefix().bytes());
 
     let (_, result) = vm.execute_program(
         &executable,
@@ -332,7 +393,11 @@ pub fn execute_vm_interp<'a>(
     // For simplicity, we ignore them.
     let out_registers = match result {
         StableResult::Err(_) => &[0; 12],
-        StableResult::Ok(_) => vm.context_object_pointer.trace_log.last()?,
+        StableResult::Ok(_) => vm
+            .context_object_pointer
+            .trace_log
+            .last()
+            .unwrap_or(&[0; 12]),
     };
 
     if ENABLE_TRACE_DUMP {
@@ -345,99 +410,57 @@ pub fn execute_vm_interp<'a>(
         result,
         StableResult::Err(EbpfError::ExceededMaxInstructions)
     ) {
-        return Some(SyscallEffects {
-            error: err_map::ebpf_err_to_num(&EbpfError::ExceededMaxInstructions).into(),
-            ..Default::default()
-        });
+        let effects = vm_generated::SyscallEffects::create(
+            builder,
+            &vm_generated::SyscallEffectsArgs {
+                err_code: err_map_flatbuffers::ebpf_err_to_num(&EbpfError::ExceededMaxInstructions)
+                    as i8,
+                ..Default::default()
+            },
+        );
+        builder.finish_minimal(effects);
+        return;
     }
 
-    Some(SyscallEffects {
-        error: match result {
-            StableResult::Ok(_) => 0,
-            StableResult::Err(ref ebpf_err) => err_map::ebpf_err_to_num(ebpf_err).into(),
-        },
-        r0: out_registers[0],
-        r1: out_registers[1],
-        r2: out_registers[2],
-        r3: out_registers[3],
-        r4: out_registers[4],
-        r5: out_registers[5],
-        r6: out_registers[6],
-        r7: out_registers[7],
-        r8: out_registers[8],
-        r9: out_registers[9],
-        r10: out_registers[10],
-        cu_avail: vm.context_object_pointer.get_remaining(),
-        frame_count: vm.call_depth,
-        heap: heap.as_slice().into(),
-        /* Compress stack by removing right-most 0s, mainly to save 256kB space when stack is unused */
-        stack: vec_rtrim_zeros(stack.as_slice()),
-        rodata: rodata.as_slice().into(),
-        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
-        log: vec![],
-        pc: match vm.context_object_pointer.trace_log.last() {
-            Some(regs) => regs[11],
-            None => vm.registers[11],
-        },
-        ..Default::default()
-    })
-}
-
-/* This sets up a function registry based on a Firedancer-loaded SBPF program.
-The key difference is call immediates are hashed based on their target pc,
-not the function symbol. Firedancer maintains a bit vector of all valid call
-destinations[1], which the interpreter uses during the CALL_IMM instruction.
-
-To mimic that behavior here, we iterate through the valid call destinations
-in vm_ctx.call_whitelist, and register the pc hash as an entry in the registry.
-
-This effectively behaves the same as the FD bit vector, but with some technical
-differences that may cause issues. Most notably, FunctionRegistry operates as
-a AHashMap, while FD's bit vector is a simple array. Out of bounds queries are
-non-issue here, but require explicit handling in FD. This causes a slight
-difference in error checks in CALL_IMM, which we handle in process_result.
-
-[1](https://github.com/firedancer-io/firedancer/blob/93cea434dfe2f728f2ab4746590972644c06b863/src/ballet/sbpf/fd_sbpf_loader.h#L27). */
-fn setup_internal_fn_registry(
-    vm_ctx: &VmContext,
-    sbpf_version: SBPFVersion,
-) -> FunctionRegistry<usize> {
-    let mut fn_reg = FunctionRegistry::default();
-    let max_pc = vm_ctx.rodata.len() / 8;
-
-    // register entry point
-    let entry_pc = (vm_ctx.entry_pc as usize).min(max_pc.saturating_sub(1));
-    let hash = if sbpf_version.enable_stricter_elf_headers() {
-        entry_pc as u32
-    } else {
-        ebpf::hash_symbol_name(b"entrypoint")
-    };
-    let _ = fn_reg.register_function(hash, b"entrypoint", entry_pc);
-
-    let call_whitelist = &vm_ctx.call_whitelist;
-    for (byte_idx, byte) in call_whitelist.iter().enumerate() {
-        for bit_idx in 0..8 {
-            if (byte & (1 << bit_idx)) != 0 {
-                let pc = byte_idx.saturating_mul(8).saturating_add(bit_idx);
-                // ignore invalid pc, i.e. assume the test was set up correctly.
-                // registering fn beyond max_pc segfaults inside the JIT.
-                if pc < max_pc {
-                    let hash = if sbpf_version.enable_stricter_elf_headers() {
-                        pc as u32
-                    } else {
-                        ebpf::hash_symbol_name(&u64::to_le_bytes(pc as u64))
-                    };
-                    let _ = fn_reg.register_function(hash, b"fn", pc);
+    let heap_output = builder.create_vector(heap.as_slice());
+    let stack_output = builder.create_vector_from_iter(vec_rtrim_zeros(stack.as_slice()).iter());
+    let rodata_output = builder.create_vector(rodata.as_slice());
+    let input_data_regions_vector =
+        mem_regions_flatbuffers::extract_input_data_regions(&vm.memory_mapping, builder);
+    let input_data_regions_output = builder.create_vector(input_data_regions_vector.as_slice());
+    let effects = vm_generated::SyscallEffects::create(
+        builder,
+        &vm_generated::SyscallEffectsArgs {
+            err_code: match result {
+                StableResult::Ok(_) => 0,
+                StableResult::Err(ref ebpf_err) => {
+                    err_map_flatbuffers::ebpf_err_to_num(ebpf_err) as i8
                 }
-            }
-        }
-    }
-
-    // https://github.com/anza-xyz/sbpf/blob/v0.11.1/src/elf.rs#L529
-    // in vm v3, the function at 0 is always registered
-    if sbpf_version.enable_stricter_elf_headers() {
-        let _ = fn_reg.register_function(0, b"fn0", 0);
-    }
-
-    fn_reg
+            },
+            r0: out_registers[0],
+            r1: out_registers[1],
+            r2: out_registers[2],
+            r3: out_registers[3],
+            r4: out_registers[4],
+            r5: out_registers[5],
+            r6: out_registers[6],
+            r7: out_registers[7],
+            r8: out_registers[8],
+            r9: out_registers[9],
+            r10: out_registers[10],
+            cu_avail: vm.context_object_pointer.get_remaining(),
+            frame_count: vm.call_depth,
+            heap: Some(heap_output),
+            stack: Some(stack_output),
+            rodata: Some(rodata_output),
+            input_data_regions: Some(input_data_regions_output),
+            pc: match vm.context_object_pointer.trace_log.last() {
+                Some(regs) => regs[11],
+                None => vm.registers[11],
+            },
+            ..Default::default()
+        },
+    );
+    builder.finish_minimal(effects);
+    return;
 }

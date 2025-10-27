@@ -8,7 +8,6 @@ use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
 use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
-use solana_instruction::AccountMeta;
 use solana_precompile_error::PrecompileError;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
@@ -21,14 +20,11 @@ use solana_sdk_ids::{
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
 };
 use solana_stable_layout::stable_instruction::StableInstruction;
-use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
-use solana_transaction_context::{
-    IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
-};
+use solana_transaction_context::{TransactionAccount, TransactionContext};
 
 use crate::instr_generated;
 use crate::utils::err_map_flatbuffers::instr_err_to_num;
