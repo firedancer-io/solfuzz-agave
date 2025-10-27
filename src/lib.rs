@@ -14,7 +14,7 @@ mod types;
 pub mod types_fuzzer;
 pub mod utils;
 pub mod vm_interp;
-// pub mod vm_interp_flatbuffers;
+pub mod vm_interp_flatbuffers;
 pub mod vm_syscalls;
 
 use agave_feature_set::*;

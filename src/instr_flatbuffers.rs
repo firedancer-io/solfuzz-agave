@@ -95,26 +95,6 @@ impl TransactionProcessingCallback for InstrContext {
     }
 }
 
-pub fn get_instr_accounts(
-    txn_context: &TransactionContext,
-    acct_metas: &StableVec<AccountMeta>,
-) -> Vec<InstructionAccount> {
-    let mut instruction_accounts: Vec<InstructionAccount> =
-        Vec::with_capacity(acct_metas.len().try_into().unwrap());
-    for account_meta in acct_metas.iter() {
-        let index_in_transaction = txn_context
-            .find_index_of_account(&account_meta.pubkey)
-            .unwrap_or(txn_context.get_number_of_accounts())
-            as IndexOfAccount;
-        instruction_accounts.push(InstructionAccount::new(
-            index_in_transaction,
-            account_meta.is_signer,
-            account_meta.is_writable,
-        ));
-    }
-    instruction_accounts
-}
-
 fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     // Load builtin programs into the cache.
     cache.replenish(
@@ -198,7 +178,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
     load_bpf_program!();
 }
 
-fn create_invoke_context_fields(
+pub fn create_invoke_context_fields(
     input: &mut InstrContext,
 ) -> (
     TransactionContext,
@@ -435,7 +415,7 @@ pub fn execute_instr(
     let mut compute_units_consumed = 0u64;
 
     let instruction_accounts =
-        get_instr_accounts(&transaction_context, &instr_context.instruction.accounts);
+        crate::get_instr_accounts(&transaction_context, &instr_context.instruction.accounts);
 
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
