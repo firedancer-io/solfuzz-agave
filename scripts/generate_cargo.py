@@ -292,14 +292,17 @@ def main():
     pin_dependencies(toml_data, lockfile_path)
 
     # Write the updated data to the output TOML file
-    with open(args.output, "w") as f:
+    output_filepath_abs = os.path.abspath(args.output)
+
+    with open(output_filepath_abs, "w") as f:
         f.write("# This file is auto generated. See generate_cargo.py\n")
         f.write(toml_data.as_string())
 
     # Generate lockfile using Cargo
+    output_dir = os.path.dirname(args.output) or os.getcwd()
     try:
-        subprocess.run(["cargo", "generate-lockfile"], cwd=os.path.dirname(args.output), check=True)
-        print(f"Generated Cargo.lock in {os.path.dirname(args.output) or '.'}")
+        subprocess.run(["cargo", "generate-lockfile"], cwd=output_dir, check=True)
+        print(f"Generated Cargo.lock in {output_dir or '.'}")
     except subprocess.CalledProcessError as e:
         print(f"Error generating Cargo.lock: {e}")
         return 1
