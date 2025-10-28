@@ -232,7 +232,7 @@ pub fn execute_vm_interp<'a>(
         .transaction_context
         .get_current_instruction_context()
         .expect("Instruction call stack was not properly initialized");
-    let (_, input_memory_regions, acc_metadatas) = serialize_parameters(
+    let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
         &caller_instr_ctx,
         stricter_abi_and_runtime_constraints,
         direct_mapping,
