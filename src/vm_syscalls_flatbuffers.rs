@@ -1,4 +1,4 @@
-use crate::utils::vm::mem_regions_flatbuffers::{self, vec_rtrim_zeros};
+use crate::utils::vm::mem_regions_flatbuffers;
 use crate::{
     instr_flatbuffers, utils::err_map_flatbuffers::unpack_stable_result, utils::vm::HEAP_MAX,
     utils::vm::STACK_SIZE, vm_generated,
@@ -265,7 +265,7 @@ pub fn execute_vm_syscall<'a>(
     );
 
     let heap_output = builder.create_vector(heap.as_slice());
-    let stack_output = builder.create_vector_from_iter(vec_rtrim_zeros(stack.as_slice()).iter());
+    let stack_output = builder.create_vector(stack.as_slice());
     let rodata_output = builder.create_vector(rodata.as_slice());
     let input_data_regions_vector =
         mem_regions_flatbuffers::extract_input_data_regions(&vm.memory_mapping, builder);
