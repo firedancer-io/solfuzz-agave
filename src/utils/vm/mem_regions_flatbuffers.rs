@@ -22,7 +22,7 @@ pub fn extract_input_data_regions<'a, 'b>(
                 .iter()
                 .skip_while(|region| region.vm_addr < ebpf::MM_INPUT_START)
                 .map(|region| mem_region_to_input_data_region(region, builder))
-                .collect::<Vec<_>>()
+                .collect()
         }
         MemoryMapping::Unaligned(_mapping) => {
             // regions are in eytzinger order, so we need to collect and sort them
@@ -32,7 +32,7 @@ pub fn extract_input_data_regions<'a, 'b>(
                 .filter(|region| region.vm_addr >= ebpf::MM_INPUT_START)
                 .sorted_by_key(|region| region.vm_addr.saturating_sub(ebpf::MM_INPUT_START))
                 .map(|region| mem_region_to_input_data_region(region, builder))
-                .collect::<Vec<_>>()
+                .collect()
         }
         _ => vec![],
     }
