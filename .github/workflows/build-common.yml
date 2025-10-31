@@ -18,8 +18,12 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.86.0
+      # TODO: change back to stable once rust releases the coverage fix
+      # - uses: dtolnay/rust-toolchain@1.86.0
+      - uses: actions-rs/toolchain@v1
         with:
+          toolchain: nightly-2025-10-30
+          override: true
           components: "clippy, rustfmt"
       - uses: Swatinem/rust-cache@v2
         with:
