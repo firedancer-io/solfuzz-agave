@@ -36,14 +36,14 @@ macro_rules! define_sol_compat_execute_v2 {
 
             // Validate input pointers
             if in_ptr.is_null() || in_sz == 0 {
-                return 0;
+                return -1;
             }
 
             // Parse input slice as flatbuffers root
             let in_slice = ::std::slice::from_raw_parts(in_ptr, in_sz as usize);
             let Ok(context) = ::flatbuffers::root::<context_module::$context_type<'_>>(in_slice)
             else {
-                return 0;
+                return -1;
             };
 
             // Setup output slice and build effects
@@ -58,7 +58,7 @@ macro_rules! define_sol_compat_execute_v2 {
                 *out_psz = out_data.len() as u64;
             });
 
-            return 1;
+            return 0;
         }
     };
 }
