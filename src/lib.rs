@@ -367,13 +367,6 @@ pub mod metadata_generated {
     include!(concat!(env!("OUT_DIR"), "/metadata_generated.rs"));
     pub use self::org::solana::sealevel::v_2::*;
 }
-
-#[allow(unused_imports, dead_code)]
-pub mod shred_generated {
-    include!(concat!(env!("OUT_DIR"), "/shred_generated.rs"));
-    pub use self::org::solana::sealevel::v_2::*;
-}
-
 #[allow(unused_imports, dead_code)]
 pub mod txn_generated {
     include!(concat!(env!("OUT_DIR"), "/txn_generated.rs"));

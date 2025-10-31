@@ -41,10 +41,8 @@ macro_rules! define_sol_compat_execute_v2 {
 
             // Parse input slice as flatbuffers root
             let in_slice = ::std::slice::from_raw_parts(in_ptr, in_sz as usize);
-            let Ok(context) = ::flatbuffers::root::<context_module::$context_type<'_>>(in_slice)
-            else {
-                return -1;
-            };
+            let context =
+                ::flatbuffers::root_unchecked::<context_module::$context_type<'_>>(in_slice);
 
             // Setup output slice and build effects
             let out_slice = ::std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
