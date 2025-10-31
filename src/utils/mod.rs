@@ -26,8 +26,8 @@ pub const fn feature_u64(feature: &Pubkey) -> u64 {
 lazy_static! {
     static ref INDEXED_FEATURES: AHashMap<u64, Pubkey> = {
         FEATURE_NAMES
-            .iter()
-            .map(|(pubkey, _)| (feature_u64(pubkey), *pubkey))
+            .keys()
+            .map(|pubkey| (feature_u64(pubkey), *pubkey))
             .collect()
     };
 }
