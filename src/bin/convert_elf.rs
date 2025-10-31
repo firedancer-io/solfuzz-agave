@@ -38,19 +38,11 @@ fn convert_fixture_proto_to_flatbuf(input: &pb::ElfLoaderFixture) -> Vec<u8> {
                 ))
             }
         });
-        let elf_off = ctx.elf.as_ref().map(|elf| {
-            let data_off = fbb.create_vector(&elf.data);
-            fbs_elf::ELFBinary::create(
-                &mut fbb,
-                &fbs_elf::ELFBinaryArgs {
-                    data: Some(data_off),
-                },
-            )
-        });
+        let elf_off = ctx.elf.as_ref().map(|elf| fbb.create_vector(&elf.data));
         fbs_elf::ELFLoaderCtx::create(
             &mut fbb,
             &fbs_elf::ELFLoaderCtxArgs {
-                elf: elf_off,
+                elf_data: elf_off,
                 features: features_off,
                 deploy_checks: ctx.deploy_checks,
             },

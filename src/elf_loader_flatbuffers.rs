@@ -81,7 +81,7 @@ pub fn execute_elf_loader<'ctx, 'buf>(
     input: &elf_generated::ELFLoaderCtx<'ctx>,
     builder: &mut flatbuffers::FlatBufferBuilder<'buf>,
 ) {
-    let elf_bytes = input.elf().data().bytes();
+    let elf_bytes = input.elf_data().bytes();
     let features = input.features();
     load_elf(elf_bytes, builder, features.as_ref(), input.deploy_checks());
 }
