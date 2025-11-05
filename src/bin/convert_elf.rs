@@ -25,25 +25,26 @@ fn convert_fixture_proto_to_flatbuf(input: &pb::ElfLoaderFixture) -> Vec<u8> {
 
     // input ctx
     let input_off = input.input.as_ref().map(|ctx| {
-        let features_off = ctx.features.as_ref().and_then(|fs| {
-            if fs.features.is_empty() {
-                None
+        let features_off = {
+            let ctx_features = ctx.features.clone().unwrap_or_default();
+            let vec_off = if ctx_features.features.is_empty() {
+                fbb.create_vector::<u64>(&[])
             } else {
-                let vec_off = fbb.create_vector(&fs.features);
-                Some(fbs_ctx::FeatureSet::create(
-                    &mut fbb,
-                    &fbs_ctx::FeatureSetArgs {
-                        features: Some(vec_off),
-                    },
-                ))
-            }
-        });
+                fbb.create_vector(&ctx_features.features)
+            };
+            fbs_ctx::FeatureSet::create(
+                &mut fbb,
+                &fbs_ctx::FeatureSetArgs {
+                    features: Some(vec_off),
+                },
+            )
+        };
         let elf_off = ctx.elf.as_ref().map(|elf| fbb.create_vector(&elf.data));
         fbs_elf::ELFLoaderCtx::create(
             &mut fbb,
             &fbs_elf::ELFLoaderCtxArgs {
                 elf_data: elf_off,
-                features: features_off,
+                features: Some(features_off),
                 deploy_checks: ctx.deploy_checks,
             },
         )
@@ -65,7 +66,6 @@ fn convert_fixture_proto_to_flatbuf(input: &pb::ElfLoaderFixture) -> Vec<u8> {
             &mut fbb,
             &fbs_elf::ELFLoaderEffectsArgs {
                 rodata: rodata_off,
-                rodata_sz: eff.rodata_sz,
                 text_cnt: eff.text_cnt,
                 text_off: eff.text_off,
                 entry_pc: eff.entry_pc,

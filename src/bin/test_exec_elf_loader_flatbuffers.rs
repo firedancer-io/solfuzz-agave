@@ -34,7 +34,6 @@ fn exec(input: &PathBuf, blob: &[u8], builder: &mut flatbuffers::FlatBufferBuild
         builder,
         &ELFLoaderEffectsArgs {
             rodata: expected_rodata,
-            rodata_sz: expected.rodata_sz(),
             text_cnt: expected.text_cnt(),
             text_off: expected.text_off(),
             entry_pc: expected.entry_pc(),

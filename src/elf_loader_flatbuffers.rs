@@ -10,14 +10,10 @@ use std::collections::BTreeSet;
 pub fn load_elf<'ctx, 'buf>(
     elf_bytes: &[u8],
     builder: &mut flatbuffers::FlatBufferBuilder<'buf>,
-    features: Option<&context_generated::FeatureSet<'ctx>>,
+    features: &context_generated::FeatureSet<'ctx>,
     deploy_checks: bool,
 ) {
-    let feature_set: FeatureSet = if let Some(features) = features {
-        FeatureSet::from(features)
-    } else {
-        FeatureSet::default()
-    };
+    let feature_set = FeatureSet::from(features);
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set.runtime_features(),
@@ -67,7 +63,6 @@ pub fn load_elf<'ctx, 'buf>(
         &elf_generated::ELFLoaderEffectsArgs {
             err_code: 0,
             rodata: Some(rodata),
-            rodata_sz: ro_section.len() as u64,
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
             text_off: text_vaddr.saturating_sub(ebpf::MM_RODATA_START),
             text_cnt: (raw_text_sz / 8) as u64,
@@ -83,5 +78,5 @@ pub fn execute_elf_loader<'ctx, 'buf>(
 ) {
     let elf_bytes = input.elf_data().bytes();
     let features = input.features();
-    load_elf(elf_bytes, builder, features.as_ref(), input.deploy_checks());
+    load_elf(elf_bytes, builder, &features, input.deploy_checks());
 }
