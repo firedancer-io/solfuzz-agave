@@ -233,13 +233,14 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     //   3. heap
     //   4. input data aka accounts
     // The stack gap size is 0 iff direct mapping is enabled.
-    let (_aligned_memory, input_memory_regions, acc_metadatas, _) = serialize_parameters(
-        &caller_instr_ctx,
-        stricter_abi_and_runtime_constraints,
-        direct_mapping,
-        mask_out_rent_epoch_in_vm_serialization,
-    )
-    .unwrap();
+    let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
+        serialize_parameters(
+            &caller_instr_ctx,
+            stricter_abi_and_runtime_constraints,
+            direct_mapping,
+            mask_out_rent_epoch_in_vm_serialization,
+        )
+        .unwrap();
 
     let sbpf_version = SBPFVersion::V0;
 

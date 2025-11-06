@@ -241,13 +241,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .transaction_context
         .get_current_instruction_context()
         .unwrap();
-    let (_aligned_memory, input_memory_regions, acc_metadatas, _) = serialize_parameters(
-        &caller_instr_ctx,
-        stricter_abi_and_runtime_constraints,
-        direct_mapping,
-        mask_out_rent_epoch_in_vm_serialization,
-    )
-    .unwrap();
+    let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
+        serialize_parameters(
+            &caller_instr_ctx,
+            stricter_abi_and_runtime_constraints,
+            direct_mapping,
+            mask_out_rent_epoch_in_vm_serialization,
+        )
+        .unwrap();
 
     let mut config = environments.program_runtime_v1.get_config().clone();
     // Note: enable_instruction_tracing field was removed from Config
