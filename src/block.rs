@@ -405,8 +405,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     ancestors.insert(current_slot.saturating_sub(1), 1);
     ancestors.insert(current_slot, 1);
 
-    /* Accounts DB config and initialization. Agave v3.1 uses a new Accounts 
-       interface, which is not compatible with the old one. */
+    /* Accounts DB config and initialization. Agave v3.1 uses a new Accounts
+    interface, which is not compatible with the old one. */
     let index = Some(AccountsIndexConfig {
         bins: Some(2),
         num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
@@ -588,13 +588,15 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     bank.distribute_partitioned_epoch_rewards();
 
-    // NOTE: reset_sysvar_cache and fill_missing_sysvar_cache_entries no longer
-    // needed in Agave v3.1
+    bank.get_transaction_processor().reset_sysvar_cache();
+
     bank.update_slot_hashes();
     bank.update_stake_history(Some(parent_epoch));
     bank.update_clock(Some(parent_epoch));
     bank.update_last_restart_slot();
     bank.update_recent_blockhashes();
+    bank.get_transaction_processor()
+        .fill_missing_sysvar_cache_entries(&bank);
 
     /* See this comment to understand why we need to populate the lthash
     cache before executing:

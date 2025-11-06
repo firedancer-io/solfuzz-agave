@@ -60,7 +60,6 @@ pub struct TestContextObject {
 
 // Agave v3.1 moves register tracing into the runtime.
 impl ContextObject for TestContextObject {
-
     fn consume(&mut self, amount: u64) {
         self.remaining = self.remaining.saturating_sub(amount);
     }

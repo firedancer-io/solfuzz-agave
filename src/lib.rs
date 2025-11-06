@@ -40,7 +40,10 @@ use solana_svm::rent_calculator::RENT_EXEMPT_RENT_EPOCH;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
-use solana_transaction_context::{IndexOfAccount, InstructionAccount, TransactionContext, transaction_accounts::KeyedAccountSharedData};
+use solana_transaction_context::{
+    transaction_accounts::KeyedAccountSharedData, IndexOfAccount, InstructionAccount,
+    TransactionContext,
+};
 
 use crate::utils::err_map::instr_err_to_num;
 use crate::utils::feature_u64;
@@ -860,7 +863,6 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         .collect::<Vec<_>>()
         .into();
     let initial_cu_avail = input.cu_avail;
-    let _accounts_snapshot = input.accounts.clone();
 
     let (
         mut transaction_context,
@@ -1050,7 +1052,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 //
                 // We need to swap back in the original here to avoid a
                 // mismatch.
-                if let Some(program_account) = _accounts_snapshot
+                if let Some(program_account) = accounts_snapshot
                     .iter()
                     .find(|(pubkey, _)| *pubkey == program_id)
                 {

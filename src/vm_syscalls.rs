@@ -206,7 +206,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     match invoke_ctx.push() {
         Ok(_) => (),
-        Err(_err) => {
+        Err(_) => {
             cleanup_static_ptrs(
                 transaction_context_ptr,
                 sysvar_cache_ptr,

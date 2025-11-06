@@ -412,18 +412,21 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     /* Load accounts + sysvars
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
     pubkeys are ignored. */
+    bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
     }
+    bank.get_transaction_processor()
+        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
     bank.update_epoch_schedule();
     bank.update_rent();
 
     // Register blockhashes in bank, the sysvar cache is now primed inside the
-    // bank constructor, and we let the bank's own fee governor supply the 
+    // bank constructor, and we let the bank's own fee governor supply the
     // per-signature cost when staging recent blockhashes.
     for blockhash in &context.blockhash_queue {
         let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
