@@ -38,7 +38,7 @@ use solana_svm_timings::ExecuteTimings;
 use solana_sysvar;
 use solana_transaction::versioned::VersionedTransaction;
 use solana_transaction::TransactionVerificationMode;
-use solana_transaction_context::TransactionAccount;
+use solana_transaction_context::transaction_accounts::KeyedAccountSharedData;
 use solana_transaction_error::TransactionError;
 use std::cmp::max;
 use std::collections::HashMap;
@@ -144,8 +144,9 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
     )
 }
 
-impl From<TransactionAccount> for proto::AcctState {
-    fn from(value: TransactionAccount) -> AcctState {
+// A tuple of a pubkey and an AccountSharedData represents a TransactionAccount.
+impl From<KeyedAccountSharedData> for proto::AcctState {
+    fn from(value: KeyedAccountSharedData) -> AcctState {
         AcctState {
             address: value.0.to_bytes().to_vec(),
             lamports: value.1.lamports(),
@@ -348,7 +349,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             genesis_config.add_account(*key, account.clone());
         });
 
-    let mut blockhash_queue = if context.blockhash_queue.is_empty() {
+    let blockhash_queue = if context.blockhash_queue.is_empty() {
         vec![vec![0u8; 32]]
     } else {
         context.blockhash_queue.clone()
@@ -368,23 +369,22 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     #[allow(unused)]
     let shm_path = std::path::PathBuf::from("/dev/shm");
 
-    let accounts_db_config = Some(AccountsDbConfig {
+    // no more hash thread
+    let accounts_db_config = AccountsDbConfig {
         index,
         storage_access: StorageAccess::Mmap,
         skip_initial_hash_calc: true,
-        num_hash_threads: Some(NonZeroUsize::new(1).unwrap()),
         base_working_path: Some(shm_path),
         ..AccountsDbConfig::default()
-    });
-    let bank = Bank::new_with_paths(
+    };
+    // previously, Block::new_with_paths()
+    let bank = Bank::new_from_genesis(
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
         vec!["/dev/shm/a".into()],
-        None,
-        None,
-        false,
+        None, // debug_keys
         accounts_db_config,
-        None,
+        None, // accounts_update_notifier
         Some(FEE_COLLECTOR),
         Arc::new(AtomicBool::new(false)),
         genesis_hash,
@@ -412,38 +412,23 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     /* Load accounts + sysvars
     NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
     pubkeys are ignored. */
-    bank.get_transaction_processor().reset_sysvar_cache();
     for account in &context.account_shared_data {
         let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
         let account_data = AccountSharedData::from(account);
         bank.store_account(&pubkey, &account_data);
     }
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
     bank.update_epoch_schedule();
     bank.update_rent();
 
-    let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
-    let mut lamports_per_signature: Option<u64> = None;
-    if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
-        if let Some(hash) = recent_blockhashes.first() {
-            if hash.fee_calculator.lamports_per_signature != 0 {
-                lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
-            }
-        }
+    // Register blockhashes in bank, the sysvar cache is now primed inside the
+    // bank constructor, and we let the bank's own fee governor supply the 
+    // per-signature cost when staging recent blockhashes.
+    for blockhash in &context.blockhash_queue {
+        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
+        bank.register_recent_blockhash_for_test(&blockhash_hash, None);
     }
-
-    // Register blockhashes in bank
-    for blockhash in blockhash_queue.iter_mut() {
-        let blockhash_hash = Hash::new_from_array(std::mem::take(blockhash).try_into().unwrap());
-        bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
-    }
-    bank.update_recent_blockhashes();
-    bank.get_transaction_processor().reset_sysvar_cache();
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?);
 
@@ -466,7 +451,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         signatures,
     };
 
-    let sanitized_transaction = match bank.verify_transaction(
+    let runtime_transaction = match bank.verify_transaction(
         versioned_transaction,
         TransactionVerificationMode::HashAndVerifyPrecompiles,
     ) {
@@ -492,8 +477,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         }
     };
 
-    let transactions = [sanitized_transaction.clone()];
-
+    // Agave v3.1 wraps txns in RuntimeTransaction, which is not clonable. We
+    // need to wrap it in a Vec to satisfy the bank's prepare_sanitized_batch()
+    let transactions = vec![runtime_transaction];
     let batch = bank.prepare_sanitized_batch(&transactions);
 
     let recording_config = ExecutionRecordingConfig {
@@ -522,6 +508,10 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         configs,
     );
 
+    // Agave v3.1 wraps txns in RuntimeTransaction, which is not clonable.
+    // Therefore, we need to borrow the runtime_transaction from the Vec.
+    let runtime_transaction_ref = &transactions[0];
+
     let account_keys = context
         .tx
         .as_ref()
@@ -529,7 +519,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
 
-    let mut txn_result = output_txn_result_from_result(result, sanitized_transaction.message());
+    let mut txn_result = output_txn_result_from_result(result, runtime_transaction_ref.message());
     if let Some(relevant_accounts) = &mut txn_result.resulting_state {
         let mut loaded_account_keys = AHashSet::<Pubkey>::new();
         loaded_account_keys.extend(
@@ -537,7 +527,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
                 .iter()
                 .map(|key| Pubkey::new_from_array(key.clone().try_into().ok().unwrap())),
         );
-        match sanitized_transaction.message() {
+        match runtime_transaction_ref.message() {
             SanitizedMessage::Legacy(_) => {}
             SanitizedMessage::V0(message) => {
                 loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
@@ -550,7 +540,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             .acct_states
             .into_iter()
             .enumerate()
-            .filter(|&(i, _)| sanitized_transaction.message().is_writable(i))
+            .filter(|&(i, _)| runtime_transaction_ref.message().is_writable(i))
             .map(|(_, account)| account)
             .collect();
 

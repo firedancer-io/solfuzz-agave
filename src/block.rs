@@ -405,23 +405,23 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     ancestors.insert(current_slot.saturating_sub(1), 1);
     ancestors.insert(current_slot, 1);
 
-    /* Accounts DB config and initialization */
+    /* Accounts DB config and initialization. Agave v3.1 uses a new Accounts 
+       interface, which is not compatible with the old one. */
     let index = Some(AccountsIndexConfig {
         bins: Some(2),
         num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
         index_limit_mb: IndexLimitMb::InMemOnly,
         ..AccountsIndexConfig::default()
     });
-    let accounts_db_config = Some(AccountsDbConfig {
+    let accounts_db_config = AccountsDbConfig {
         index,
         storage_access: StorageAccess::File,
         skip_initial_hash_calc: true,
-        num_hash_threads: Some(NonZeroUsize::new(1).unwrap()),
         ..AccountsDbConfig::default()
-    });
+    };
     let accounts_db = AccountsDb::new_with_config(
         vec![],
-        accounts_db_config,
+        accounts_db_config.clone(),
         None,
         Arc::new(AtomicBool::new(false)),
     );
@@ -435,10 +435,16 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             (pubkey, account_data)
         })
         .collect::<Vec<_>>();
-    accounts.store_accounts_seq(
-        (current_slot.saturating_sub(1), &accounts_to_store[..]),
-        None,
-    );
+
+    let storage_slot = slot_ctx.prev_slot;
+    accounts.store_accounts_seq((storage_slot, &accounts_to_store[..]), None);
+    // Add the root slot to the accounts DB
+    // Now needed when calling Bank::new_from_snapshot() in Agave v3.1
+    accounts.accounts_db.add_root(storage_slot);
+    let accounts_data_size_initial: u64 = accounts_to_store
+        .iter()
+        .map(|(_, account)| account.data().len() as u64)
+        .sum();
 
     /* Build the stakes separately */
     let current_epoch = epoch_schedule.get_epoch(current_slot);
@@ -543,23 +549,25 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     };
 
     let bank_rc = BankRc::new(accounts);
-    let mut bank = Bank::new_from_fields(
+    let mut bank = Bank::new_from_snapshot(
         bank_rc,
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
         bank_fields,
         None,
-        None,
-        false,
-        0,
+        accounts_data_size_initial, // precomputed above
         Some(feature_set),
     );
 
-    // Seed initial accounts into the bank
-    for account in &context.acct_states {
-        let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
-        let account_data = AccountSharedData::from(account);
-        bank.store_account(&pubkey, &account_data);
+    // Store the accounts in the bank using the new interface.
+    for (pubkey, account_data) in &accounts_to_store {
+        bank.store_account(pubkey, account_data);
+    }
+
+    // Register the blockhashes in the bank using the new interface.
+    for blockhash in context.blockhash_queue.iter() {
+        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
+        bank.register_recent_blockhash_for_test(&blockhash_hash, Some(lamports_per_signature));
     }
 
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
@@ -580,14 +588,13 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     bank.distribute_partitioned_epoch_rewards();
 
-    bank.get_transaction_processor().reset_sysvar_cache();
+    // NOTE: reset_sysvar_cache and fill_missing_sysvar_cache_entries no longer
+    // needed in Agave v3.1
     bank.update_slot_hashes();
     bank.update_stake_history(Some(parent_epoch));
     bank.update_clock(Some(parent_epoch));
     bank.update_last_restart_slot();
     bank.update_recent_blockhashes();
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(&bank);
 
     /* See this comment to understand why we need to populate the lthash
     cache before executing:

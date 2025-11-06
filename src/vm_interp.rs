@@ -4,12 +4,14 @@ use crate::{
         err_map,
         vm::{mem_regions, HEAP_MAX, STACK_SIZE},
     },
-    InstrContext,
+    InstrContext, SnapshotInvokeContext,
 };
 // feature removed from feature set surface in 3.0; direct mapping toggled via SVMFeatureSet flags
+use agave_syscalls;
 use bincode::Error;
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
+use solana_instruction::AccountMeta;
 use solana_program_runtime::serialization::serialize_parameters;
 use solana_program_runtime::{
     invoke_context::{EnvironmentConfig, InvokeContext},
@@ -23,10 +25,11 @@ use solana_sbpf::{
     error::{EbpfError, StableResult},
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
-    static_analysis::TraceLogEntry,
+    static_analysis::RegisterTraceEntry, // renamed in Agave v3.1
     verifier::RequisiteVerifier,
     vm::{ContextObject, EbpfVm},
 };
+use solana_stable_layout::stable_vec::StableVec;
 use solana_svm_log_collector::LogCollector;
 use std::ffi::c_int;
 
@@ -50,15 +53,13 @@ declare_builtin_function!(
 #[derive(Debug, Clone, Default)]
 pub struct TestContextObject {
     /// Contains the register state at every instruction in order of execution
-    pub trace_log: Vec<TraceLogEntry>,
+    pub trace_log: Vec<RegisterTraceEntry>,
     /// Maximal amount of instructions which still can be executed
     pub remaining: u64,
 }
 
+// Agave v3.1 moves register tracing into the runtime.
 impl ContextObject for TestContextObject {
-    fn trace(&mut self, state: [u64; 12]) {
-        self.trace_log.push(state);
-    }
 
     fn consume(&mut self, amount: u64) {
         self.remaining = self.remaining.saturating_sub(amount);
@@ -153,6 +154,20 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         _ => SBPFVersion::V0,
     };
 
+    // Extract values before mutable borrow
+    let program_id = instr_ctx.instruction.program_id;
+    let instruction_data = instr_ctx.instruction.data.to_vec();
+    let runtime_features = instr_ctx.feature_set.runtime_features();
+    let feature_set_snapshot = instr_ctx.feature_set.clone();
+    let instruction_accounts_snapshot: StableVec<AccountMeta> = instr_ctx
+        .instruction
+        .accounts
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>()
+        .into();
+    let initial_cu_avail = instr_ctx.cu_avail;
+
     let (
         mut transaction_context,
         sysvar_cache,
@@ -162,11 +177,27 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         compute_budget,
     ) = crate::create_invoke_context_fields(&mut instr_ctx)?;
 
-    let instr = &instr_ctx.instruction;
-
     let log_collector = LogCollector::new_ref();
-    let instr_accounts = crate::get_instr_accounts(&transaction_context, &instr.accounts);
-    let runtime_features = instr_ctx.feature_set.runtime_features();
+
+    // Get accounts first (this borrow is released when instr_accounts is created)
+    let instr_accounts =
+        crate::get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
+
+    // Create ProgramRuntimeEnvironments
+    let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
+        &runtime_features,
+        &compute_budget.to_budget(),
+        false,                                      /* deployment */
+        std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
+    )
+    .unwrap();
+    let environments = solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments {
+        program_runtime_v1: std::sync::Arc::new(program_runtime_environment_v1),
+        ..solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments::default()
+    };
+
+    // Now create EnvironmentConfig (accounts borrow is released, callback borrow is separate)
+    let callback_context = SnapshotInvokeContext::new(feature_set_snapshot);
 
     let mut invoke_ctx = InvokeContext::new(
         &mut transaction_context,
@@ -174,8 +205,10 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         EnvironmentConfig::new(
             blockhash,
             lamports_per_signature,
-            &instr_ctx,
+            &callback_context,
             &runtime_features,
+            &environments,
+            &environments,
             &sysvar_cache,
         ),
         Some(log_collector.clone()),
@@ -185,7 +218,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     let program_idx = invoke_ctx
         .transaction_context
-        .find_index_of_account(&instr_ctx.instruction.program_id)?;
+        .find_index_of_account(&program_id)?;
 
     let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
     let stricter_abi_and_runtime_constraints = invoke_ctx
@@ -197,7 +230,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
 
     invoke_ctx
         .transaction_context
-        .configure_next_instruction_for_tests(program_idx, instr_accounts, &instr.data)
+        .configure_next_instruction_for_tests(program_idx, instr_accounts, instruction_data)
         .unwrap();
 
     match invoke_ctx.push() {
@@ -209,7 +242,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .transaction_context
         .get_current_instruction_context()
         .unwrap();
-    let (_aligned_memory, input_memory_regions, acc_metadatas) = serialize_parameters(
+    let (_aligned_memory, input_memory_regions, acc_metadatas, _) = serialize_parameters(
         &caller_instr_ctx,
         stricter_abi_and_runtime_constraints,
         direct_mapping,
@@ -217,20 +250,14 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     )
     .unwrap();
 
-    let mut config = invoke_ctx
-        .program_cache_for_tx_batch
-        .environments
-        .program_runtime_v1
-        .get_config()
-        .clone();
-    config.enable_instruction_tracing = true;
+    let mut config = environments.program_runtime_v1.get_config().clone();
+    // Note: enable_instruction_tracing field was removed from Config
     config.enabled_sbpf_versions = SBPFVersion::V0..=sbpf_version;
 
     invoke_ctx
         .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
             allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
             accounts_metadata: acc_metadatas, // TODO: accounts metadata for direct mapping support
-            trace_log: Vec::new(),
         })
         .unwrap();
 
@@ -239,11 +266,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     // Stub syscalls
     // Note: unstubbed_runtime is "v1", so syscalls are only registered for version < V3,
     //       i.e. unstubbed_runtime.get_function_registry(sbpf_version) does NOT work.
-    let syscall_reg = invoke_ctx
-        .program_cache_for_tx_batch
-        .environments
-        .program_runtime_v1
-        .get_function_registry();
+    let syscall_reg = environments.program_runtime_v1.get_function_registry();
     for (_key, (name, _func)) in syscall_reg.iter() {
         loader
             .register_function(std::str::from_utf8(name).unwrap(), SyscallStub::vm)
@@ -271,7 +294,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     }
 
     // Setup TestContextObject
-    let mut context_obj = TestContextObject::new(instr_ctx.cu_avail);
+    let mut context_obj = TestContextObject::new(initial_cu_avail);
 
     // setup memory
     let heap_max = (vm_ctx.heap_max as usize).min(HEAP_MAX);
@@ -347,16 +370,19 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         USE_INTERPRETER, /* use JIT for fuzzing, interpreter for debugging */
     );
 
+    // The runtime now owns the register trace. We need to take it out of the VM.
+    let register_trace = std::mem::take(&mut vm.register_trace);
+
     // When a program fails, the register in trace_log are not properly
     // captured (they represent the state at the end of the previous ix).
     // For simplicity, we ignore them.
     let out_registers = match result {
         StableResult::Err(_) => &[0; 12],
-        StableResult::Ok(_) => vm.context_object_pointer.trace_log.last()?,
+        StableResult::Ok(_) => register_trace.last()?,
     };
 
     if ENABLE_TRACE_DUMP {
-        eprintln!("Tracing: {:x?}", vm.context_object_pointer.trace_log);
+        eprintln!("Tracing: {:x?}", register_trace);
     }
 
     /* We do not compare VM state on CU errors since CU consumption is
@@ -395,7 +421,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         rodata: rodata.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
         log: vec![],
-        pc: match vm.context_object_pointer.trace_log.last() {
+        pc: match register_trace.last() {
             Some(regs) => regs[11],
             None => vm.registers[11],
         },
