@@ -564,12 +564,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         bank.store_account(pubkey, account_data);
     }
 
-    // Register the blockhashes in the bank using the new interface.
-    for blockhash in context.blockhash_queue.iter() {
-        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
-        bank.register_recent_blockhash_for_test(&blockhash_hash, Some(lamports_per_signature));
-    }
-
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
     let leader = leader_schedule
         .slot_leader_at(current_slot, Some(&bank))

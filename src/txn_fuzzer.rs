@@ -349,7 +349,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             genesis_config.add_account(*key, account.clone());
         });
 
-    let blockhash_queue = if context.blockhash_queue.is_empty() {
+    let mut blockhash_queue = if context.blockhash_queue.is_empty() {
         vec![vec![0u8; 32]]
     } else {
         context.blockhash_queue.clone()
@@ -425,13 +425,26 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     bank.update_epoch_schedule();
     bank.update_rent();
 
-    // Register blockhashes in bank, the sysvar cache is now primed inside the
-    // bank constructor, and we let the bank's own fee governor supply the
-    // per-signature cost when staging recent blockhashes.
-    for blockhash in &context.blockhash_queue {
-        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
-        bank.register_recent_blockhash_for_test(&blockhash_hash, None);
+    // Blockhashes are already populated via BankFieldsToDeserialize.blockhash_queue
+    let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
+    let mut lamports_per_signature: Option<u64> = None;
+    if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
+        if let Some(hash) = recent_blockhashes.first() {
+            if hash.fee_calculator.lamports_per_signature != 0 {
+                lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
+            }
+        }
     }
+
+    // Register blockhashes in bank
+    for blockhash in blockhash_queue.iter_mut() {
+        let blockhash_hash = Hash::new_from_array(std::mem::take(blockhash).try_into().unwrap());
+        bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
+    }
+    bank.update_recent_blockhashes();
+    bank.get_transaction_processor().reset_sysvar_cache();
+    bank.get_transaction_processor()
+        .fill_missing_sysvar_cache_entries(bank.as_ref());
 
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?);
 
