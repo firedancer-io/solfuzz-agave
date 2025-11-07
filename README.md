@@ -22,6 +22,12 @@ Install dependencies:
 ```sh
 apt install libudev-dev protobuf-compiler pkg-config
 ```
+### NOTE FOR LOCAL COPIES
+
+You must use the [firedancer fork](https://github.com/firedancer-io/agave) of Agave with the corresponding 
+`patches` branch. 
+
+For example, solfuzz-agave branch `agave-v3.0.3` should checkout `agave-v3.0.3-patches` in the fork.
 
 Running with a local copy of Agave (for easily adding print statements):
 ```sh
