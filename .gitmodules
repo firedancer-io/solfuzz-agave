@@ -1,0 +1,4 @@
+[submodule "shlr/flatbuffers"]
+	path = shlr/flatbuffers
+	url = https://github.com/firedancer-io/flatbuffers.git
+	branch = v25.9.23-patches

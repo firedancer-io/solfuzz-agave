@@ -21,6 +21,8 @@ Supported APIs:
 Install dependencies:
 ```sh
 apt install libudev-dev protobuf-compiler pkg-config
+git submodule update --init --recursive
+./deps.sh
 ```
 
 Running with a local copy of Agave (for easily adding print statements):

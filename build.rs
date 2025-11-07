@@ -55,7 +55,14 @@ fn compile_flatbuffers() -> Result<(), Box<dyn std::error::Error>> {
 
     // Compile flatbuffers into Rust
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    flatc_rust::run(flatc_rust::Args {
+
+    // Use custom flatc from ./opt/bin/flatc relative to this build.rs
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
+    let flatc_path = manifest_dir.join("opt").join("bin").join("flatc");
+
+    let flatc = flatc_rust::Flatc::from_path(&flatc_path);
+    flatc.check()?;
+    flatc.run(flatc_rust::Args {
         lang: "rust",
         inputs: flatbuffer_files
             .iter()
