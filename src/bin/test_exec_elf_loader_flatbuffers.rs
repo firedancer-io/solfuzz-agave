@@ -1,5 +1,5 @@
 use clap::Parser;
-use solfuzz_agave::elf_generated::{ELFLoaderEffects, ELFLoaderEffectsArgs, ELFLoaderFixture};
+use solfuzz_agave::elf_generated::{ELFLoaderEffects, ELFLoaderFixture};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -21,30 +21,9 @@ fn exec(input: &PathBuf, blob: &[u8], builder: &mut flatbuffers::FlatBufferBuild
 
     solfuzz_agave::elf_loader_flatbuffers::execute_elf_loader(&context, builder);
     let effects_slice = builder.finished_data().to_vec();
-    builder.reset();
+    let actual = unsafe { flatbuffers::root_unchecked::<ELFLoaderEffects<'_>>(&effects_slice) };
 
-    // Rebuild expected into a fresh FlatBuffer to get comparable bytes
-    let expected_rodata = expected
-        .rodata()
-        .map(|rodata| builder.create_vector(rodata.bytes()));
-    let expected_calldests = expected
-        .calldests()
-        .map(|calldests| builder.create_vector_from_iter(calldests.iter()));
-    let expected_off = ELFLoaderEffects::create(
-        builder,
-        &ELFLoaderEffectsArgs {
-            rodata: expected_rodata,
-            text_cnt: expected.text_cnt(),
-            text_off: expected.text_off(),
-            entry_pc: expected.entry_pc(),
-            calldests: expected_calldests,
-            err_code: expected.err_code(),
-        },
-    );
-    builder.finish_minimal(expected_off);
-    let expected_bytes = builder.finished_data();
-
-    let ok = expected_bytes == effects_slice;
+    let ok = expected.unpack() == actual.unpack();
     if ok {
         println!("OK: {:?}", input);
     } else {

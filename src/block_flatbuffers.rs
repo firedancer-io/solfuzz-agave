@@ -1,6 +1,6 @@
 use crate::block_generated;
 use crate::context_generated;
-use crate::utils::fd_hash::fd_hash;
+use crate::utils::fd_hash::fd_hash_with_seed;
 use crate::utils::program::common_flatbuffers::{build_versioned_transaction, get_sysvar};
 use agave_feature_set::*;
 #[allow(deprecated)]
@@ -274,7 +274,7 @@ pub fn hash_epoch_leaders(
                 .saturating_mul(core::mem::size_of::<Pubkey>()),
         )
     };
-    let h1 = fd_hash(seed, pub_bytes);
+    let h1 = fd_hash_with_seed(seed, pub_bytes);
     out[0..8].copy_from_slice(&h1.to_le_bytes());
 
     // Part 2 (last 64 bits): Hash of the compressed schedule (leader indices)
@@ -287,7 +287,7 @@ pub fn hash_epoch_leaders(
                 .saturating_mul(core::mem::size_of::<u32>()),
         )
     };
-    let h2 = fd_hash(seed, sched_bytes);
+    let h2 = fd_hash_with_seed(seed, sched_bytes);
     out[8..16].copy_from_slice(&h2.to_le_bytes());
 
     uniq_cnt

@@ -71,6 +71,7 @@ fn compile_flatbuffers() -> Result<(), Box<dyn std::error::Error>> {
             .as_slice(),
         out_dir: out_dir.as_path(),
         includes: &[flatbuffer_dir.as_path()],
+        extra: &["--gen-object-api", "--gen-compare"],
         ..Default::default()
     })?;
     Ok(())

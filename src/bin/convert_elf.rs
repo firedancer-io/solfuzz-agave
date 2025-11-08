@@ -4,6 +4,8 @@ use solfuzz_agave::context_generated as fbs_ctx;
 use solfuzz_agave::elf_generated as fbs_elf;
 use solfuzz_agave::metadata_generated as fbs_meta;
 use solfuzz_agave::proto as pb;
+use solfuzz_agave::utils::fd_hash::fd_hash;
+use solfuzz_agave::utils::fd_hash::fd_hash_u64;
 use std::env;
 use std::fs;
 use std::io;
@@ -52,24 +54,19 @@ fn convert_fixture_proto_to_flatbuf(input: &pb::ElfLoaderFixture) -> Vec<u8> {
 
     // output effects
     let output_off = input.output.as_ref().map(|eff| {
-        let rodata_off = if eff.rodata.is_empty() {
-            None
+        let (rodata_hash, calldests_hash) = if eff.error != 0 {
+            (0, 0)
         } else {
-            Some(fbb.create_vector(&eff.rodata))
-        };
-        let calldests_off = if eff.calldests.is_empty() {
-            None
-        } else {
-            Some(fbb.create_vector(&eff.calldests))
+            (fd_hash(&eff.rodata), unsafe { fd_hash_u64(&eff.calldests) })
         };
         fbs_elf::ELFLoaderEffects::create(
             &mut fbb,
             &fbs_elf::ELFLoaderEffectsArgs {
-                rodata: rodata_off,
+                rodata_hash,
                 text_cnt: eff.text_cnt,
                 text_off: eff.text_off,
                 entry_pc: eff.entry_pc,
-                calldests: calldests_off,
+                calldests_hash,
                 err_code: eff.error as u8,
             },
         )

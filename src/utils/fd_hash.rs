@@ -13,7 +13,7 @@ fn rotate_left(x: u64, r: u32) -> u64 {
 
 /// Rust port of Firedancer's fd_hash
 /// https://github.com/firedancer-io/firedancer/blob/main/src/util/fd_hash.c
-pub fn fd_hash(seed: u64, buf: &[u8]) -> u64 {
+pub fn fd_hash_with_seed(seed: u64, buf: &[u8]) -> u64 {
     let mut p = buf;
     let sz = buf.len() as u64;
     let mut h: u64;
@@ -98,4 +98,13 @@ pub fn fd_hash(seed: u64, buf: &[u8]) -> u64 {
     h ^= h >> 32;
 
     h
+}
+
+pub fn fd_hash(buf: &[u8]) -> u64 {
+    fd_hash_with_seed(0, buf)
+}
+
+pub unsafe fn fd_hash_u64(buf: &[u64]) -> u64 {
+    let u8_buf = core::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 8);
+    fd_hash_with_seed(0, u8_buf)
 }
