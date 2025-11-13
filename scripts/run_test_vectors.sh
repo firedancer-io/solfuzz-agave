@@ -28,20 +28,16 @@ echo "Using test-vectors commit: $GIT_REF"
 # Fetch/update test-vectors repo
 if [ ! -d dump/test-vectors ]; then
   echo "Cloning test-vectors repository..."
-  (cd dump && git clone --depth=1 -q https://github.com/firedancer-io/test-vectors.git)
-else
-  echo "Updating test-vectors repository..."
-  (cd dump/test-vectors && git fetch -q origin "$GIT_REF" || true)
+  (cd dump && git clone --depth=1 -q --no-tags https://github.com/firedancer-io/test-vectors.git)
 fi
 
 # Checkout specific commit non-destructively
 (
   cd dump/test-vectors
-  if ! git cat-file -e "$GIT_REF"^{commit} 2>/dev/null; then
-    echo "Fetching test vectors commit $GIT_REF..."
-    git fetch -q origin "$GIT_REF"
+  if ! git checkout -q $GIT_REF; then
+    git remote update
+    git checkout -q $GIT_REF
   fi
-  git checkout -q --detach "$GIT_REF"
 )
 
 # Show the commit hashes being used
