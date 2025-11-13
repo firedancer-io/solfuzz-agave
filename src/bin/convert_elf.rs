@@ -2,87 +2,41 @@ use flatbuffers::FlatBufferBuilder;
 use prost::Message;
 use solfuzz_agave::context_generated as fbs_ctx;
 use solfuzz_agave::elf_generated as fbs_elf;
-use solfuzz_agave::metadata_generated as fbs_meta;
 use solfuzz_agave::proto as pb;
-use solfuzz_agave::utils::fd_hash::fd_hash_u64_without_seed;
-use solfuzz_agave::utils::fd_hash::fd_hash_without_seed;
 use std::env;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-fn convert_fixture_proto_to_flatbuf(input: &pb::ElfLoaderFixture) -> Vec<u8> {
+fn convert_ctx_proto_to_flatbuf(input: &pb::ElfLoaderCtx) -> Vec<u8> {
     let mut fbb = FlatBufferBuilder::new();
 
-    // metadata
-    let metadata_off = input.metadata.as_ref().map(|m| {
-        let ent = fbb.create_string(&m.fn_entrypoint);
-        fbs_meta::FixtureMetadata::create(
-            &mut fbb,
-            &fbs_meta::FixtureMetadataArgs {
-                fn_entrypoint: Some(ent),
-            },
-        )
-    });
-
     // input ctx
-    let input_off = input.input.as_ref().map(|ctx| {
-        let features_off = {
-            let ctx_features = ctx.features.clone().unwrap_or_default();
-            let vec_off = if ctx_features.features.is_empty() {
-                fbb.create_vector::<u64>(&[])
-            } else {
-                fbb.create_vector(&ctx_features.features)
-            };
-            fbs_ctx::FeatureSet::create(
-                &mut fbb,
-                &fbs_ctx::FeatureSetArgs {
-                    features: Some(vec_off),
-                },
-            )
-        };
-        let elf_off = ctx.elf.as_ref().map(|elf| fbb.create_vector(&elf.data));
-        fbs_elf::ELFLoaderCtx::create(
+    let features_off = input.features.as_ref().map(|features| {
+        let vec_off = fbb.create_vector(&features.features);
+        fbs_ctx::FeatureSet::create(
             &mut fbb,
-            &fbs_elf::ELFLoaderCtxArgs {
-                elf_data: elf_off,
-                features: Some(features_off),
-                deploy_checks: ctx.deploy_checks,
+            &fbs_ctx::FeatureSetArgs {
+                features: Some(vec_off),
             },
         )
     });
 
-    // output effects
-    let output_off = input.output.as_ref().map(|eff| {
-        let (rodata_hash, calldests_hash) = if eff.error != 0 {
-            (0, 0)
-        } else {
-            (fd_hash_without_seed(&eff.rodata), unsafe {
-                fd_hash_u64_without_seed(&eff.calldests)
-            })
-        };
-        fbs_elf::ELFLoaderEffects::create(
-            &mut fbb,
-            &fbs_elf::ELFLoaderEffectsArgs {
-                rodata_hash: Some(&fbs_ctx::XXHash::new(&rodata_hash.to_le_bytes())),
-                text_cnt: eff.text_cnt,
-                text_off: eff.text_off,
-                entry_pc: eff.entry_pc,
-                calldests_hash: Some(&fbs_ctx::XXHash::new(&calldests_hash.to_le_bytes())),
-                err_code: eff.error as u8,
-            },
-        )
-    });
+    let elf_off = input
+        .elf
+        .as_ref()
+        .map(|elf| fbb.create_vector(elf.data.as_slice()));
 
-    let fixture_off = fbs_elf::ELFLoaderFixture::create(
+    let ctx_off = fbs_elf::ELFLoaderCtx::create(
         &mut fbb,
-        &fbs_elf::ELFLoaderFixtureArgs {
-            metadata: metadata_off,
-            input: input_off,
-            output: output_off,
+        &fbs_elf::ELFLoaderCtxArgs {
+            elf_data: elf_off,
+            features: features_off,
+            deploy_checks: input.deploy_checks,
         },
     );
-    fbb.finish(fixture_off, None);
+
+    fbb.finish(ctx_off, None);
     fbb.finished_data().to_vec()
 }
 
@@ -90,15 +44,15 @@ fn read_file(path: &PathBuf) -> io::Result<Vec<u8>> {
     fs::read(path)
 }
 
-fn decode_fixture(bytes: &[u8]) -> Result<pb::ElfLoaderFixture, prost::DecodeError> {
-    pb::ElfLoaderFixture::decode(bytes)
+fn decode_ctx(bytes: &[u8]) -> Result<pb::ElfLoaderCtx, prost::DecodeError> {
+    pb::ElfLoaderCtx::decode(bytes)
 }
 
 fn process_file(path: &PathBuf, out_dir: &PathBuf) -> i32 {
     match read_file(path) {
-        Ok(bytes) => match decode_fixture(&bytes) {
-            Ok(fixture) => {
-                let out = convert_fixture_proto_to_flatbuf(&fixture);
+        Ok(bytes) => match decode_ctx(&bytes) {
+            Ok(ctx) => {
+                let out = convert_ctx_proto_to_flatbuf(&ctx);
                 // Write to output directory with same filename
                 if let Err(e) = fs::create_dir_all(out_dir) {
                     eprintln!(
@@ -129,7 +83,7 @@ fn process_file(path: &PathBuf, out_dir: &PathBuf) -> i32 {
             }
             Err(e) => {
                 eprintln!(
-                    "{}: failed to decode protobuf ElfLoaderFixture: {}",
+                    "{}: failed to decode protobuf ElfLoaderCtx: {}",
                     path.display(),
                     e
                 );
