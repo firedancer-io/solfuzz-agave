@@ -251,7 +251,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .unwrap();
 
     let mut config = environments.program_runtime_v1.get_config().clone();
-    // Note: enable_instruction_tracing field was removed from Config
+    config.enable_register_tracing = true;
     config.enabled_sbpf_versions = SBPFVersion::V0..=sbpf_version;
 
     invoke_ctx
