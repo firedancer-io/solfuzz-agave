@@ -1,7 +1,9 @@
 use crate::proto::ErrKind;
 use agave_syscalls::SyscallError;
 use solana_poseidon::PoseidonSyscallError;
-use solana_program_runtime::{invoke_context::InvokeContext, stable_log};
+use solana_program_runtime::{
+    cpi::CpiError, invoke_context::InvokeContext, memory::MemoryTranslationError, stable_log,
+};
 use solana_sbpf::{
     elf::ElfError,
     error::{EbpfError, StableResult},
@@ -139,6 +141,16 @@ pub fn unpack_stable_result(
                 } else if let Some(syscall_error) = syscall_error.downcast_ref::<SyscallError>() {
                     stable_log::program_failure(&logger, program_id, &syscall_error.to_string());
                     (syscall_err_to_num(syscall_error), ErrKind::Syscall)
+                } else if let Some(memory_error) =
+                    syscall_error.downcast_ref::<MemoryTranslationError>()
+                {
+                    let syscall_error: SyscallError = (memory_error.clone()).into();
+                    stable_log::program_failure(&logger, program_id, &syscall_error.to_string());
+                    (syscall_err_to_num(&syscall_error), ErrKind::Syscall)
+                } else if let Some(cpi_error) = syscall_error.downcast_ref::<CpiError>() {
+                    let syscall_error: SyscallError = (cpi_error.clone()).into();
+                    stable_log::program_failure(&logger, program_id, &syscall_error.to_string());
+                    (syscall_err_to_num(&syscall_error), ErrKind::Syscall)
                 } else if let Some(ebpf_error) = syscall_error.downcast_ref::<EbpfError>() {
                     stable_log::program_failure(&logger, program_id, &ebpf_error.to_string());
                     (ebpf_err_to_num(ebpf_error), ErrKind::Ebpf)
