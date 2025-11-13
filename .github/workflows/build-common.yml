@@ -18,6 +18,8 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       # TODO: change back to stable once rust releases the coverage fix
       # - uses: dtolnay/rust-toolchain@1.86.0
       - uses: actions-rs/toolchain@v1
@@ -31,8 +33,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo dnf install -y protobuf-compiler
           sudo dnf install -y systemd-devel
+          ./deps.sh
 
       - name: Check lints and clippy
         run: |

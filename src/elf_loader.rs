@@ -34,7 +34,7 @@ pub fn load_elf(
         Ok(exec) => exec,
         Err(err) => {
             return Some(ElfLoaderEffects {
-                error: elf_err_to_num(&err),
+                error: elf_err_to_num(&err) as i32,
                 ..Default::default()
             });
         }
