@@ -43,7 +43,8 @@ use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
 use solana_transaction_context::{
-    IndexOfAccount, InstructionAccount, TransactionAccount, TransactionContext,
+    transaction_accounts::KeyedAccountSharedData, IndexOfAccount, InstructionAccount,
+    TransactionContext,
 };
 
 use crate::utils::err_map::instr_err_to_num;
@@ -432,6 +433,42 @@ impl InvokeContextCallback for InstrContext {
     }
 }
 
+// Rust's orphan rules forbid implementing an external trait for an external type
+// so we need to separate this out.
+pub(crate) struct SnapshotInvokeContext {
+    feature_set: FeatureSet,
+}
+
+impl SnapshotInvokeContext {
+    pub(crate) fn new(feature_set: FeatureSet) -> Self {
+        Self { feature_set }
+    }
+}
+
+/// TODO: use InvokeContextCallback directly within the Agave SVM harness
+impl InvokeContextCallback for SnapshotInvokeContext {
+    fn is_precompile(&self, program_id: &Pubkey) -> bool {
+        is_precompile(program_id, |feature_id: &Pubkey| {
+            self.feature_set.is_active(feature_id)
+        })
+    }
+
+    fn process_precompile(
+        &self,
+        program_id: &Pubkey,
+        data: &[u8],
+        instruction_datas: Vec<&[u8]>,
+    ) -> std::result::Result<(), PrecompileError> {
+        if let Some(precompile) = get_precompile(program_id, |feature_id: &Pubkey| {
+            self.feature_set.is_active(feature_id)
+        }) {
+            precompile.verify(data, &instruction_datas, &self.feature_set)
+        } else {
+            Err(PrecompileError::InvalidPublicKey)
+        }
+    }
+}
+
 impl TransactionProcessingCallback for InstrContext {
     fn get_account_shared_data(&self, pubkey: &Pubkey) -> Option<(AccountSharedData, u64)> {
         self.accounts
@@ -646,7 +683,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
 fn create_invoke_context_fields(
     input: &mut InstrContext,
 ) -> Option<(
-    TransactionContext,
+    TransactionContext<'_>,
     SysvarCache,
     ProgramCacheForTxBatch,
     Hash,
@@ -669,6 +706,14 @@ fn create_invoke_context_fields(
         }
     }
 
+    // Do not diverge from Agave on post-activation features.
+    let simd_0268_active = input
+        .feature_set
+        .is_active(&raise_cpi_nesting_limit_to_8::id());
+    let simd_0339_active = input
+        .feature_set
+        .is_active(&increase_cpi_account_info_limit::id());
+
     #[cfg(feature = "core-bpf-conformance")]
     // If the fixture declares `cu_avail` to be less than the builtin version's
     // `DEFAULT_COMPUTE_UNITS`, the program should fail on compute meter
@@ -679,7 +724,7 @@ fn create_invoke_context_fields(
     // mismatches from the BPF program exhuasting the meter when the builtin
     // did not.
     let compute_budget = {
-        let mut budget = ComputeBudget::new_with_defaults(false);
+        let mut budget = ComputeBudget::new_with_defaults(simd_0268_active, simd_0339_active);
         if input.cu_avail <= CORE_BPF_DEFAULT_COMPUTE_UNITS {
             budget.compute_unit_limit = 0; // Ensures CU meter exhaustion.
         }
@@ -687,7 +732,7 @@ fn create_invoke_context_fields(
     };
     #[cfg(not(feature = "core-bpf-conformance"))]
     let compute_budget = {
-        let mut budget = ComputeBudget::new_with_defaults(false);
+        let mut budget = ComputeBudget::new_with_defaults(simd_0268_active, simd_0339_active);
         budget.compute_unit_limit = input.cu_avail;
         budget
     };
@@ -721,7 +766,8 @@ fn create_invoke_context_fields(
         ));
     }
 
-    let mut transaction_accounts = Vec::<TransactionAccount>::with_capacity(input.accounts.len());
+    let mut transaction_accounts =
+        Vec::<KeyedAccountSharedData>::with_capacity(input.accounts.len());
     #[allow(deprecated)]
     input
         .accounts
@@ -773,8 +819,6 @@ fn create_invoke_context_fields(
         program_runtime_v1: Arc::new(program_runtime_environment_v1),
         ..ProgramRuntimeEnvironments::default()
     };
-    program_cache_for_tx_batch.environments = environments.clone();
-    program_cache_for_tx_batch.upcoming_environments = Some(environments.clone());
 
     initialize_program_cache(&mut program_cache_for_tx_batch, &input.feature_set);
 
@@ -857,6 +901,20 @@ fn create_invoke_context_fields(
 fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     let log_collector = LogCollector::new_ref();
 
+    // Extract all needed values before mutable borrow
+    let program_id = input.instruction.program_id;
+    let instruction_data = input.instruction.data.to_vec();
+    let runtime_features = input.feature_set.runtime_features();
+    let feature_set_snapshot = input.feature_set.clone();
+    let instruction_accounts_snapshot: StableVec<AccountMeta> = input
+        .instruction
+        .accounts
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>()
+        .into();
+    let initial_cu_avail = input.cu_avail;
+
     let (
         mut transaction_context,
         sysvar_cache,
@@ -866,22 +924,39 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         compute_budget,
     ) = create_invoke_context_fields(&mut input)?;
 
-    let runtime_features = input.feature_set.runtime_features();
+    // Get accounts immediately after mutable borrow is released, before creating EnvironmentConfig
+    let instruction_accounts =
+        get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
 
+    // Create ProgramRuntimeEnvironments
+    let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
+        &runtime_features,
+        &compute_budget.to_budget(),
+        false,                                      /* deployment */
+        std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
+    )
+    .unwrap();
+    let environments = ProgramRuntimeEnvironments {
+        program_runtime_v1: Arc::new(program_runtime_environment_v1),
+        ..ProgramRuntimeEnvironments::default()
+    };
+
+    let callback_context = SnapshotInvokeContext::new(feature_set_snapshot);
+
+    // Create EnvironmentConfig (mutable borrow on input is released)
     let environment_config = EnvironmentConfig::new(
         blockhash,
         lamports_per_signature,
-        &input,
+        &callback_context,
         &runtime_features,
+        &environments,
+        &environments,
         &sysvar_cache,
     );
 
-    let program_idx = transaction_context.find_index_of_account(&input.instruction.program_id)?;
+    let program_idx = transaction_context.find_index_of_account(&program_id)?;
 
     let mut compute_units_consumed = 0u64;
-
-    let instruction_accounts =
-        get_instr_accounts(&transaction_context, &input.instruction.accounts);
 
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
@@ -897,15 +972,14 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         .configure_next_instruction_for_tests(
             program_idx,
             instruction_accounts,
-            &input.instruction.data,
+            instruction_data.clone(),
         )
         .unwrap();
 
-    let result = if invoke_context.is_precompile(&input.instruction.program_id) {
-        let instruction_data = input.instruction.data.iter().copied().collect::<Vec<_>>();
+    let result = if invoke_context.is_precompile(&program_id) {
         invoke_context.process_precompile(
-            &input.instruction.program_id,
-            &input.instruction.data,
+            &program_id,
+            &instruction_data,
             [instruction_data.as_slice()].into_iter(),
         )
     } else {
@@ -917,11 +991,9 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     // To keep alignment with a builtin run, deduct only the CUs the builtin
     // version would have consumed, so the fixture realizes the same CU
     // deduction across both BPF and builtin in its effects.
-    let cu_avail = input
-        .cu_avail
-        .saturating_sub(CORE_BPF_DEFAULT_COMPUTE_UNITS);
+    let cu_avail = initial_cu_avail.saturating_sub(CORE_BPF_DEFAULT_COMPUTE_UNITS);
     #[cfg(not(feature = "core-bpf-conformance"))]
-    let cu_avail = input.cu_avail.saturating_sub(compute_units_consumed);
+    let cu_avail = initial_cu_avail.saturating_sub(compute_units_consumed);
     let return_data = transaction_context.get_return_data().1.to_vec();
 
     let account_keys: Vec<Pubkey> = (0..transaction_context.get_number_of_accounts())
@@ -938,15 +1010,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             #[cfg(feature = "core-bpf-conformance")]
             // See comment below under `result` for special-casing of custom
             // errors for Core BPF programs.
-            if input.instruction.program_id == solana_address_lookup_table::program::id()
-                && code == 10
-            {
+            if program_id == solana_address_lookup_table::program::id() && code == 10 {
                 None
-            } else if input.instruction.program_id == solana_config::program::id() && code == 0 {
+            } else if program_id == solana_config::program::id() && code == 0 {
                 None
             }
 
-            if get_precompile(&input.instruction.program_id, |_| true).is_some() {
+            if get_precompile(&program_id, |_| true).is_some() {
                 Some(0)
             } else {
                 Some(code)
@@ -976,8 +1046,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             // Therefore, some errors require reconciliation when testing a BPF
             // program against its builtin implementation.
             if err == InstructionError::ProgramFailedToComplete
-                && (input.cu_avail <= CORE_BPF_DEFAULT_COMPUTE_UNITS
-                    || compute_units_consumed >= input.cu_avail)
+                && (initial_cu_avail <= CORE_BPF_DEFAULT_COMPUTE_UNITS
+                    || compute_units_consumed >= initial_cu_avail)
             {
                 return InstructionError::ComputationalBudgetExceeded;
             }
@@ -1001,13 +1071,13 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             // special-cased below to avoid fixture mismatches.
             match err {
                 InstructionError::Custom(code) => {
-                    if program_id == &solana_address_lookup_table::program::id() {
+                    if program_id == solana_address_lookup_table::program::id() {
                         // Special-cased custom error codes for the ALT program.
                         if code == 10 {
                             return InstructionError::ReadonlyDataModified;
                         }
                     }
-                    if program_id == &solana_config::program::id() {
+                    if program_id == solana_config::program::id() {
                         // Special-cased custom error codes for the Config program.
                         if code == 0 {
                             return InstructionError::ReadonlyDataModified;
@@ -1033,10 +1103,9 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 //
                 // We need to swap back in the original here to avoid a
                 // mismatch.
-                if let Some(program_account) = input
-                    .accounts
+                if let Some(program_account) = accounts_snapshot
                     .iter()
-                    .find(|(pubkey, _)| *pubkey == input.instruction.program_id)
+                    .find(|(pubkey, _)| *pubkey == program_id)
                 {
                     return (program_account.0, program_account.1.clone());
                 }
@@ -1084,7 +1153,7 @@ pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
     env::set_var("RAYON_NUM_THREADS", "1");
     if env::var("ENABLE_SOLANA_LOGGER").is_ok() {
         /* Pairs with RUST_LOG={trace,debug,info,etc} */
-        solana_logger::setup();
+        agave_logger::setup(); // renamed in Agave v3.1
     }
 }
 
