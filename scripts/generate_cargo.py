@@ -23,16 +23,22 @@ PROTOSOL_VERSION_TAG = "v2.0.0"
 def replace_path_with_git_rev(toml_data, git_url, rev):
     """
     Recursively process the TOML data to replace path with git and rev,
-    while keeping all other lines intact.
+    while preserving all other fields including features.
     """
     if isinstance(toml_data, dict):
         for key, value in list(toml_data.items()):
             if isinstance(value, dict):
                 if "path" in value:
-                    # Replace path with git and rev
+                    # Replace path with git and rev, preserve other fields
                     new_table = inline_table()
                     new_table["git"] = git_url
                     new_table["rev"] = rev
+                    # Preserve version if present
+                    if "version" in value:
+                        new_table["version"] = value["version"]
+                    # Preserve features as-is (don't add or modify)
+                    if "features" in value:
+                        new_table["features"] = value["features"]
                     toml_data[key] = new_table
                 else:
                     replace_path_with_git_rev(value, git_url, rev)
@@ -45,16 +51,22 @@ def replace_path_with_git_rev(toml_data, git_url, rev):
 
 def replace_path_with_local(toml_data, local_path):
     """
-    Recursively process the TOML data to replace path with git and rev,
-    while keeping all other lines intact.
+    Recursively process the TOML data to replace path with local path,
+    while preserving all other fields including features.
     """
     if isinstance(toml_data, dict):
         for key, value in list(toml_data.items()):
             if isinstance(value, dict):
                 if "path" in value:
-                    # Replace path with local path
+                    # Replace path with local path, preserve other fields
                     new_table = inline_table()
                     new_table["path"] = os.path.join(local_path, value["path"])
+                    # Preserve version if present
+                    if "version" in value:
+                        new_table["version"] = value["version"]
+                    # Preserve features as-is (don't add or modify)
+                    if "features" in value:
+                        new_table["features"] = value["features"]
                     toml_data[key] = new_table
                 else:
                     replace_path_with_local(value, local_path)
@@ -282,7 +294,33 @@ def main():
         if hasattr(values, 'items'):
             # It's a dictionary/table
             for k, v in values.items():
-                toml_data[section][k] = v
+                # Special handling for dependencies section: merge features
+                if section == "dependencies" and k in toml_data[section]:
+                    existing_dep = toml_data[section][k]
+                    # If both are dicts (dependency specs), merge them
+                    if isinstance(existing_dep, dict) and isinstance(v, dict):
+                        # Preserve path/git/version from existing
+                        merged_dep = inline_table()
+                        for key in ["path", "git", "rev", "version"]:
+                            if key in existing_dep:
+                                merged_dep[key] = existing_dep[key]
+                        # Merge features from both
+                        merged_features = []
+                        if "features" in existing_dep:
+                            merged_features.extend(existing_dep["features"])
+                        if "features" in v:
+                            for feat in v["features"]:
+                                if feat not in merged_features:
+                                    merged_features.append(feat)
+                        if merged_features:
+                            merged_dep["features"] = merged_features
+                        toml_data[section][k] = merged_dep
+                    else:
+                        # Not both dicts, just use the solfuzz_agave.toml value
+                        toml_data[section][k] = v
+                else:
+                    # Not a dependency or not present in existing, just assign
+                    toml_data[section][k] = v
         else:
             # It's likely an Array of Tables or other non-dict type
             # Assign the entire values object directly

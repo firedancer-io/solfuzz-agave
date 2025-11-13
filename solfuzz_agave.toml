@@ -14,6 +14,19 @@ once_cell = "1.21.3"
 lazy_static = "1.5.0"
 home = "0.5.11"
 
+# Enable dev-context-only-utils for Agave dependencies that need it
+solana-runtime = { features = ["dev-context-only-utils"] }
+solana-accounts-db = { features = ["dev-context-only-utils"] }
+solana-svm = { features = ["dev-context-only-utils"] }
+solana-runtime-transaction = { features = ["dev-context-only-utils"] }
+solana-vote = { features = ["dev-context-only-utils"] }
+solana-transaction-context = { features = ["dev-context-only-utils"] }
+solana-vote-program = { features = ["dev-context-only-utils"] }
+solana-compute-budget-instruction = { features = ["dev-context-only-utils"] }
+solana-core = { features = ["dev-context-only-utils"] }
+solana-ledger = { features = ["dev-context-only-utils"] }
+solana-perf = { features = ["dev-context-only-utils"] }
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
