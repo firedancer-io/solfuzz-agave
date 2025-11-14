@@ -18,7 +18,9 @@ pub fn load_elf(
     let feature_set = FeatureSet::from(features.unwrap_or(&proto::FeatureSet::default()));
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set.runtime_features(),
-        &SVMTransactionExecutionBudget::default(),
+        &SVMTransactionExecutionBudget::new_with_defaults(
+            feature_set.runtime_features().raise_cpi_nesting_limit_to_8, // simd_0268_active
+        ),
         deploy_checks,
         std::env::var("ENABLE_VM_TRACING").is_ok(),
     )
