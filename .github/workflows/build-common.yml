@@ -32,9 +32,7 @@ jobs:
           cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
 
       - name: Install dependencies
-        run: |
-          sudo dnf install -y systemd-devel
-          ./deps.sh
+        run: ./deps.sh
 
       - name: check out test-vectors (persistent)
         run: |
@@ -78,6 +76,7 @@ jobs:
           cargo test --release
 
       - name: Build shared objects
+        if: ${{ inputs.upload_artifacts }}
         run: make shared_obj
 
       - name: Build cov-enabled shared objects
