@@ -283,7 +283,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_partitioned_rent_collection,
     formalize_loaded_transaction_data_size,
     enable_loader_v4, // custom hardcoded feature
-    create_slashing_program,
+    // create_slashing_program, // renamed to enshrine_slashing_program
     drop_unchained_merkle_shreds,
     enable_zk_proof_from_account,
     enable_zk_transfer_with_fee,
