@@ -338,7 +338,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     raise_block_limits_to_100m, // to be activated in v3.1
     // alpenglow, // TBD
     raise_account_cu_limit,
-    // raise_cpi_nesting_limit_to_8, // soon after direct mapping
+    // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
     // relax_intrabatch_account_locks, // not worth fuzzing
 ];
 
