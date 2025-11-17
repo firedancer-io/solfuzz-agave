@@ -285,7 +285,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_loader_v4, // custom hardcoded feature
     // create_slashing_program, // renamed to enshrine_slashing_program
     drop_unchained_merkle_shreds,
-    enable_zk_proof_from_account,
+    // enable_zk_proof_from_account,
     enable_zk_transfer_with_fee,
     fix_alt_bn128_multiplication_input_length,
     include_loaded_accounts_data_size_in_fee_calculation,
