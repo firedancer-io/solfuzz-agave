@@ -288,7 +288,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     // enable_zk_proof_from_account,
     enable_zk_transfer_with_fee,
     fix_alt_bn128_multiplication_input_length,
-    include_loaded_accounts_data_size_in_fee_calculation,
+    // include_loaded_accounts_data_size_in_fee_calculation, // was reverted
     raise_block_limits_to_60m,
     vote_only_full_fec_sets,
 ];
