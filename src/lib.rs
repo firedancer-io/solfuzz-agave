@@ -283,29 +283,18 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_partitioned_rent_collection,
     formalize_loaded_transaction_data_size,
     enable_loader_v4, // custom hardcoded feature
-    blake3_syscall_enabled,
     create_slashing_program,
-    deplete_cu_meter_on_vm_failure,
-    disable_zk_elgamal_proof_program,
     drop_unchained_merkle_shreds,
-    enable_big_mod_exp_syscall,
-    enable_get_epoch_stake_syscall,
-    enable_sbpf_v1_deployment_and_execution,
-    enable_sbpf_v2_deployment_and_execution,
-    enable_sbpf_v3_deployment_and_execution,
     enable_zk_proof_from_account,
     enable_zk_transfer_with_fee,
     fix_alt_bn128_multiplication_input_length,
     include_loaded_accounts_data_size_in_fee_calculation,
-    mask_out_rent_epoch_in_vm_serialization,
     raise_block_limits_to_60m,
-    reenable_zk_elgamal_proof_program,
-    remaining_compute_units_syscall_enabled,
-    stricter_abi_and_runtime_constraints,
     vote_only_full_fec_sets,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
+    blake3_syscall_enabled,
     // zk_token_sdk_enabled, // NOT supported in fd
     stake_raise_minimum_delegation_to_1_sol,
     stake_minimum_delegation_for_rewards,
@@ -319,13 +308,21 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
+    enable_sbpf_v1_deployment_and_execution,
+    enable_sbpf_v2_deployment_and_execution,
+    // enable_sbpf_v3_deployment_and_execution, // still actively being worked on
+    enable_get_epoch_stake_syscall,
     verify_retransmitter_signature,
     enable_turbine_extended_fanout_experiments,
     vote_only_retransmitter_signed_fec_sets,
+    mask_out_rent_epoch_in_vm_serialization,
+    disable_zk_elgamal_proof_program,
+    reenable_zk_elgamal_proof_program,
     enable_extend_program_checked,
     require_static_nonce_account,
     enable_vote_address_leader_schedule,
     enshrine_slashing_program,
+    stricter_abi_and_runtime_constraints,
     account_data_direct_mapping,
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
