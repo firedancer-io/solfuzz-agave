@@ -335,6 +335,11 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     static_instruction_limit,
     switch_to_chacha8_turbine,
     vote_state_v4,
+    raise_block_limits_to_100m, // to be activated in v3.1
+    // alpenglow, // TBD
+    raise_account_cu_limit,
+    // raise_cpi_nesting_limit_to_8, // soon after direct mapping
+    // relax_intrabatch_account_locks, // not worth fuzzing
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
