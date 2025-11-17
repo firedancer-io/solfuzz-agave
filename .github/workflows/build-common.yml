@@ -14,7 +14,74 @@ jobs:
     name: cargo check + test
     runs-on: [self-hosted]
     concurrency:
-      group: on-pull-request_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: on-pull-request_test_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      # TODO: change back to stable once rust releases the coverage fix
+      # - uses: dtolnay/rust-toolchain@1.86.0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2025-10-30
+          override: true
+          components: "clippy, rustfmt"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
+
+      - name: Install dependencies
+        run: ./deps.sh
+
+      - name: Check lints and clippy
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all -- -D warnings
+
+      - name: Log Cargo.toml
+        run: |
+          echo "=== Cargo.toml ==="
+          cat Cargo.toml
+          echo "=================="
+
+      - name: Log Cargo.lock
+        run: |
+          echo "=== Cargo.lock ==="
+          cat Cargo.lock
+          echo "=================="
+
+      - name: Run cargo check + test
+        run: |
+          cargo check --release
+          cargo test --release
+
+      - name: Build shared objects
+        if: ${{ inputs.upload_artifacts }}
+        run: make shared_obj
+
+      - name: Build cov-enabled shared objects
+        if: ${{ inputs.upload_artifacts }}
+        run: |
+          make shared_obj_cov
+          cd src && pwd > buildpwd && cd -
+          cp -r ./src/ ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
+
+      - name: Upload main so
+        if: ${{ inputs.upload_artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: libsolfuzz-agave.so
+          path: |
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave+cov.so
+            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
+
+  test-vectors:
+    name: run test vectors
+    runs-on: [self-hosted]
+    concurrency:
+      group: on-pull-request_test-vectors_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
@@ -46,52 +113,9 @@ jobs:
           mkdir -p dump
           ln -sf "${TEST_VECTORS_PATH}" dump/test-vectors
 
-      - name: Check lints and clippy
-        run: |
-          cargo fmt --all -- --check
-          cargo clippy --all -- -D warnings
-
       - name: Make binaries
         run: make binaries
-
-      - name: Log Cargo.toml
-        run: |
-          echo "=== Cargo.toml ==="
-          cat Cargo.toml
-          echo "=================="
-
-      - name: Log Cargo.lock
-        run: |
-          echo "=== Cargo.lock ==="
-          cat Cargo.lock
-          echo "=================="
 
       - name: Run test-vectors
         run: |
           ./scripts/run_test_vectors.sh
-
-      - name: Run cargo check + test
-        run: |
-          cargo check --release
-          cargo test --release
-
-      - name: Build shared objects
-        if: ${{ inputs.upload_artifacts }}
-        run: make shared_obj
-
-      - name: Build cov-enabled shared objects
-        if: ${{ inputs.upload_artifacts }}
-        run: |
-          make shared_obj_cov
-          cd src && pwd > buildpwd && cd -
-          cp -r ./src/ ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
-
-      - name: Upload main so
-        if: ${{ inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: libsolfuzz-agave.so
-          path: |
-            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so
-            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave+cov.so
-            ./target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave_src/
