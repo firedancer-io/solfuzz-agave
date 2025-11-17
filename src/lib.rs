@@ -283,6 +283,14 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_partitioned_rent_collection,
     formalize_loaded_transaction_data_size,
     enable_loader_v4, // custom hardcoded feature
+    // create_slashing_program, // renamed to enshrine_slashing_program
+    drop_unchained_merkle_shreds,
+    // enable_zk_proof_from_account, // disabled
+    // enable_zk_transfer_with_fee, // disabled
+    fix_alt_bn128_multiplication_input_length,
+    // include_loaded_accounts_data_size_in_fee_calculation, // was reverted
+    raise_block_limits_to_60m,
+    vote_only_full_fec_sets,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -295,8 +303,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // enable_big_mod_exp_syscall, // NOT impl in fd
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
-    enable_zk_transfer_with_fee,
-    enable_zk_proof_from_account,
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
     enable_secp256r1_precompile,
@@ -304,11 +310,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
-    enable_sbpf_v3_deployment_and_execution,
+    // enable_sbpf_v3_deployment_and_execution, // still actively being worked on
     enable_get_epoch_stake_syscall,
-    fix_alt_bn128_multiplication_input_length,
-    vote_only_full_fec_sets,
-    drop_unchained_merkle_shreds,
     verify_retransmitter_signature,
     enable_turbine_extended_fanout_experiments,
     vote_only_retransmitter_signed_fec_sets,
@@ -321,6 +324,22 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enshrine_slashing_program,
     stricter_abi_and_runtime_constraints,
     account_data_direct_mapping,
+    deprecate_rent_exemption_threshold,
+    discard_unexpected_data_complete_shreds,
+    enforce_fixed_fec_set,
+    fix_alt_bn128_pairing_length_check,
+    increase_cpi_account_info_limit,
+    poseidon_enforce_padding,
+    provide_instruction_data_offset_in_vm_r2,
+    replace_spl_token_with_p_token,
+    static_instruction_limit,
+    switch_to_chacha8_turbine,
+    vote_state_v4,
+    raise_block_limits_to_100m, // to be activated in v3.1
+    // alpenglow, // TBD
+    raise_account_cu_limit,
+    // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
+    // relax_intrabatch_account_locks, // not worth fuzzing
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
