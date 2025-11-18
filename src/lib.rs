@@ -282,7 +282,6 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_transaction_loading_failure_fees,
     disable_partitioned_rent_collection,
     formalize_loaded_transaction_data_size,
-    enable_loader_v4, // custom hardcoded feature
     // create_slashing_program, // renamed to enshrine_slashing_program
     drop_unchained_merkle_shreds,
     // enable_zk_proof_from_account, // disabled
@@ -340,6 +339,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     raise_account_cu_limit,
     // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
     // relax_intrabatch_account_locks, // not worth fuzzing
+    // enable_loader_v4,
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
