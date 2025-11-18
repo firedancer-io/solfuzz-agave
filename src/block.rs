@@ -27,6 +27,7 @@ use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
 };
 use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
+use solana_ledger::leader_schedule_utils;
 use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
@@ -471,24 +472,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         ),
     );
 
-    let stakes_current_accounts = Stakes::new(&stakes_t, |pubkey| {
-        context
-            .acct_states
-            .iter()
-            .find(|acct| {
-                Pubkey::new_from_array(acct.address.clone().try_into().unwrap()) == *pubkey
-            })
-            .map(AccountSharedData::from)
-    })
-    .unwrap();
-    epoch_stakes.insert(
-        leader_schedule_epoch.saturating_add(1),
-        VersionedEpochStakes::new(
-            SerdeStakesToStakeFormat::from(stakes_current_accounts),
-            leader_schedule_epoch.saturating_add(1),
-        ),
-    );
-
     let fee_rate_governor = slot_ctx.fee_rate_governor.unwrap();
 
     let mut parent_lthash = LtHash::identity();
@@ -579,6 +562,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             null_tracer(),
         );
     }
+    let l_sched = leader_schedule_utils::leader_schedule(current_epoch, &bank).unwrap();
 
     bank.distribute_partitioned_epoch_rewards();
 
@@ -689,48 +673,35 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     // - leader_schedule_epoch: The epoch for which the leader schedule applies
     // - first_slot: The absolute slot number where this epoch begins
     // - slots_in_epoch: Total number of slots in this epoch (can vary by epoch)
-    let first_slot = epoch_schedule_for_effects.get_first_slot_in_epoch(leader_schedule_epoch);
-    let slots_in_epoch = epoch_schedule_for_effects.get_slots_in_epoch(leader_schedule_epoch);
+    let first_slot = epoch_schedule_for_effects.get_first_slot_in_epoch(current_epoch);
+    let slots_in_epoch = epoch_schedule_for_effects.get_slots_in_epoch(current_epoch);
 
     // Attempt to retrieve the leader schedule for this epoch from the cache
-    let leader_schedule_effects =
-        if let Some(schedule) = leader_schedule.get_epoch_leader_schedule(leader_schedule_epoch) {
-            // Schedule found, obtain effects and hash
-            // Generate a deterministic 128-bit hash of the entire leader schedule
-            // This hash encodes both WHO the leaders are and WHEN they lead.
-            // We use a fixed seed for reproducibility across implementations.
-            let mut schedule_hash = [0u8; 16];
-            let schedule_pubkeys: Vec<Pubkey> = (0..slots_in_epoch)
-                .map(|slot_offset| schedule[slot_offset])
-                .collect();
 
-            let unique_cnt = hash_epoch_leaders(
-                &schedule_pubkeys,
-                LEADER_SCHEDULE_HASH_SEED,
-                &mut schedule_hash,
-            );
+    // Schedule found, obtain effects and hash
+    // Generate a deterministic 128-bit hash of the entire leader schedule
+    // This hash encodes both WHO the leaders are and WHEN they lead.
+    // We use a fixed seed for reproducibility across implementations.
+    let mut schedule_hash = [0u8; 16];
+    let schedule_pubkeys: Vec<Pubkey> = (0..slots_in_epoch)
+        .map(|slot_offset| l_sched[slot_offset])
+        .collect();
 
-            // Package all the schedule metadata for output
-            proto::LeaderScheduleEffects {
-                leaders_epoch: leader_schedule_epoch, // Which epoch this schedule applies to
-                leaders_slot0: first_slot,            // First absolute slot in this epoch
-                leaders_slot_cnt: slots_in_epoch as u64, // Total slots in this epoch
-                leader_pub_cnt: unique_cnt as u64,    // Number of unique leader validators
-                leaders_sched_cnt: slots_in_epoch as u64, // Number of scheduled leader slots (verification field)
-                leader_schedule_hash: schedule_hash.to_vec(), // 128-bit fingerprint of the schedule
-            }
-        } else {
-            // No schedule found for this epoch, return empty/zero values
-            // This can happen during bootstrapping or if the epoch is too far in the future
-            proto::LeaderScheduleEffects {
-                leaders_epoch: 0,
-                leaders_slot0: 0,
-                leaders_slot_cnt: 0,
-                leader_pub_cnt: 0,
-                leaders_sched_cnt: 0,
-                leader_schedule_hash: vec![],
-            }
-        };
+    let unique_cnt = hash_epoch_leaders(
+        &schedule_pubkeys,
+        LEADER_SCHEDULE_HASH_SEED,
+        &mut schedule_hash,
+    );
+
+    // Package all the schedule metadata for output
+    let leader_schedule_effects = proto::LeaderScheduleEffects {
+        leaders_epoch: current_epoch, // Which epoch this schedule applies to
+        leaders_slot0: first_slot,    // First absolute slot in this epoch
+        leaders_slot_cnt: slots_in_epoch as u64, // Total slots in this epoch
+        leader_pub_cnt: unique_cnt as u64, // Number of unique leader validators
+        leaders_sched_cnt: slots_in_epoch as u64, // Number of scheduled leader slots (verification field)
+        leader_schedule_hash: schedule_hash.to_vec(), // 128-bit fingerprint of the schedule
+    };
 
     // Then include in the output
     Some(BlockEffects {
