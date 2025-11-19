@@ -561,7 +561,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     // Store the accounts in the bank using the new interface.
     for (pubkey, account_data) in &accounts_to_store {
-        bank.store_account(pubkey, account_data);
+        if account_data.lamports() > 0 {
+            bank.store_account(pubkey, account_data);
+        }
     }
 
     let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
