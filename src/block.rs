@@ -734,11 +734,23 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             }
         };
 
+    let bank_hash = if result.is_err() {
+        Hash::default()
+    } else {
+        no_schedule_bank.hash()
+    };
+
+    let capitalization = if result.is_err() {
+        0
+    } else {
+        no_schedule_bank.capitalization()
+    };
+
     // Then include in the output
     Some(BlockEffects {
         has_error: result.is_err(),
-        slot_capitalization: no_schedule_bank.capitalization(),
-        bank_hash: no_schedule_bank.hash().to_bytes().to_vec(),
+        slot_capitalization: capitalization,
+        bank_hash: bank_hash.to_bytes().to_vec(),
         cost_tracker: Some(proto::CostTracker {
             block_cost: cost_tracker.block_cost(),
             vote_cost: cost_tracker.vote_cost(),
