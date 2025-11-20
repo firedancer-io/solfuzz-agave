@@ -388,6 +388,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             target_tick_duration: Duration::from_micros(6250), /* TODO: Restore this from input */
             ..PohConfig::default()
         },
+        ticks_per_slot: epoch_ctx.ticks_per_slot,
         ..GenesisConfig::default()
     };
 
@@ -450,7 +451,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     /* Build the stakes separately */
     let current_epoch = epoch_schedule.get_epoch(current_slot);
     let parent_epoch = epoch_schedule.get_epoch(parent_slot);
-    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
+    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(current_slot);
     let stakes_t =
         build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history);
     let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
@@ -482,6 +483,19 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     // Clone epoch_schedule for later use since it will be moved into bank_fields
     let epoch_schedule_for_effects: EpochSchedule = epoch_schedule.clone();
 
+    if epoch_ctx.ticks_per_slot < 1 || epoch_ctx.ticks_per_slot > 1000 {
+        eprintln!("Invalid ticks_per_slot {}", epoch_ctx.ticks_per_slot);
+        return None;
+    }
+    let slots_per_year = genesis_config.slots_per_year();
+    if !slots_per_year.is_normal() || slots_per_year < 1000f64 || slots_per_year > 10e9f64 {
+        eprintln!(
+            "Invalid slots_per_year {} for ticks_per_slot {}",
+            slots_per_year, epoch_ctx.ticks_per_slot
+        );
+        return None;
+    }
+
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
         ancestors,
@@ -495,7 +509,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         signature_count: 0,
         tick_height: 64u64.saturating_mul(current_slot),
         max_tick_height: 64u64.saturating_mul(current_slot.saturating_add(1)),
-        ticks_per_slot: 64u64,
+        ticks_per_slot: epoch_ctx.ticks_per_slot,
         ns_per_slot: genesis_config.ns_per_slot(),
         genesis_creation_time: epoch_ctx.genesis_creation_time as i64,
         slots_per_year: genesis_config.slots_per_year(),
@@ -518,7 +532,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         rent_collector: RentCollector {
             epoch: epoch_schedule.get_epoch(parent_slot),
             epoch_schedule: epoch_schedule.clone(),
-            slots_per_year: epoch_ctx.slots_per_year,
+            slots_per_year: genesis_config.slots_per_year(),
             rent,
         },
         epoch_schedule,
