@@ -72,51 +72,43 @@ run_fixtures_per_file() {
     return 1
   fi
 
+  # Calculate optimal chunk size: min(128, file_count / procs)
+  local file_count
+  file_count=$(find "$fixture_dir" -type f -name '*.fix' | wc -l)
+  local chunk_size
+  if [[ $file_count -eq 0 ]]; then
+    chunk_size=128
+  else
+    chunk_size=$(( (file_count + procs - 1) / procs ))  # Ceiling division
+    if [[ $chunk_size -gt 128 ]]; then
+      chunk_size=128
+    fi
+    if [[ $chunk_size -lt 1 ]]; then
+      chunk_size=1
+    fi
+  fi
+
   export name bin job_log fail_log ok_log pf_dir EXPECT_REGEX ACTUAL_REGEX FAIL_CONTEXT_LINES
   find "$fixture_dir" -type f -name '*.fix' -print0 \
-    | xargs -0 -r -P "$procs" -n 1 bash -c '
+    | xargs -0 -r -P "$procs" -n "$chunk_size" bash -c '
         set -euo pipefail
-        file="$1"
 
-        # Create a per-fixture log file
-        pf="$(mktemp -p "$pf_dir" "${name}_XXXXXX.log")"
+        # $@ contains all the files in this chunk
+        # Use first file for naming the per-chunk log
+        first_file="$1"
+        first_basename="$(basename "$first_file" .fix)"
 
-        # Run fixture; capture output to per-fixture log
-        if "$bin" -- "$file" >> "$pf" 2>&1; then
-          # Fallback: some binaries may still print FAIL but exit 0.
-          if grep -w -q FAIL "$pf"; then
-            echo "$file" >> "$fail_log"
-            sf="${pf}.fail.txt"
-            {
-              echo "==== FAIL: $file ===="
-              echo "Per-fixture log: $pf"
-              echo "--- Expected/Actual (pattern: $EXPECT_REGEX / $ACTUAL_REGEX) ---"
-              grep -E -i "$EXPECT_REGEX" "$pf" || true
-              grep -E -i "$ACTUAL_REGEX" "$pf" || true
-              echo "--- Tail of output (last $FAIL_CONTEXT_LINES lines) ---"
-              tail -n "$FAIL_CONTEXT_LINES" "$pf" || true
-              echo
-            } > "$sf"
-          else
-            echo "$file" >> "$ok_log"
-          fi
-        else
-          # Non-zero exit => failure
-          echo "$file" >> "$fail_log"
-          sf="${pf}.fail.txt"
-          {
-            echo "==== FAIL: $file ===="
-            echo "Per-fixture log: $pf"
-            echo "--- Expected/Actual (pattern: $EXPECT_REGEX / $ACTUAL_REGEX) ---"
-            grep -E -i "$EXPECT_REGEX" "$pf" || true
-            grep -E -i "$ACTUAL_REGEX" "$pf" || true
-            echo "--- Tail of output (last $FAIL_CONTEXT_LINES lines) ---"
-            tail -n "$FAIL_CONTEXT_LINES" "$pf" || true
-            echo
-          } > "$sf"
-        fi
+        # Create a per-chunk log file
+        pf="$(mktemp -p "$pf_dir" "${name}_${first_basename}_XXXXXX.log")"
 
-        # Append per-fixture output to the job log
+        # Run binary with all fixtures in this chunk; capture output to per-chunk log
+        "$bin" -- "$@" >> "$pf" 2>&1 || true
+
+        # Parse the log to find which files actually failed/passed
+        grep -o "FAIL: .*" "$pf" | sed "s/FAIL: //" | sed "s/\"//g" >> "$fail_log" || true
+        grep -o "OK: .*" "$pf" | sed "s/OK: //" | sed "s/\"//g" >> "$ok_log" || true
+
+        # Append per-chunk output to the job log
         cat "$pf" >> "$job_log" 2>&1
       ' _
 }
