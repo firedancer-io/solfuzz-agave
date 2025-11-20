@@ -15,6 +15,14 @@ lazy_static = "1.5.0"
 home = "0.5.11"
 flatbuffers = "25.9.23"
 
+# SPL compatibility pins:
+# spl-type-length-value (^0.9.0) and spl-token-2022-interface (^2.0.0) on crates.io
+# require spl-pod >= 0.7.1 and spl-token-group-interface >= 0.7.1.
+# Pin to 0.7.1 here to prevent the resolver selecting older 0.7.0, which
+# conflicts with upstream SPL constraints during lockfile generation.
+spl-pod = "0.7.1"
+spl-token-group-interface = "0.7.1"
+
 # Enable dev-context-only-utils for Agave dependencies that need it
 solana-runtime = { features = ["dev-context-only-utils"] }
 solana-accounts-db = { features = ["dev-context-only-utils"] }
@@ -27,6 +35,25 @@ solana-compute-budget-instruction = { features = ["dev-context-only-utils"] }
 solana-core = { features = ["dev-context-only-utils"] }
 solana-ledger = { features = ["dev-context-only-utils"] }
 solana-perf = { features = ["dev-context-only-utils"] }
+
+# Aya stack pins (keep Linux builds on rustc 1.86.0):
+# Newer aya subcrates require rustc 1.87.0. We pin the aya family to pre-1.87
+# versions so that including turbine/XDP on Linux does not bump the toolchain.
+# If XDP is excluded, these remain inert, but the pins ensure reproducibility.
+aya = "=0.13.0"
+aya-obj = "=0.2.1"
+aya-build = "=0.1.2"
+aya-ebpf-cty = "=0.2.2"
+aya-ebpf-macros = "=0.1.1"
+aya-ebpf = "=0.1.1"
+aya-ebpf-bindings = "=0.1.1"
+
+# Keep solana-hash and solana-epoch-rewards-hasher aligned with Agave’s manifest
+# to avoid mixed solana-hash (3.0.0 vs 4.0.1) in the graph, which causes type
+# duplication and E0308 mismatches. Some crates on crates.io (e.g. solana-message)
+# depend on solana-hash 4.0.1, but Agave uses 3.0.0, so we pin both to match.
+solana-hash = "=3.0.0"
+solana-epoch-rewards-hasher = "=3.0.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
