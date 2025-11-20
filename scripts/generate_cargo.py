@@ -172,6 +172,9 @@ def pin_dependencies(toml_data, lockfile_path):
     sections = ["dependencies", "dev-dependencies", "build-dependencies"]
     pinned_names = set()
 
+    def is_solana_crate(name: str) -> bool:
+        return name.startswith(("solana-", "agave-", "spl-"))
+
     for section in sections:
         deps = toml_data.get(section, {})
         for dep_name, val in deps.items():
@@ -186,6 +189,32 @@ def pin_dependencies(toml_data, lockfile_path):
                 continue
             pinned_names.add(package_name)
 
+            # Only pin Solana-related crates; leave 3rd-party crates with their
+            # semver ranges so Cargo can select non-yanked patch versions.
+            if not is_solana_crate(package_name):
+                continue
+
+            # Do not override versions for local path dependencies.
+            # These point at the local Agave workspace and must match
+            # the workspace crate version (often a prerelease).
+            if isinstance(val, dict) and "path" in val:
+                continue
+
+            # Do not override versions that are already exactly pinned in the overlay.
+            # This allows solfuzz_agave.toml to override Agave's lockfile versions
+            # (e.g. solana-epoch-rewards-hasher =3.0.0 to avoid solana-hash conflicts).
+            def is_already_exact_pinned(v):
+                if isinstance(v, str):
+                    return v.strip().startswith("=")
+                elif isinstance(v, dict):
+                    ver = v.get("version", "")
+                    return isinstance(ver, str) and ver.strip().startswith("=")
+                return False
+
+            if is_already_exact_pinned(val):
+                continue
+
+            # Fall back to the version present in the Agave lockfile if none declared
             if package_name not in version_map:
                 continue
 
