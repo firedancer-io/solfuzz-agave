@@ -28,25 +28,33 @@ sudo dnf install -y systemd-devel
 git submodule update --init --recursive
 ./deps.sh
 ```
+
+Python Environment:
+```sh
+./install.sh
+source solfuzz_agave_env/bin/activate
+```
 ### NOTE FOR LOCAL COPIES
 
 You must use the [firedancer fork](https://github.com/firedancer-io/agave) of Agave with the corresponding `patches` branch.
 
 For example, solfuzz-agave branch `agave-v3.1.0-beta.0` should checkout `agave-v3.1.0-beta.0-patches` in the fork.
 
+Set up the python environment with instructions above first.
+
 Running with a local copy of Agave (for easily adding print statements):
 ```sh
-./scripts/generate_cargo.py -p <your_local_agave_path> -o Cargo.toml
+python scripts/generate_cargo.py -p <your_local_agave_path> -o Cargo.toml
 ```
 
 Running with a specific Agave commit:
 ```sh
-./scripts/generate_cargo.py -c <commit_hash> -o Cargo.toml
+python scripts/generate_cargo.py -c <commit_hash> -o Cargo.toml
 ```
 
 Running with a specific protosol version:
 ```sh
-./scripts/generate_cargo.py -c <commit_hash> -v <version> -o Cargo.toml
+python scripts/generate_cargo.py -c <commit_hash> -v <version> -o Cargo.toml
 # Example: ./scripts/generate_cargo.py -c <commit_hash> -v 1.0.4 -o Cargo.toml
 ```
 
