@@ -536,6 +536,14 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
+        if input.data.len() > 1232 {
+            panic!(
+                "invariant violation: instr data sz is too large {} > {}",
+                input.data.len(),
+                1232
+            );
+        }
+
         let instruction = StableInstruction {
             accounts: instruction_accounts.into(),
             data: input.data.into(),
