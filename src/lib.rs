@@ -42,6 +42,7 @@ use solana_svm::rent_calculator::RENT_EXEMPT_RENT_EPOCH;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
+use solana_transaction_context::MAX_INSTRUCTION_DATA_LEN;
 use solana_transaction_context::{
     transaction_accounts::KeyedAccountSharedData, IndexOfAccount, InstructionAccount,
     TransactionContext,
@@ -536,11 +537,11 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        if input.data.len() > 1232 {
+        if input.data.len() > MAX_INSTRUCTION_DATA_LEN {
             panic!(
                 "invariant violation: instr data sz is too large {} > {}",
                 input.data.len(),
-                1232
+                MAX_INSTRUCTION_DATA_LEN
             );
         }
 
