@@ -992,7 +992,9 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         environment_config,
         Some(log_collector.clone()),
         compute_budget.to_budget(),
-        SVMTransactionExecutionCost::default(),
+        SVMTransactionExecutionCost::new_with_defaults(
+            runtime_features.increase_cpi_account_info_limit,
+        ),
     );
 
     invoke_context

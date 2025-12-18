@@ -170,7 +170,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ),
         Some(log_collector.clone()),
         compute_budget.to_budget(),
-        SVMTransactionExecutionCost::default(),
+        SVMTransactionExecutionCost::new_with_defaults(
+            runtime_features.increase_cpi_account_info_limit,
+        ),
     );
 
     let Some(program_idx) = invoke_ctx
