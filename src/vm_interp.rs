@@ -212,7 +212,9 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         ),
         Some(log_collector.clone()),
         compute_budget.to_budget(),
-        SVMTransactionExecutionCost::default(),
+        SVMTransactionExecutionCost::new_with_defaults(
+            runtime_features.increase_cpi_account_info_limit,
+        ),
     );
 
     let program_idx = invoke_ctx
