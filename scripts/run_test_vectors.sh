@@ -57,9 +57,6 @@ run_fixtures_per_file() {
   local pf_dir="$LOG_PATH/per_fixture/$name"
 
   mkdir -p "$pf_dir"
-  : > "$job_log"
-  : > "$fail_log"
-  : > "$ok_log"
 
   # Validate inputs
   if [[ ! -x "$bin" ]]; then
@@ -138,12 +135,17 @@ for name in "${!JOBS[@]}"; do
   fixtures="${JOBS[$name]}"
   job_log="$LOG_PATH/${name}.log"
 
+  # Initialize log files once per job (before processing multiple fixture directories)
+  fail_log="${job_log%.log}.failures"
+  ok_log="${job_log%.log}.passed"
+  : > "$job_log"
+  : > "$fail_log"
+  : > "$ok_log"
+
   # Handle multiple fixture directories
   for fixture_dir in $fixtures; do
     run_fixtures_per_file "$name" "$bin" "$fixture_dir" "$job_log" "$NUM_PROCESSES"
   done
-
-  fail_log="${job_log%.log}.failures"
 
   # Mark job failure if any fixtures failed
   if [ -s "$fail_log" ]; then
