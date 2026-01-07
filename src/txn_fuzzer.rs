@@ -218,7 +218,16 @@ fn output_txn_result_from_result(
             let rent = 0;
             let resulting_state: Option<ResultingState> = match txn {
                 ProcessedTransaction::Executed(executed_tx) => {
-                    Some(executed_tx.loaded_transaction.clone().into())
+                    let mut state: ResultingState = executed_tx.loaded_transaction.clone().into();
+                    // Filter to only writable accounts for executed transactions
+                    state.acct_states = state
+                        .acct_states
+                        .into_iter()
+                        .enumerate()
+                        .filter(|&(i, _)| sanitized_message.is_writable(i))
+                        .map(|(_, account)| account)
+                        .collect();
+                    Some(state)
                 }
                 ProcessedTransaction::FeesOnly(tx) => {
                     let mut accounts = Vec::with_capacity(tx.rollback_accounts.count());
@@ -550,15 +559,6 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
                 loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
             }
         }
-
-        relevant_accounts.acct_states = relevant_accounts
-            .clone()
-            .acct_states
-            .into_iter()
-            .enumerate()
-            .filter(|&(i, _)| runtime_transaction_ref.message().is_writable(i))
-            .map(|(_, account)| account)
-            .collect();
 
         // Only keep accounts that were passed in as account_keys or as ALUT accounts
         relevant_accounts.acct_states.retain(|account| {
