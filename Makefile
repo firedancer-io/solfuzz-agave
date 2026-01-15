@@ -1,12 +1,21 @@
-RUSTFLAGS:=
-RUSTFLAGS+=-g
-RUSTFLAGS+=-Cpasses=sancov-module
-RUSTFLAGS+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
-RUSTFLAGS+=-Cllvm-args=-sanitizer-coverage-level=4
-RUSTFLAGS+=-Cllvm-args=-sanitizer-coverage-pc-table
-RUSTFLAGS+=-Clink-dead-code
-RUSTFLAGS+=-Cforce-frame-pointers=yes
-RUSTFLAGS+=-Ctarget-feature=-crt-static
+RUSTFLAGS_COMMON:=
+RUSTFLAGS_COMMON+=-g
+RUSTFLAGS_COMMON+=-Cpasses=sancov-module
+RUSTFLAGS_COMMON+=-Cllvm-args=-sanitizer-coverage-level=4
+RUSTFLAGS_COMMON+=-Cllvm-args=-sanitizer-coverage-pc-table
+RUSTFLAGS_COMMON+=-Clink-dead-code
+RUSTFLAGS_COMMON+=-Cforce-frame-pointers=yes
+RUSTFLAGS_COMMON+=-Ctarget-feature=-crt-static
+
+# 8-bit counter mode (default)
+RUSTFLAGS_8BIT:=$(RUSTFLAGS_COMMON)
+RUSTFLAGS_8BIT+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
+
+# PC guard mode (used by honggfuzz)
+RUSTFLAGS_PCGUARD:=$(RUSTFLAGS_COMMON)
+RUSTFLAGS_PCGUARD+=-Cllvm-args=-sanitizer-coverage-trace-pc-guard
+
+RUSTFLAGS:=$(RUSTFLAGS_8BIT)
 
 ifeq ($(ENABLE_COVERAGE),1)
 RUSTFLAGS+=-Cinstrument-coverage
@@ -28,6 +37,9 @@ conformance: | shared_obj_debug
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
+
+shared_obj_pcguard:
+	RUSTFLAGS="$(RUSTFLAGS_PCGUARD)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/pcguard
 
 shared_obj_cov:
 	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) build --target x86_64-unknown-linux-gnu --release \
