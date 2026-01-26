@@ -261,26 +261,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 return Some(SyscallEffects {
                     error,
                     error_kind: crate::proto::ErrKind::Instruction as i32,
-                    r0: 0,
-                    r1: 0,
-                    r2: 0,
-                    r3: 0,
-                    r4: 0,
-                    r5: 0,
-                    r6: 0,
-                    r7: 0,
-                    r8: 0,
-                    r9: 0,
-                    r10: 0,
                     cu_avail: invoke_ctx.get_remaining(),
-                    heap: vec![],
-                    stack: vec![],
-                    input_data_regions: vec![],
-                    inputdata: vec![],
-                    rodata: vec![],
-                    frame_count: 0,
-                    log: vec![],
-                    pc: 0,
+                    ..Default::default()
                 });
             }
         };
