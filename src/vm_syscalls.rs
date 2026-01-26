@@ -179,6 +179,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .transaction_context
         .find_index_of_account(&program_id)
     else {
+        // Skip test if program_id not found in accounts
         cleanup_static_ptrs(
             transaction_context_ptr,
             sysvar_cache_ptr,
@@ -235,19 +236,71 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     //   3. heap
     //   4. input data aka accounts
     // The stack gap size is 0 iff direct mapping is enabled.
+    let serialize_result = serialize_parameters(
+        &caller_instr_ctx,
+        stricter_abi_and_runtime_constraints,
+        direct_mapping,
+        mask_out_rent_epoch_in_vm_serialization,
+    );
+
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
-        serialize_parameters(
-            &caller_instr_ctx,
-            stricter_abi_and_runtime_constraints,
-            direct_mapping,
-            mask_out_rent_epoch_in_vm_serialization,
-        )
-        .unwrap();
+        match serialize_result {
+            Ok(result) => result,
+            Err(e) => {
+                // Return effects with the serialization error instead of rejecting
+                let error = crate::utils::err_map::instr_err_to_num(&e) as i64;
+                cleanup_static_ptrs(
+                    transaction_context_ptr,
+                    sysvar_cache_ptr,
+                    program_cache_for_tx_batch_ptr,
+                    runtime_features_ptr,
+                    instr_ctx_ptr,
+                    callback_context_ptr,
+                    environments_ptr,
+                );
+                return Some(SyscallEffects {
+                    error,
+                    error_kind: crate::proto::ErrKind::Instruction as i32,
+                    r0: 0,
+                    r1: 0,
+                    r2: 0,
+                    r3: 0,
+                    r4: 0,
+                    r5: 0,
+                    r6: 0,
+                    r7: 0,
+                    r8: 0,
+                    r9: 0,
+                    r10: 0,
+                    cu_avail: invoke_ctx.get_remaining(),
+                    heap: vec![],
+                    stack: vec![],
+                    input_data_regions: vec![],
+                    inputdata: vec![],
+                    rodata: vec![],
+                    frame_count: 0,
+                    log: vec![],
+                    pc: 0,
+                });
+            }
+        };
 
     let sbpf_version = SBPFVersion::V0;
 
     // Set up memory mapping
-    let vm_ctx = input.vm_ctx.unwrap();
+    let Some(vm_ctx) = input.vm_ctx else {
+        // Match FD behavior: skip test if vm_ctx is missing
+        cleanup_static_ptrs(
+            transaction_context_ptr,
+            sysvar_cache_ptr,
+            program_cache_for_tx_batch_ptr,
+            runtime_features_ptr,
+            instr_ctx_ptr,
+            callback_context_ptr,
+            environments_ptr,
+        );
+        return None;
+    };
     // Follow FD harness behavior
     if vm_ctx.heap_max as usize > HEAP_MAX {
         cleanup_static_ptrs(
