@@ -48,6 +48,12 @@ aya-ebpf-macros = "=0.1.1"
 aya-ebpf = "=0.1.1"
 aya-ebpf-bindings = "=0.1.1"
 
+# Time crate pins (keep builds on rustc 1.86.0):
+# time 0.3.45+ requires Rust 1.88.0. Pin to compatible versions.
+time = "=0.3.44"
+time-core = "=0.1.6"
+time-macros = "=0.2.24"
+
 # Keep solana-hash and solana-epoch-rewards-hasher aligned with Agave’s manifest
 # to avoid mixed solana-hash (3.0.0 vs 4.0.1) in the graph, which causes type
 # duplication and E0308 mismatches. Some crates on crates.io (e.g. solana-message)
