@@ -242,18 +242,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .vm_ctx
         .expect("invariant violation: vm_ctx must be present for every execution");
     // Follow FD harness behavior
-    if vm_ctx.heap_max as usize > HEAP_MAX {
-        cleanup_static_ptrs(
-            transaction_context_ptr,
-            sysvar_cache_ptr,
-            program_cache_for_tx_batch_ptr,
-            runtime_features_ptr,
-            instr_ctx_ptr,
-            callback_context_ptr,
-            environments_ptr,
-        );
-        return None;
-    }
+    assert!(vm_ctx.heap_max as usize <= HEAP_MAX, "invariant violation: heap_max must be <= HEAP_MAX");
 
     let config = environments.program_runtime_v1.get_config().clone();
     let Some((_, syscall_func)) = environments
@@ -267,16 +256,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 .function_name,
         )
     else {
-        cleanup_static_ptrs(
-            transaction_context_ptr,
-            sysvar_cache_ptr,
-            program_cache_for_tx_batch_ptr,
-            runtime_features_ptr,
-            instr_ctx_ptr,
-            callback_context_ptr,
-            environments_ptr,
-        );
-        return None;
+        panic!("invariant violation: syscall function not found");
     };
 
     let mut mempool = VmMemoryPool::new();
