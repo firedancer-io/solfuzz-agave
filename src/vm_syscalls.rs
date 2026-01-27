@@ -175,26 +175,14 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ),
     );
 
-    let Some(program_idx) = invoke_ctx
+    let program_idx = invoke_ctx
         .transaction_context
         .find_index_of_account(&program_id)
-    else {
-        // Skip test if program_id not found in accounts
-        cleanup_static_ptrs(
-            transaction_context_ptr,
-            sysvar_cache_ptr,
-            program_cache_for_tx_batch_ptr,
-            runtime_features_ptr,
-            instr_ctx_ptr,
-            callback_context_ptr,
-            environments_ptr,
-        );
-        return None;
-    };
-    if program_idx > 255 {
-        // TransactionContext::configure_next_instruction_for_tests() crashes if program_idx > 255
-        return None;
-    }
+        .expect("invariant violation: program_id must be found in accounts");
+    assert!(
+        program_idx <= 255,
+        "invariant violation: program_idx must be <= 255"
+    );
     let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
     let stricter_abi_and_runtime_constraints = invoke_ctx
         .get_feature_set()
