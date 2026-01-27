@@ -145,10 +145,9 @@ pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
 pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
 
-    let Some(vm_ctx) = syscall_context.vm_ctx else {
-        // Match FD behavior: skip test if vm_ctx is missing
-        return None;
-    };
+    let vm_ctx = syscall_context
+        .vm_ctx
+        .expect("invariant violation: vm_ctx must be present for every execution");
     let sbpf_version = match vm_ctx.sbpf_version {
         1 => SBPFVersion::V1,
         2 => SBPFVersion::V2,
@@ -246,26 +245,16 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .transaction_context
         .get_current_instruction_context()
         .unwrap();
-    let serialize_result = serialize_parameters(
-        &caller_instr_ctx,
-        stricter_abi_and_runtime_constraints,
-        direct_mapping,
-        mask_out_rent_epoch_in_vm_serialization,
-    );
+    // serialize_parameters should never fail - the fuzzer now ensures
+    // valid instruction account counts, so unwrap is safe here
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
-        match serialize_result {
-            Ok(result) => result,
-            Err(e) => {
-                // Return effects with the serialization error
-                let error = crate::utils::err_map::instr_err_to_num(&e) as i64;
-                return Some(SyscallEffects {
-                    error,
-                    error_kind: crate::proto::ErrKind::Instruction as i32,
-                    cu_avail: invoke_ctx.get_remaining(),
-                    ..Default::default()
-                });
-            }
-        };
+        serialize_parameters(
+            &caller_instr_ctx,
+            stricter_abi_and_runtime_constraints,
+            direct_mapping,
+            mask_out_rent_epoch_in_vm_serialization,
+        )
+        .expect("invariant violation: serialize_parameters failed");
 
     let mut config = environments.program_runtime_v1.get_config().clone();
     config.enable_register_tracing = true;

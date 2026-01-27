@@ -236,53 +236,23 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     //   3. heap
     //   4. input data aka accounts
     // The stack gap size is 0 iff direct mapping is enabled.
-    let serialize_result = serialize_parameters(
-        &caller_instr_ctx,
-        stricter_abi_and_runtime_constraints,
-        direct_mapping,
-        mask_out_rent_epoch_in_vm_serialization,
-    );
-
+    // serialize_parameters should never fail - the fuzzer now ensures
+    // valid instruction account counts, so unwrap is safe here
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
-        match serialize_result {
-            Ok(result) => result,
-            Err(e) => {
-                // Return effects with the serialization error instead of rejecting
-                let error = crate::utils::err_map::instr_err_to_num(&e) as i64;
-                cleanup_static_ptrs(
-                    transaction_context_ptr,
-                    sysvar_cache_ptr,
-                    program_cache_for_tx_batch_ptr,
-                    runtime_features_ptr,
-                    instr_ctx_ptr,
-                    callback_context_ptr,
-                    environments_ptr,
-                );
-                return Some(SyscallEffects {
-                    error,
-                    error_kind: crate::proto::ErrKind::Instruction as i32,
-                    cu_avail: invoke_ctx.get_remaining(),
-                    ..Default::default()
-                });
-            }
-        };
+        serialize_parameters(
+            &caller_instr_ctx,
+            stricter_abi_and_runtime_constraints,
+            direct_mapping,
+            mask_out_rent_epoch_in_vm_serialization,
+        )
+        .expect("invariant violation: serialize_parameters failed");
 
     let sbpf_version = SBPFVersion::V0;
 
     // Set up memory mapping
-    let Some(vm_ctx) = input.vm_ctx else {
-        // Match FD behavior: skip test if vm_ctx is missing
-        cleanup_static_ptrs(
-            transaction_context_ptr,
-            sysvar_cache_ptr,
-            program_cache_for_tx_batch_ptr,
-            runtime_features_ptr,
-            instr_ctx_ptr,
-            callback_context_ptr,
-            environments_ptr,
-        );
-        return None;
-    };
+    let vm_ctx = input
+        .vm_ctx
+        .expect("invariant violation: vm_ctx must be present for every execution");
     // Follow FD harness behavior
     if vm_ctx.heap_max as usize > HEAP_MAX {
         cleanup_static_ptrs(
