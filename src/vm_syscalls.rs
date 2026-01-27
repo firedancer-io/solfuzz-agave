@@ -393,7 +393,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         heap: heap.as_slice().into(),
         stack: stack.as_slice().into(),
         input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
-        inputdata: vec![], // deprecated
         rodata: rodata.as_slice().into(),
         frame_count: vm.call_depth,
         error,

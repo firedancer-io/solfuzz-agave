@@ -518,7 +518,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         rent_collector: RentCollector {
             epoch: epoch_schedule.get_epoch(parent_slot),
             epoch_schedule: epoch_schedule.clone(),
-            slots_per_year: epoch_ctx.slots_per_year,
+            slots_per_year: genesis_config.slots_per_year(),
             rent,
         },
         epoch_schedule,
