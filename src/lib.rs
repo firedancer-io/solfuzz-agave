@@ -522,6 +522,15 @@ impl TryFrom<proto::InstrContext> for InstrContext {
             .map(|acct_state| acct_state.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
+        // Match Firedancer harness limit (FD_INSTR_ACCT_MAX = 1094)
+        // which is derived from the MTU
+        // (see FD_BPF_INSTR_ACCT_MAX comment in Firedancer)
+        const MAX_INSTR_ACCOUNTS: usize = 1094;
+        assert!(
+            input.instr_accounts.len() <= MAX_INSTR_ACCOUNTS,
+            "invariant violation: too many instruction accounts"
+        );
+
         let instruction_accounts = input
             .instr_accounts
             .into_iter()
