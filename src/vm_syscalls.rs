@@ -245,7 +245,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     assert!(vm_ctx.heap_max as usize <= HEAP_MAX, "invariant violation: heap_max must be <= HEAP_MAX");
 
     let config = environments.program_runtime_v1.get_config().clone();
-    let Some((_, syscall_func)) = environments
+    let (_, syscall_func) = environments
         .program_runtime_v1
         .get_function_registry()
         .lookup_by_name(
@@ -255,9 +255,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 .unwrap_or_default()
                 .function_name,
         )
-    else {
-        panic!("invariant violation: syscall function not found");
-    };
+        .expect("invariant violation: syscall function not found");
 
     let mut mempool = VmMemoryPool::new();
     let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
