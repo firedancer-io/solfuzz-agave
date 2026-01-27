@@ -145,7 +145,9 @@ pub fn vec_rtrim_zeros(v: &[u8]) -> Vec<u8> {
 pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffects> {
     let mut instr_ctx: InstrContext = syscall_context.instr_ctx?.try_into().ok()?;
 
-    let vm_ctx = syscall_context.vm_ctx.unwrap();
+    let vm_ctx = syscall_context
+        .vm_ctx
+        .expect("invariant violation: vm_ctx must be present for every execution");
     let sbpf_version = match vm_ctx.sbpf_version {
         1 => SBPFVersion::V1,
         2 => SBPFVersion::V2,
@@ -243,6 +245,8 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         .transaction_context
         .get_current_instruction_context()
         .unwrap();
+    // serialize_parameters should never fail - the fuzzer now ensures
+    // valid instruction account counts, so unwrap is safe here
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
         serialize_parameters(
             &caller_instr_ctx,
@@ -250,7 +254,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
             direct_mapping,
             mask_out_rent_epoch_in_vm_serialization,
         )
-        .unwrap();
+        .expect("invariant violation: serialize_parameters failed");
 
     let mut config = environments.program_runtime_v1.get_config().clone();
     config.enable_register_tracing = true;

@@ -175,25 +175,14 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         ),
     );
 
-    let Some(program_idx) = invoke_ctx
+    let program_idx = invoke_ctx
         .transaction_context
         .find_index_of_account(&program_id)
-    else {
-        cleanup_static_ptrs(
-            transaction_context_ptr,
-            sysvar_cache_ptr,
-            program_cache_for_tx_batch_ptr,
-            runtime_features_ptr,
-            instr_ctx_ptr,
-            callback_context_ptr,
-            environments_ptr,
-        );
-        return None;
-    };
-    if program_idx > 255 {
-        // TransactionContext::configure_next_instruction_for_tests() crashes if program_idx > 255
-        return None;
-    }
+        .expect("invariant violation: program_id must be found in accounts");
+    assert!(
+        program_idx <= 255,
+        "invariant violation: program_idx must be <= 255"
+    );
     let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
     let stricter_abi_and_runtime_constraints = invoke_ctx
         .get_feature_set()
@@ -235,6 +224,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     //   3. heap
     //   4. input data aka accounts
     // The stack gap size is 0 iff direct mapping is enabled.
+    // serialize_parameters should never fail - the fuzzer now ensures
+    // valid instruction account counts, so unwrap is safe here
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
         serialize_parameters(
             &caller_instr_ctx,
@@ -242,12 +233,14 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             direct_mapping,
             mask_out_rent_epoch_in_vm_serialization,
         )
-        .unwrap();
+        .expect("invariant violation: serialize_parameters failed");
 
     let sbpf_version = SBPFVersion::V0;
 
     // Set up memory mapping
-    let vm_ctx = input.vm_ctx.unwrap();
+    let vm_ctx = input
+        .vm_ctx
+        .expect("invariant violation: vm_ctx must be present for every execution");
     // Follow FD harness behavior
     if vm_ctx.heap_max as usize > HEAP_MAX {
         cleanup_static_ptrs(
