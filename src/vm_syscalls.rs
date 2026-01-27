@@ -242,7 +242,10 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .vm_ctx
         .expect("invariant violation: vm_ctx must be present for every execution");
     // Follow FD harness behavior
-    assert!(vm_ctx.heap_max as usize <= HEAP_MAX, "invariant violation: heap_max must be <= HEAP_MAX");
+    assert!(
+        vm_ctx.heap_max as usize <= HEAP_MAX,
+        "invariant violation: heap_max must be <= HEAP_MAX"
+    );
 
     let config = environments.program_runtime_v1.get_config().clone();
     let Some((_, syscall_func)) = environments
