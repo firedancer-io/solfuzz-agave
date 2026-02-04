@@ -49,7 +49,7 @@ shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
 
 shared_obj_hfuzz:
-	RUSTFLAGS="$(RUSTFLAGS_HFUZZ)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/hfuzz
+	RUSTFLAGS="$(RUSTFLAGS_HFUZZ)" $(CARGO) build --target x86_64-unknown-linux-gnu --profile release-with-debug --lib --target-dir target/hfuzz
 
 shared_obj_pcguard:
 	RUSTFLAGS="$(RUSTFLAGS_PCGUARD)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/pcguard
