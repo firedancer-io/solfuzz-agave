@@ -21,6 +21,7 @@ use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
     ebpf::HOST_ALIGN,
+    error::StableResult,
     memory_region::{MemoryMapping, MemoryRegion},
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
@@ -353,6 +354,12 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
+    // If an error has occurred e.g. in CPI, the memory regions may not be in a valid state.
+    // Thus, we only compare the input region for successful executions.
+    let input_data_regions = match program_result {
+        StableResult::Ok(_) => mem_regions::extract_input_data_regions(&vm.memory_mapping),
+        StableResult::Err(_) => vec![],
+    };
     let (error, error_kind, r0) =
         unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
 
@@ -384,7 +391,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap: heap.as_slice().into(),
         stack: stack.as_slice().into(),
-        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
+        input_data_regions,
         rodata: rodata.as_slice().into(),
         frame_count: vm.call_depth,
         error,
