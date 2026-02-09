@@ -321,8 +321,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     require_static_nonce_account,
     enable_vote_address_leader_schedule,
     enshrine_slashing_program,
-    stricter_abi_and_runtime_constraints,
-    account_data_direct_mapping,
+    // stricter_abi_and_runtime_constraints, // fuzz in 4.0+
+    // account_data_direct_mapping, // fuzz in 4.0+
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
     enforce_fixed_fec_set,
