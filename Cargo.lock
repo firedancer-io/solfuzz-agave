@@ -68,8 +68,8 @@ dependencies = [
 
 [[package]]
 name = "agave-banking-stage-ingress-types"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "crossbeam-channel",
  "solana-perf",
@@ -77,8 +77,8 @@ dependencies = [
 
 [[package]]
 name = "agave-cargo-registry"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-logger",
  "clap 2.34.0",
@@ -109,21 +109,21 @@ dependencies = [
 
 [[package]]
 name = "agave-feature-set"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "ahash 0.8.12",
  "solana-epoch-schedule",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-pubkey 3.0.0",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-svm-feature-set",
 ]
 
 [[package]]
 name = "agave-fs"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-io-uring",
  "io-uring",
@@ -135,12 +135,12 @@ dependencies = [
 
 [[package]]
 name = "agave-geyser-plugin-interface"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "log",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-signature",
  "solana-transaction",
  "solana-transaction-status",
@@ -149,8 +149,8 @@ dependencies = [
 
 [[package]]
 name = "agave-io-uring"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "io-uring",
  "libc",
@@ -161,8 +161,8 @@ dependencies = [
 
 [[package]]
 name = "agave-logger"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "env_logger",
  "libc",
@@ -172,8 +172,8 @@ dependencies = [
 
 [[package]]
 name = "agave-precompiles"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "bincode",
@@ -193,8 +193,8 @@ dependencies = [
 
 [[package]]
 name = "agave-reserved-account-keys"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "solana-pubkey 3.0.0",
@@ -203,19 +203,19 @@ dependencies = [
 
 [[package]]
 name = "agave-scheduler-bindings"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 
 [[package]]
 name = "agave-scheduling-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-scheduler-bindings",
  "agave-transaction-view",
  "ahash 0.8.12",
  "libc",
- "nix",
+ "nix 0.30.1",
  "rts-alloc",
  "shaq",
  "solana-pubkey 3.0.0",
@@ -225,8 +225,8 @@ dependencies = [
 
 [[package]]
 name = "agave-snapshots"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-fs",
  "bincode",
@@ -240,7 +240,7 @@ dependencies = [
  "solana-accounts-db",
  "solana-clock",
  "solana-genesis-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-lattice-hash",
  "solana-measure",
  "solana-metrics",
@@ -254,8 +254,8 @@ dependencies = [
 
 [[package]]
 name = "agave-syscalls"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "libsecp256k1",
@@ -267,8 +267,8 @@ dependencies = [
  "solana-bn254",
  "solana-clock",
  "solana-cpi",
- "solana-curve25519 3.1.0-beta.0",
- "solana-hash 3.0.0",
+ "solana-curve25519",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keccak-hasher",
  "solana-loader-v3-interface",
@@ -279,7 +279,7 @@ dependencies = [
  "solana-sbpf",
  "solana-sdk-ids 3.0.0",
  "solana-secp256k1-recover",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-stable-layout",
  "solana-stake-interface",
  "solana-svm-callback",
@@ -296,8 +296,8 @@ dependencies = [
 
 [[package]]
 name = "agave-thread-manager"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "affinity",
  "anyhow",
@@ -313,10 +313,10 @@ dependencies = [
 
 [[package]]
 name = "agave-transaction-view"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-packet",
  "solana-pubkey 3.0.0",
@@ -329,8 +329,8 @@ dependencies = [
 
 [[package]]
 name = "agave-verified-packet-receiver"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "solana-perf",
  "solana-streamer",
@@ -338,8 +338,8 @@ dependencies = [
 
 [[package]]
 name = "agave-votor"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-logger",
  "agave-votor-messages",
@@ -369,7 +369,7 @@ dependencies = [
  "solana-epoch-schedule",
  "solana-genesis-config",
  "solana-gossip",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-ledger",
  "solana-measure",
@@ -390,20 +390,20 @@ dependencies = [
 
 [[package]]
 name = "agave-votor-messages"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-logger",
  "serde",
  "solana-bls-signatures",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
 ]
 
 [[package]]
 name = "agave-xdp"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-xdp-ebpf",
  "aya",
@@ -416,8 +416,8 @@ dependencies = [
 
 [[package]]
 name = "agave-xdp-ebpf"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "aya",
  "aya-ebpf",
@@ -2194,12 +2194,12 @@ dependencies = [
 
 [[package]]
 name = "ctrlc"
-version = "3.5.1"
+version = "3.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73736a89c4aff73035ba2ed2e565061954da00d4970fc9ac25dcc85a2a20d790"
+checksum = "e0b1fab2ae45819af2d0731d60f2afe17227ebb1a1538a236da84c93e9a60162"
 dependencies = [
  "dispatch2",
- "nix",
+ "nix 0.31.1",
  "windows-sys 0.61.2",
 ]
 
@@ -2895,7 +2895,16 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a75b8549488b4715defcb0d8a8a1c1c76a80661b5fa106b4ca0e7fce59d7d875"
 dependencies = [
- "five8_core",
+ "five8_core 0.1.2",
+]
+
+[[package]]
+name = "five8"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23f76610e969fa1784327ded240f1e28a3fd9520c9cec93b636fcf62dd37f772"
+dependencies = [
+ "five8_core 1.0.0",
 ]
 
 [[package]]
@@ -2904,7 +2913,16 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26dec3da8bc3ef08f2c04f61eab298c3ab334523e55f076354d6d6f613799a7b"
 dependencies = [
- "five8_core",
+ "five8_core 0.1.2",
+]
+
+[[package]]
+name = "five8_const"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a0f1728185f277989ca573a402716ae0beaaea3f76a8ff87ef9dd8fb19436c5"
+dependencies = [
+ "five8_core 1.0.0",
 ]
 
 [[package]]
@@ -2912,6 +2930,12 @@ name = "five8_core"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2551bf44bc5f776c15044b9b94153a00198be06743e262afaaa61f11ac7523a5"
+
+[[package]]
+name = "five8_core"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "059c31d7d36c43fe39d89e55711858b4da8be7eb6dabac23c7289b1a19489406"
 
 [[package]]
 name = "fixedbitset"
@@ -4299,9 +4323,9 @@ checksum = "09edd9e8b54e49e587e4f6295a7d29c3ea94d469cb40ab8ca70b288248a81db2"
 
 [[package]]
 name = "libc"
-version = "0.2.181"
+version = "0.2.180"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "459427e2af2b9c839b132acb702a1c654d95e10f8c326bfc2ad11310e458b1c5"
+checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
 name = "libloading"
@@ -4695,6 +4719,18 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "225e7cfe711e0ba79a68baeddb2982723e4235247aefce1482f2f16c27865b66"
+dependencies = [
+ "bitflags 2.10.0",
+ "cfg-if 1.0.4",
+ "cfg_aliases",
+ "libc",
 ]
 
 [[package]]
@@ -6934,8 +6970,8 @@ dependencies = [
 
 [[package]]
 name = "solana-account-decoder"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "Inflector",
  "base64 0.22.1",
@@ -6975,8 +7011,8 @@ dependencies = [
 
 [[package]]
 name = "solana-account-decoder-client-types"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "base64 0.22.1",
  "bs58",
@@ -7002,8 +7038,8 @@ dependencies = [
 
 [[package]]
 name = "solana-accounts-db"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-fs",
  "ahash 0.8.12",
@@ -7035,7 +7071,7 @@ dependencies = [
  "solana-epoch-schedule",
  "solana-fee-calculator",
  "solana-genesis-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-lattice-hash",
  "solana-measure",
@@ -7046,10 +7082,10 @@ dependencies = [
  "solana-rayon-threadlimit",
  "solana-rent",
  "solana-reward-info",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-signer",
  "solana-slot-hashes",
- "solana-stake-program",
+ "solana-stake-interface",
  "solana-svm-transaction",
  "solana-system-interface",
  "solana-sysvar",
@@ -7066,24 +7102,34 @@ dependencies = [
 
 [[package]]
 name = "solana-address"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a7a457086457ea9db9a5199d719dc8734dc2d0342fad0d8f77633c31eb62f19"
+checksum = "a2ecac8e1b7f74c2baa9e774c42817e3e75b20787134b76cc4d45e8a604488f5"
+dependencies = [
+ "solana-address 2.1.0",
+]
+
+[[package]]
+name = "solana-address"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "998227476aed49e1c63dec0e89341b768a2cf3bd22913c3ed8baa985cda882c9"
 dependencies = [
  "borsh",
  "bytemuck",
  "bytemuck_derive",
  "curve25519-dalek 4.1.3",
- "five8",
- "five8_const",
- "rand 0.8.5",
+ "five8 1.0.0",
+ "five8_const 1.0.0",
+ "rand 0.9.2",
  "serde",
  "serde_derive",
  "solana-atomic-u64 3.0.0",
- "solana-define-syscall 3.0.0",
+ "solana-define-syscall 5.0.0",
  "solana-program-error",
  "solana-sanitize 3.0.1",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
+ "wincode 0.2.5",
 ]
 
 [[package]]
@@ -7124,8 +7170,8 @@ dependencies = [
 
 [[package]]
 name = "solana-banks-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "borsh",
  "futures 0.3.31",
@@ -7133,7 +7179,7 @@ dependencies = [
  "solana-banks-interface",
  "solana-clock",
  "solana-commitment-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-program-pack",
  "solana-pubkey 3.0.0",
@@ -7151,14 +7197,14 @@ dependencies = [
 
 [[package]]
 name = "solana-banks-interface"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "serde",
  "solana-account",
  "solana-clock",
  "solana-commitment-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-pubkey 3.0.0",
  "solana-signature",
@@ -7170,8 +7216,8 @@ dependencies = [
 
 [[package]]
 name = "solana-banks-server"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "bincode",
@@ -7182,7 +7228,7 @@ dependencies = [
  "solana-client",
  "solana-clock",
  "solana-commitment-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-pubkey 3.0.0",
  "solana-runtime",
@@ -7227,13 +7273,13 @@ checksum = "ffa2e3bdac3339c6d0423275e45dafc5ac25f4d43bf344d026a3cc9a85e244a6"
 dependencies = [
  "blake3",
  "solana-define-syscall 3.0.0",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
 ]
 
 [[package]]
 name = "solana-bloom"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bv",
  "fnv",
@@ -7293,8 +7339,8 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-loader-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-syscalls",
  "bincode",
@@ -7321,8 +7367,8 @@ dependencies = [
 
 [[package]]
 name = "solana-bucket-map"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bv",
  "bytemuck",
@@ -7339,18 +7385,17 @@ dependencies = [
 
 [[package]]
 name = "solana-builtins"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "solana-bpf-loader-program",
  "solana-compute-budget-program",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-loader-v4-program",
  "solana-program-runtime",
  "solana-pubkey 3.0.0",
  "solana-sdk-ids 3.0.0",
- "solana-stake-program",
  "solana-system-program",
  "solana-vote-program",
  "solana-zk-elgamal-proof-program",
@@ -7359,8 +7404,8 @@ dependencies = [
 
 [[package]]
 name = "solana-builtins-default-costs"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "ahash 0.8.12",
@@ -7370,15 +7415,14 @@ dependencies = [
  "solana-loader-v4-program",
  "solana-pubkey 3.0.0",
  "solana-sdk-ids 3.0.0",
- "solana-stake-program",
  "solana-system-program",
  "solana-vote-program",
 ]
 
 [[package]]
 name = "solana-clap-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "chrono",
  "clap 2.34.0",
@@ -7388,7 +7432,7 @@ dependencies = [
  "solana-cluster-type",
  "solana-commitment-config",
  "solana-derivation-path",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-message",
  "solana-native-token",
@@ -7406,8 +7450,8 @@ dependencies = [
 
 [[package]]
 name = "solana-clap-v3-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "chrono",
  "clap 3.2.25",
@@ -7416,7 +7460,7 @@ dependencies = [
  "solana-cluster-type",
  "solana-commitment-config",
  "solana-derivation-path",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-message",
  "solana-native-token",
@@ -7435,8 +7479,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cli"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-logger",
@@ -7476,7 +7520,7 @@ dependencies = [
  "solana-feature-gate-interface",
  "solana-fee-calculator",
  "solana-fee-structure",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-loader-v3-interface",
@@ -7521,8 +7565,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cli-config"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "dirs-next",
  "serde",
@@ -7534,8 +7578,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cli-output"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "Inflector",
  "agave-reserved-account-keys",
@@ -7556,7 +7600,7 @@ dependencies = [
  "solana-cli-config",
  "solana-clock",
  "solana-epoch-info",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-packet",
  "solana-pubkey 3.0.0",
@@ -7575,8 +7619,8 @@ dependencies = [
 
 [[package]]
 name = "solana-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "bincode",
@@ -7593,7 +7637,7 @@ dependencies = [
  "solana-commitment-config",
  "solana-connection-cache",
  "solana-epoch-info",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-measure",
@@ -7629,7 +7673,7 @@ dependencies = [
  "solana-account",
  "solana-commitment-config",
  "solana-epoch-info",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-message",
@@ -7662,7 +7706,7 @@ checksum = "eb7692fa6bf10a1a86b450c4775526f56d7e0e2116a53313f2533b5694abea64"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
 ]
 
 [[package]]
@@ -7677,8 +7721,8 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "solana-fee-structure",
  "solana-program-runtime",
@@ -7686,8 +7730,8 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget-instruction"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "log",
@@ -7717,8 +7761,8 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "solana-program-runtime",
 ]
@@ -7742,8 +7786,8 @@ dependencies = [
 
 [[package]]
 name = "solana-connection-cache"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "bincode",
@@ -7764,8 +7808,8 @@ dependencies = [
 
 [[package]]
 name = "solana-core"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-banking-stage-ingress-types",
  "agave-feature-set",
@@ -7836,7 +7880,7 @@ dependencies = [
  "solana-geyser-plugin-manager",
  "solana-gossip",
  "solana-hard-forks",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-ledger",
@@ -7864,7 +7908,7 @@ dependencies = [
  "solana-sanitize 3.0.1",
  "solana-sdk-ids 3.0.0",
  "solana-send-transaction-service",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-short-vec",
  "solana-shred-version",
  "solana-signature",
@@ -7908,8 +7952,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cost-model"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "ahash 0.8.12",
@@ -7949,22 +7993,8 @@ dependencies = [
 
 [[package]]
 name = "solana-curve25519"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
-dependencies = [
- "bytemuck",
- "bytemuck_derive",
- "curve25519-dalek 4.1.3",
- "solana-define-syscall 3.0.0",
- "subtle",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "solana-curve25519"
 version = "3.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "737ede9143c36b8628cc11d920cdb762cd1ccbd7ca904c3bd63b39c58669fe38"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bytemuck",
  "bytemuck_derive",
@@ -7996,6 +8026,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9697086a4e102d28a156b8d6b521730335d6951bd39a5e766512bbe09007cee"
 
 [[package]]
+name = "solana-define-syscall"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57e5b1c0bc1d4a4d10c88a4100499d954c09d3fecfae4912c1a074dff68b1738"
+
+[[package]]
+name = "solana-define-syscall"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03aacdd7a61e2109887a7a7f046caebafce97ddf1150f33722eeac04f9039c73"
+
+[[package]]
 name = "solana-derivation-path"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8008,8 +8050,8 @@ dependencies = [
 
 [[package]]
 name = "solana-download-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-snapshots",
  "log",
@@ -8033,8 +8075,8 @@ dependencies = [
 
 [[package]]
 name = "solana-entry"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -8044,8 +8086,8 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "serde",
- "solana-address",
- "solana-hash 3.0.0",
+ "solana-address 1.1.0",
+ "solana-hash 3.1.0",
  "solana-measure",
  "solana-merkle-tree",
  "solana-message",
@@ -8053,12 +8095,12 @@ dependencies = [
  "solana-packet",
  "solana-perf",
  "solana-runtime-transaction",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-short-vec",
  "solana-signature",
  "solana-transaction",
  "solana-transaction-error",
- "wincode",
+ "wincode 0.1.2",
 ]
 
 [[package]]
@@ -8079,7 +8121,7 @@ checksum = "b319a4ed70390af911090c020571f0ff1f4ec432522d05ab89f5c08080381995"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-sdk-ids 3.0.0",
  "solana-sdk-macro",
  "solana-sysvar-id",
@@ -8092,7 +8134,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e507099d0c2c5d7870c9b1848281ea67bbeee80d171ca85003ee5767994c9c38"
 dependencies = [
  "siphasher 0.3.11",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-pubkey 3.0.0",
 ]
 
@@ -8129,7 +8171,7 @@ dependencies = [
  "serde_derive",
  "solana-address-lookup-table-interface",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keccak-hasher",
  "solana-message",
@@ -8142,8 +8184,8 @@ dependencies = [
 
 [[package]]
 name = "solana-faucet"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-logger",
  "bincode",
@@ -8154,7 +8196,7 @@ dependencies = [
  "solana-clap-utils",
  "solana-cli-config",
  "solana-cli-output",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-message",
@@ -8193,8 +8235,8 @@ dependencies = [
 
 [[package]]
 name = "solana-fee"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "solana-fee-structure",
@@ -8269,8 +8311,8 @@ dependencies = [
 
 [[package]]
 name = "solana-genesis"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-logger",
@@ -8309,7 +8351,6 @@ dependencies = [
  "solana-sdk-ids 3.0.0",
  "solana-signer",
  "solana-stake-interface",
- "solana-stake-program",
  "solana-time-utils",
  "solana-version",
  "solana-vote-program",
@@ -8332,14 +8373,14 @@ dependencies = [
  "solana-cluster-type",
  "solana-epoch-schedule",
  "solana-fee-calculator",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-inflation",
  "solana-keypair",
  "solana-poh-config",
  "solana-pubkey 3.0.0",
  "solana-rent",
  "solana-sdk-ids 3.0.0",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-shred-version",
  "solana-signer",
  "solana-time-utils",
@@ -8347,22 +8388,22 @@ dependencies = [
 
 [[package]]
 name = "solana-genesis-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-snapshots",
  "log",
  "solana-download-utils",
  "solana-genesis-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-rpc-client",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "solana-geyser-plugin-manager"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-geyser-plugin-interface",
  "bs58",
@@ -8376,7 +8417,7 @@ dependencies = [
  "solana-accounts-db",
  "solana-clock",
  "solana-entry",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-ledger",
  "solana-measure",
  "solana-metrics",
@@ -8392,8 +8433,8 @@ dependencies = [
 
 [[package]]
 name = "solana-gossip"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-logger",
@@ -8425,7 +8466,7 @@ dependencies = [
  "solana-connection-cache",
  "solana-entry",
  "solana-epoch-schedule",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-ledger",
  "solana-measure",
@@ -8441,7 +8482,7 @@ dependencies = [
  "solana-runtime",
  "solana-sanitize 3.0.1",
  "solana-serde-varint",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-short-vec",
  "solana-signature",
  "solana-signer",
@@ -8472,7 +8513,7 @@ version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5b96e9f0300fa287b545613f007dfe20043d7812bee255f418c1eb649c93b63"
 dependencies = [
- "five8",
+ "five8 0.2.1",
  "js-sys",
  "solana-atomic-u64 2.2.1",
  "solana-sanitize 2.2.1",
@@ -8481,18 +8522,28 @@ dependencies = [
 
 [[package]]
 name = "solana-hash"
-version = "3.0.0"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a063723b9e84c14d8c0d2cdf0268207dc7adecf546e31251f9e07c7b00b566c"
+checksum = "337c246447142f660f778cf6cb582beba8e28deb05b3b24bfb9ffd7c562e5f41"
+dependencies = [
+ "solana-hash 4.1.0",
+]
+
+[[package]]
+name = "solana-hash"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b6100d68f90726ddb4d2ac7d00e8b6cf9ce8e4ccdfbb9112b1d766045753241"
 dependencies = [
  "borsh",
  "bytemuck",
  "bytemuck_derive",
- "five8",
+ "five8 1.0.0",
  "serde",
  "serde_derive",
  "solana-atomic-u64 3.0.0",
  "solana-sanitize 3.0.1",
+ "wincode 0.2.5",
 ]
 
 [[package]]
@@ -8558,7 +8609,7 @@ checksum = "57eebd3012946913c8c1b8b43cdf8a6249edb09c0b6be3604ae910332a3acd97"
 dependencies = [
  "sha3",
  "solana-define-syscall 3.0.0",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
 ]
 
 [[package]]
@@ -8569,7 +8620,7 @@ checksum = "952ed9074c12edd2060cb09c2a8c664303f4ab7f7056a407ac37dd1da7bdaa3e"
 dependencies = [
  "ed25519-dalek 2.2.0",
  "ed25519-dalek-bip32 0.3.0",
- "five8",
+ "five8 0.2.1",
  "rand 0.8.5",
  "solana-derivation-path",
  "solana-pubkey 3.0.0",
@@ -8594,8 +8645,8 @@ dependencies = [
 
 [[package]]
 name = "solana-lattice-hash"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -8605,8 +8656,8 @@ dependencies = [
 
 [[package]]
 name = "solana-ledger"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-reserved-account-keys",
@@ -8653,7 +8704,7 @@ dependencies = [
  "solana-epoch-schedule",
  "solana-genesis-config",
  "solana-genesis-utils",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-measure",
@@ -8670,12 +8721,11 @@ dependencies = [
  "solana-runtime",
  "solana-runtime-transaction",
  "solana-seed-derivable",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-shred-version",
  "solana-signature",
  "solana-signer",
  "solana-stake-interface",
- "solana-stake-program",
  "solana-storage-bigtable",
  "solana-storage-proto",
  "solana-streamer",
@@ -8700,7 +8750,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "trees",
- "wincode",
+ "wincode 0.1.2",
 ]
 
 [[package]]
@@ -8749,8 +8799,8 @@ dependencies = [
 
 [[package]]
 name = "solana-loader-v4-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "log",
  "solana-account",
@@ -8772,9 +8822,10 @@ dependencies = [
 
 [[package]]
 name = "solana-local-cluster"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
+ "agave-feature-set",
  "agave-logger",
  "agave-snapshots",
  "crossbeam-channel",
@@ -8795,7 +8846,7 @@ dependencies = [
  "solana-genesis-config",
  "solana-gossip",
  "solana-hard-forks",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-ledger",
  "solana-message",
@@ -8815,7 +8866,6 @@ dependencies = [
  "solana-signer",
  "solana-slot-hashes",
  "solana-stake-interface",
- "solana-stake-program",
  "solana-streamer",
  "solana-system-interface",
  "solana-system-transaction",
@@ -8836,17 +8886,17 @@ dependencies = [
 
 [[package]]
 name = "solana-measure"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 
 [[package]]
 name = "solana-merkle-tree"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "fast-math",
- "solana-hash 3.0.0",
- "solana-sha256-hasher 3.0.0",
+ "solana-hash 3.1.0",
+ "solana-sha256-hasher 3.1.0",
 ]
 
 [[package]]
@@ -8860,8 +8910,8 @@ dependencies = [
  "lazy_static",
  "serde",
  "serde_derive",
- "solana-address",
- "solana-hash 3.0.0",
+ "solana-address 1.1.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-sanitize 3.0.1",
  "solana-sdk-ids 3.0.0",
@@ -8871,15 +8921,15 @@ dependencies = [
 
 [[package]]
 name = "solana-metrics"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
  "log",
  "reqwest 0.12.28",
  "solana-cluster-type",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-time-utils",
  "thiserror 2.0.18",
 ]
@@ -8901,8 +8951,8 @@ checksum = "ae8dd4c280dca9d046139eb5b7a5ac9ad10403fbd64964c7d7571214950d758f"
 
 [[package]]
 name = "solana-net-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "anyhow",
  "bincode",
@@ -8911,7 +8961,7 @@ dependencies = [
  "dashmap",
  "itertools 0.12.1",
  "log",
- "nix",
+ "nix 0.30.1",
  "rand 0.8.5",
  "serde",
  "socket2 0.6.2",
@@ -8936,9 +8986,9 @@ dependencies = [
  "serde",
  "serde_derive",
  "solana-fee-calculator",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-pubkey 3.0.0",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
 ]
 
 [[package]]
@@ -8948,20 +8998,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "805fd25b29e5a1a0e6c3dd6320c9da80f275fbe4ff6e392617c303a2085c435e"
 dependencies = [
  "solana-account",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-nonce",
  "solana-sdk-ids 3.0.0",
 ]
 
 [[package]]
 name = "solana-notifier"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "log",
  "reqwest 0.12.28",
  "serde_json",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
 ]
 
 [[package]]
@@ -8971,11 +9021,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6e2a1141a673f72a05cf406b99e4b2b8a457792b7c01afa07b3f00d4e2de393"
 dependencies = [
  "num_enum",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-packet",
  "solana-pubkey 3.0.0",
  "solana-sanitize 3.0.1",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-signature",
  "solana-signer",
 ]
@@ -8996,8 +9046,8 @@ dependencies = [
 
 [[package]]
 name = "solana-perf"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "ahash 0.8.12",
  "bincode",
@@ -9009,12 +9059,12 @@ dependencies = [
  "fnv",
  "libc",
  "log",
- "nix",
+ "nix 0.30.1",
  "rand 0.8.5",
  "rayon",
  "serde",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-message",
  "solana-metrics",
@@ -9036,8 +9086,8 @@ dependencies = [
 
 [[package]]
 name = "solana-poh"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "arc-swap",
  "core_affinity",
@@ -9046,7 +9096,7 @@ dependencies = [
  "qualifier_attr",
  "solana-clock",
  "solana-entry",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-ledger",
  "solana-measure",
  "solana-metrics",
@@ -9070,8 +9120,8 @@ dependencies = [
 
 [[package]]
 name = "solana-poseidon"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "ark-bn254 0.4.0",
  "ark-bn254 0.5.0",
@@ -9119,7 +9169,7 @@ dependencies = [
  "solana-epoch-stake",
  "solana-example-mocks",
  "solana-fee-calculator",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-instruction-error",
  "solana-instructions-sysvar",
@@ -9138,7 +9188,7 @@ dependencies = [
  "solana-secp256k1-recover",
  "solana-serde-varint",
  "solana-serialize-utils",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-short-vec",
  "solana-slot-hashes",
  "solana-slot-history",
@@ -9149,8 +9199,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program-binaries"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "serde",
@@ -9212,8 +9262,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program-runtime"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -9228,7 +9278,7 @@ dependencies = [
  "solana-epoch-rewards",
  "solana-epoch-schedule",
  "solana-fee-structure",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-last-restart-slot",
  "solana-loader-v3-interface",
@@ -9256,8 +9306,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program-test"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-logger",
@@ -9283,7 +9333,7 @@ dependencies = [
  "solana-epoch-schedule",
  "solana-fee-calculator",
  "solana-genesis-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-loader-v3-interface",
@@ -9324,8 +9374,8 @@ version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b62adb9c3261a052ca1f999398c388f1daf558a1b492f60a6d9e64857db4ff1"
 dependencies = [
- "five8",
- "five8_const",
+ "five8 0.2.1",
+ "five8_const 0.1.4",
  "getrandom 0.2.17",
  "js-sys",
  "num-traits",
@@ -9344,13 +9394,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8909d399deb0851aa524420beeb5646b115fd253ef446e35fe4504c904da3941"
 dependencies = [
  "rand 0.8.5",
- "solana-address",
+ "solana-address 1.1.0",
 ]
 
 [[package]]
 name = "solana-pubsub-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -9374,8 +9424,8 @@ dependencies = [
 
 [[package]]
 name = "solana-quic-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-lock",
  "async-trait",
@@ -9412,8 +9462,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rayon-threadlimit"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "log",
  "num_cpus",
@@ -9421,8 +9471,8 @@ dependencies = [
 
 [[package]]
 name = "solana-remote-wallet"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "console 0.16.2",
  "dialoguer",
@@ -9467,8 +9517,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-snapshots",
@@ -9504,7 +9554,7 @@ dependencies = [
  "solana-faucet",
  "solana-genesis-config",
  "solana-gossip",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-ledger",
  "solana-measure",
@@ -9525,7 +9575,6 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-slot-history",
- "solana-stake-program",
  "solana-storage-bigtable",
  "solana-streamer",
  "solana-svm",
@@ -9553,8 +9602,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -9576,7 +9625,7 @@ dependencies = [
  "solana-epoch-info",
  "solana-epoch-schedule",
  "solana-feature-gate-interface",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-message",
  "solana-pubkey 3.0.0",
@@ -9592,8 +9641,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-api"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "anyhow",
  "jsonrpc-core",
@@ -9612,14 +9661,14 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-nonce-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "clap 2.34.0",
  "solana-account",
  "solana-clap-utils",
  "solana-commitment-config",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-nonce",
  "solana-pubkey 3.0.0",
@@ -9630,8 +9679,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-types"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "base64 0.22.1",
  "bs58",
@@ -9640,7 +9689,7 @@ dependencies = [
  "serde_json",
  "solana-account",
  "solana-account-decoder-client-types",
- "solana-address",
+ "solana-address 1.1.0",
  "solana-clock",
  "solana-commitment-config",
  "solana-fee-calculator",
@@ -9656,8 +9705,8 @@ dependencies = [
 
 [[package]]
 name = "solana-runtime"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-fs",
@@ -9716,6 +9765,7 @@ dependencies = [
  "solana-compute-budget",
  "solana-compute-budget-instruction",
  "solana-compute-budget-interface",
+ "solana-config-interface",
  "solana-cost-model",
  "solana-cpi",
  "solana-ed25519-program",
@@ -9728,7 +9778,7 @@ dependencies = [
  "solana-fee-structure",
  "solana-genesis-config",
  "solana-hard-forks",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-inflation",
  "solana-instruction",
  "solana-keypair",
@@ -9756,13 +9806,12 @@ dependencies = [
  "solana-secp256k1-program",
  "solana-seed-derivable",
  "solana-serde",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-signature",
  "solana-signer",
  "solana-slot-hashes",
  "solana-slot-history",
  "solana-stake-interface",
- "solana-stake-program",
  "solana-svm",
  "solana-svm-callback",
  "solana-svm-timings",
@@ -9793,14 +9842,14 @@ dependencies = [
 
 [[package]]
 name = "solana-runtime-transaction"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-transaction-view",
  "log",
  "solana-compute-budget",
  "solana-compute-budget-instruction",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-pubkey 3.0.0",
  "solana-sdk-ids 3.0.0",
@@ -9929,8 +9978,8 @@ dependencies = [
 
 [[package]]
 name = "solana-send-transaction-service"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
@@ -9939,7 +9988,7 @@ dependencies = [
  "solana-client",
  "solana-clock",
  "solana-connection-cache",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-measure",
  "solana-metrics",
@@ -9996,13 +10045,13 @@ dependencies = [
 
 [[package]]
 name = "solana-sha256-hasher"
-version = "3.0.0"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9b912ba6f71cb202c0c3773ec77bf898fa9fe0c78691a2d6859b3b5b8954719"
+checksum = "db7dc3011ea4c0334aaaa7e7128cb390ecf546b28d412e9bf2064680f57f588f"
 dependencies = [
  "sha2 0.10.9",
- "solana-define-syscall 3.0.0",
- "solana-hash 3.0.0",
+ "solana-define-syscall 4.0.1",
+ "solana-hash 4.1.0",
 ]
 
 [[package]]
@@ -10021,8 +10070,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94953e22ca28fe4541a3447d6baeaf519cc4ddc063253bfa673b721f34c136bb"
 dependencies = [
  "solana-hard-forks",
- "solana-hash 3.0.0",
- "solana-sha256-hasher 3.0.0",
+ "solana-hash 3.1.0",
+ "solana-sha256-hasher 3.1.0",
 ]
 
 [[package]]
@@ -10032,7 +10081,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4bb8057cc0e9f7b5e89883d49de6f407df655bb6f3a71d0b7baf9986a2218fd9"
 dependencies = [
  "ed25519-dalek 2.2.0",
- "five8",
+ "five8 0.2.1",
  "serde",
  "serde-big-array",
  "serde_derive",
@@ -10069,7 +10118,7 @@ checksum = "80a293f952293281443c04f4d96afd9d547721923d596e92b4377ed2360f1746"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-sdk-ids 3.0.0",
  "solana-sysvar-id",
 ]
@@ -10118,31 +10167,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-stake-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
-dependencies = [
- "agave-feature-set",
- "bincode",
- "log",
- "solana-account",
- "solana-clock",
- "solana-config-interface",
- "solana-genesis-config",
- "solana-native-token",
- "solana-pubkey 3.0.0",
- "solana-rent",
- "solana-sdk-ids 3.0.0",
- "solana-stake-interface",
- "solana-sysvar",
- "solana-transaction-context",
- "solana-vote-interface",
-]
-
-[[package]]
 name = "solana-storage-bigtable"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-reserved-account-keys",
  "backoff",
@@ -10181,8 +10208,8 @@ dependencies = [
 
 [[package]]
 name = "solana-storage-proto"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "bs58",
@@ -10191,7 +10218,7 @@ dependencies = [
  "protobuf-src",
  "serde",
  "solana-account-decoder",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-message",
  "solana-pubkey 3.0.0",
@@ -10206,8 +10233,8 @@ dependencies = [
 
 [[package]]
 name = "solana-streamer"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "arc-swap",
  "bytes",
@@ -10221,7 +10248,7 @@ dependencies = [
  "itertools 0.12.1",
  "libc",
  "log",
- "nix",
+ "nix 0.30.1",
  "num_cpus",
  "pem",
  "percentage",
@@ -10253,8 +10280,8 @@ dependencies = [
 
 [[package]]
 name = "solana-svm"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "ahash 0.8.12",
  "log",
@@ -10264,7 +10291,7 @@ dependencies = [
  "solana-account",
  "solana-clock",
  "solana-fee-structure",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-instructions-sysvar",
  "solana-loader-v3-interface",
@@ -10296,8 +10323,8 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-callback"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "solana-account",
  "solana-clock",
@@ -10307,26 +10334,26 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-feature-set"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 
 [[package]]
 name = "solana-svm-log-collector"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "solana-svm-measure"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 
 [[package]]
 name = "solana-svm-test-harness"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-logger",
@@ -10358,8 +10385,8 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-timings"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "eager",
  "enum-iterator",
@@ -10368,10 +10395,10 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-transaction"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-message",
  "solana-pubkey 3.0.0",
  "solana-sdk-ids 3.0.0",
@@ -10381,8 +10408,8 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-type-overrides"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "rand 0.8.5",
 ]
@@ -10404,8 +10431,8 @@ dependencies = [
 
 [[package]]
 name = "solana-system-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "log",
@@ -10433,7 +10460,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31b5699ec533621515e714f1533ee6b3b0e71c463301d919eb59b8c1e249d30"
 dependencies = [
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-message",
  "solana-pubkey 3.0.0",
@@ -10461,7 +10488,7 @@ dependencies = [
  "solana-epoch-rewards",
  "solana-epoch-schedule",
  "solana-fee-calculator",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-last-restart-slot",
  "solana-program-entrypoint",
@@ -10488,8 +10515,8 @@ dependencies = [
 
 [[package]]
 name = "solana-test-validator"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-snapshots",
@@ -10545,8 +10572,8 @@ checksum = "0ced92c60aa76ec4780a9d93f3bd64dfa916e1b998eacc6f1c110f3f444f02c9"
 
 [[package]]
 name = "solana-tls-utils"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "rustls 0.23.36",
  "solana-keypair",
@@ -10557,8 +10584,8 @@ dependencies = [
 
 [[package]]
 name = "solana-tps-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "log",
  "solana-account",
@@ -10567,7 +10594,7 @@ dependencies = [
  "solana-commitment-config",
  "solana-connection-cache",
  "solana-epoch-info",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-message",
  "solana-net-utils",
@@ -10587,8 +10614,8 @@ dependencies = [
 
 [[package]]
 name = "solana-tpu-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "bincode",
@@ -10620,8 +10647,8 @@ dependencies = [
 
 [[package]]
 name = "solana-tpu-client-next"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "log",
@@ -10646,15 +10673,15 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64928e6af3058dcddd6da6680cbe08324b4e071ad73115738235bbaa9e9f72a5"
+checksum = "2ceb2efbf427a91b884709ffac4dac29117752ce1e37e9ae04977e450aa0bb76"
 dependencies = [
  "bincode",
  "serde",
  "serde_derive",
- "solana-address",
- "solana-hash 3.0.0",
+ "solana-address 2.1.0",
+ "solana-hash 4.1.0",
  "solana-instruction",
  "solana-instruction-error",
  "solana-message",
@@ -10668,8 +10695,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-context"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "qualifier_attr",
@@ -10697,8 +10724,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-metrics-tracker"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -10712,8 +10739,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-status"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "Inflector",
  "agave-reserved-account-keys",
@@ -10727,7 +10754,7 @@ dependencies = [
  "solana-account-decoder",
  "solana-address-lookup-table-interface",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-loader-v2-interface",
  "solana-loader-v3-interface",
@@ -10754,8 +10781,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-status-client-types"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -10777,8 +10804,8 @@ dependencies = [
 
 [[package]]
 name = "solana-turbine"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "agave-votor",
@@ -10801,7 +10828,7 @@ dependencies = [
  "solana-cluster-type",
  "solana-entry",
  "solana-gossip",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-keypair",
  "solana-ledger",
  "solana-measure",
@@ -10827,13 +10854,13 @@ dependencies = [
  "static_assertions",
  "thiserror 2.0.18",
  "tokio",
- "wincode",
+ "wincode 0.1.2",
 ]
 
 [[package]]
 name = "solana-udp-client"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "async-trait",
  "solana-connection-cache",
@@ -10847,8 +10874,8 @@ dependencies = [
 
 [[package]]
 name = "solana-unified-scheduler-logic"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "assert_matches",
  "solana-pubkey 3.0.0",
@@ -10860,8 +10887,8 @@ dependencies = [
 
 [[package]]
 name = "solana-unified-scheduler-pool"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-banking-stage-ingress-types",
  "aquamarine",
@@ -10901,8 +10928,8 @@ checksum = "c5d2face763df5afeaa9509b9019968860e69cc1531ec8b4a2e6c7b702204d5a"
 
 [[package]]
 name = "solana-version"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "rand 0.8.5",
@@ -10914,8 +10941,8 @@ dependencies = [
 
 [[package]]
 name = "solana-vote"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "bincode",
  "itertools 0.12.1",
@@ -10925,7 +10952,7 @@ dependencies = [
  "solana-account",
  "solana-bincode",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-packet",
@@ -10954,7 +10981,7 @@ dependencies = [
  "serde_derive",
  "serde_with",
  "solana-clock",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-instruction-error",
  "solana-pubkey 3.0.0",
@@ -10968,8 +10995,8 @@ dependencies = [
 
 [[package]]
 name = "solana-vote-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "bincode",
@@ -10981,7 +11008,7 @@ dependencies = [
  "solana-bincode",
  "solana-clock",
  "solana-epoch-schedule",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-keypair",
  "solana-metrics",
@@ -11000,8 +11027,8 @@ dependencies = [
 
 [[package]]
 name = "solana-wen-restart"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-snapshots",
  "anyhow",
@@ -11015,7 +11042,7 @@ dependencies = [
  "solana-entry",
  "solana-genesis-utils",
  "solana-gossip",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-ledger",
  "solana-pubkey 3.0.0",
  "solana-runtime",
@@ -11029,8 +11056,8 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-elgamal-proof-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "bytemuck",
@@ -11082,8 +11109,8 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-token-proof-program"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "agave-feature-set",
  "bytemuck",
@@ -11098,8 +11125,8 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-token-sdk"
-version = "3.1.0-beta.0"
-source = "git+https://github.com/firedancer-io/agave?rev=701fe2d011877defa7d773b7e42570ba56d860ba#701fe2d011877defa7d773b7e42570ba56d860ba"
+version = "3.1.8"
+source = "git+https://github.com/firedancer-io/agave?rev=63a8a9f758ff8beb1bb0142fd63fbebced878f36#63a8a9f758ff8beb1bb0142fd63fbebced878f36"
 dependencies = [
  "aes-gcm-siv",
  "base64 0.22.1",
@@ -11115,7 +11142,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3",
- "solana-curve25519 3.1.0-beta.0",
+ "solana-curve25519",
  "solana-derivation-path",
  "solana-instruction",
  "solana-pubkey 3.0.0",
@@ -11228,7 +11255,7 @@ dependencies = [
  "env_logger",
  "fast-math",
  "fd-lock",
- "five8_const",
+ "five8_const 0.1.4",
  "flatbuffers",
  "flatc-rust",
  "flate2",
@@ -11279,7 +11306,7 @@ dependencies = [
  "min-max-heap",
  "mockall",
  "modular-bitfield",
- "nix",
+ "nix 0.30.1",
  "num-bigint 0.4.6",
  "num-derive",
  "num-traits",
@@ -11347,7 +11374,7 @@ dependencies = [
  "solana-account-decoder-client-types",
  "solana-account-info",
  "solana-accounts-db",
- "solana-address",
+ "solana-address 2.1.0",
  "solana-address-lookup-table-interface",
  "solana-atomic-u64 3.0.0",
  "solana-banks-client",
@@ -11383,8 +11410,8 @@ dependencies = [
  "solana-core",
  "solana-cost-model",
  "solana-cpi",
- "solana-curve25519 3.1.0-beta.0",
- "solana-define-syscall 3.0.0",
+ "solana-curve25519",
+ "solana-define-syscall 5.0.0",
  "solana-derivation-path",
  "solana-download-utils",
  "solana-ed25519-program",
@@ -11408,7 +11435,7 @@ dependencies = [
  "solana-geyser-plugin-manager",
  "solana-gossip",
  "solana-hard-forks",
- "solana-hash 3.0.0",
+ "solana-hash 3.1.0",
  "solana-inflation",
  "solana-instruction",
  "solana-instruction-error",
@@ -11478,7 +11505,7 @@ dependencies = [
  "solana-serde",
  "solana-serde-varint",
  "solana-serialize-utils",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "solana-short-vec",
  "solana-shred-version",
  "solana-signature",
@@ -11488,7 +11515,6 @@ dependencies = [
  "solana-slot-history",
  "solana-stable-layout",
  "solana-stake-interface",
- "solana-stake-program",
  "solana-storage-bigtable",
  "solana-storage-proto",
  "solana-streamer",
@@ -11582,7 +11608,7 @@ dependencies = [
  "vec_extract_if_polyfill",
  "wasm-bindgen",
  "winapi 0.3.9",
- "wincode",
+ "wincode 0.1.2",
  "x509-parser",
  "zeroize",
  "zstd",
@@ -11643,7 +11669,7 @@ checksum = "d48cc11459e265d5b501534144266620289720b4c44522a47bc6b63cd295d2f3"
 dependencies = [
  "bytemuck",
  "solana-program-error",
- "solana-sha256-hasher 3.0.0",
+ "solana-sha256-hasher 3.1.0",
  "spl-discriminator-derive",
 ]
 
@@ -11746,7 +11772,7 @@ checksum = "879a9ebad0d77383d3ea71e7de50503554961ff0f4ef6cbca39ad126e6f6da3a"
 dependencies = [
  "bytemuck",
  "solana-account-info",
- "solana-curve25519 3.1.8",
+ "solana-curve25519",
  "solana-instruction",
  "solana-instructions-sysvar",
  "solana-msg",
@@ -13236,7 +13262,19 @@ dependencies = [
  "quote",
  "solana-short-vec",
  "thiserror 2.0.18",
- "wincode-derive",
+ "wincode-derive 0.1.1",
+]
+
+[[package]]
+name = "wincode"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5cec722a3274e47d1524cbe2cea762f2c19d615bd9d73ada21db9066349d57e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "thiserror 2.0.18",
+ "wincode-derive 0.2.3",
 ]
 
 [[package]]
@@ -13244,6 +13282,18 @@ name = "wincode-derive"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a144d1576a6d65f9c80df1d531e12b197057c6f69a6e9d4a183fe61e9f135568"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.114",
+]
+
+[[package]]
+name = "wincode-derive"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8961eb04054a1b2e026b5628e24da7e001350249a787e1a85aa961f33dc5f286"
 dependencies = [
  "darling",
  "proc-macro2",
