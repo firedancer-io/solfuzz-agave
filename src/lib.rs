@@ -290,6 +290,8 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     // include_loaded_accounts_data_size_in_fee_calculation, // was reverted
     raise_block_limits_to_60m,
     vote_only_full_fec_sets,
+    enable_sbpf_v1_deployment_and_execution,
+    enable_sbpf_v2_deployment_and_execution,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -307,8 +309,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
-    enable_sbpf_v1_deployment_and_execution,
-    enable_sbpf_v2_deployment_and_execution,
     // enable_sbpf_v3_deployment_and_execution, // still actively being worked on
     enable_get_epoch_stake_syscall,
     verify_retransmitter_signature,
@@ -580,7 +580,7 @@ pub fn get_instr_accounts(
     for account_meta in acct_metas.iter() {
         let index_in_transaction = txn_context
             .find_index_of_account(&account_meta.pubkey)
-            .unwrap_or(txn_context.get_number_of_accounts())
+            .expect("invariant violation: account not found in transaction context")
             as IndexOfAccount;
         instruction_accounts.push(InstructionAccount::new(
             index_in_transaction,
