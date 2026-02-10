@@ -580,7 +580,7 @@ pub fn get_instr_accounts(
     for account_meta in acct_metas.iter() {
         let index_in_transaction = txn_context
             .find_index_of_account(&account_meta.pubkey)
-            .unwrap_or(txn_context.get_number_of_accounts())
+            .expect("invariant violation: account not found in transaction context")
             as IndexOfAccount;
         instruction_accounts.push(InstructionAccount::new(
             index_in_transaction,
