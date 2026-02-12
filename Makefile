@@ -55,7 +55,12 @@ shared_obj_pcguard:
 	RUSTFLAGS="$(RUSTFLAGS_PCGUARD)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/pcguard
 
 shared_obj_cov:
-	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) build --target x86_64-unknown-linux-gnu --release \
+	@# Build the coverage SO with Rust nightly to get a newer LLVM.
+	@# Stable 1.86 ships LLVM 19 whose llvm-cov chokes on large Rust
+	@# binaries ("function name is empty").  Nightly ships LLVM 22+
+	@# which fixes that bug.  Only the +cov.so is built with nightly;
+	@# the regular and hfuzz builds remain on the pinned stable channel.
+	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) +nightly build --target x86_64-unknown-linux-gnu --release \
 	 --lib --target-dir target/cov
 
 	# to avoid conflicts when uploading as GH artifact
