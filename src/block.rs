@@ -113,7 +113,7 @@ fn build_latest_stake_delegations(
     account_states: &[proto::AcctState],
     epoch: Epoch,
     stake_history: &StakeHistory,
-) -> Stakes<Delegation> {
+) -> Option<Stakes<Delegation>> {
     let mut stakes = Stakes::<Delegation>::default();
 
     /* First populate the stake delegations. We only consider stake accounts with nonzero lamports and stake amount. */
@@ -135,6 +135,7 @@ fn build_latest_stake_delegations(
             }
         });
 
+    let mut total_stake = 0;
     /* Then populate the vote accounts */
     account_states
         .iter()
@@ -145,27 +146,32 @@ fn build_latest_stake_delegations(
             if let Ok(vote_account) = VoteAccount::try_from(account_shared_data) {
                 /* Note we can pass in new_rate_activation_epoch = 0 because the feature is activated on all clusters */
                 stakes.vote_accounts.insert(pubkey, vote_account, || {
-                    stakes
+                    let s = stakes
                         .stake_delegations
                         .values()
                         .filter(|delegation| delegation.voter_pubkey == pubkey)
                         .map(|delegation| delegation.stake(epoch, stake_history, Some(0)))
-                        .sum()
+                        .sum();
+                    total_stake += s;
+                    s
                 });
             }
         });
+    if total_stake == 0 { return None; }
 
     stakes.epoch = epoch;
     stakes.stake_history = stake_history.clone();
-    stakes
+    Some(stakes)
 }
 
 /* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_deleations()` is that
 we use the provided votes cache instead of the latest input account states. */
 fn build_prev_stake_delegations(
     vote_accounts: &[proto::VoteAccount],
-) -> Stakes<stake_account::StakeAccount<Delegation>> {
+) -> Option<Stakes<stake_account::StakeAccount<Delegation>>> {
     let mut stakes = Stakes::<Delegation>::default();
+    let mut total_stake = 0;
+
     vote_accounts.iter().for_each(|input_vote_account| {
         let (pubkey, account) = input_vote_account
             .vote_account
@@ -178,6 +184,7 @@ fn build_prev_stake_delegations(
         let account_shared_data = AccountSharedData::from(account);
 
         if let Ok(vote_account) = VoteAccount::try_from(account_shared_data) {
+            total_stake += input_vote_account.stake;
             stakes.vote_accounts.insert(pubkey, vote_account, || input_vote_account.stake);
         }
     });
@@ -190,7 +197,10 @@ fn build_prev_stake_delegations(
                 .map(|vote_account| vote_account.account().clone())
         })
         .unwrap();
-    stake_accounts
+    if total_stake == 0 {
+        return None;
+    }
+    Some(stake_accounts)
 }
 
 fn get_changed_accounts(
@@ -450,13 +460,30 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     /* Build the stakes separately */
     let current_epoch = epoch_schedule.get_epoch(current_slot);
     let parent_epoch = epoch_schedule.get_epoch(parent_slot);
-    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
+    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(current_slot);
     let stakes_t =
-        build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history);
-    let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
-    let stakes_t_2 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2);
+        build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history)?;
+    let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1)?;
+    let stakes_t_2 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2)?;
 
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
+
+    /* Add stakes for current_epoch to ensure epoch stakes lookups during
+       recalculate_partitioned_rewards don't panic */
+    let stakes_t_accounts = Stakes::new(&stakes_t, |pubkey| {
+        context.acct_states
+            .iter()
+            .find(|acct| acct.address.as_slice() == pubkey.as_ref())
+            .map(|acct| AccountSharedData::from(acct))
+    }).unwrap();
+    epoch_stakes.insert(
+        current_epoch,
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stakes_t_accounts),
+            current_epoch,
+        ),
+    );
+
     epoch_stakes.insert(
         leader_schedule_epoch.saturating_sub(1),
         VersionedEpochStakes::new(
@@ -611,7 +638,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
                     .iter()
                     .map(|item| {
                         Signature::from(
-                            <Vec<u8> as TryInto<[u8; 64]>>::try_into(item.clone()).unwrap(),
+                            <Vec<u8> as TryInto<[u8; 64]>>::try_into(item.clone()).unwrap_or_else(
+                                |_| [0u8; 64]
+                            ),
                         )
                     })
                     .collect::<Vec<Signature>>();
