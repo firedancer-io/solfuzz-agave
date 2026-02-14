@@ -52,13 +52,13 @@ pub fn build_versioned_message(value: &TransactionMessage) -> VersionedMessage {
     let account_keys = value
         .account_keys
         .iter()
-        .map(|key| Pubkey::new_from_array(key.clone().try_into().unwrap()))
+        .map(|key| Pubkey::new_from_array(key.clone().try_into().unwrap_or_else(|_| [0u8; 32])))
         .collect::<Vec<Pubkey>>();
     let recent_blockhash = if value.recent_blockhash.is_empty() {
         // Default: empty blockchash (this keeps tests simpler)
         Hash::new_from_array([0u8; 32])
     } else {
-        Hash::new_from_array(value.recent_blockhash.clone().try_into().unwrap())
+        Hash::new_from_array(value.recent_blockhash.clone().try_into().unwrap_or_else(|_| [0u8; 32]))
     };
     let instructions = value
         .instructions

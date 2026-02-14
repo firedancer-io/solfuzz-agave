@@ -367,7 +367,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let feature_set = FeatureSet::from(&fd_features);
     let current_slot = slot_ctx.slot;
     let parent_slot = slot_ctx.prev_slot;
-    let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap());
+    let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap_or_else(|_| [0u8; 32]));
 
     /* HACK: Because there are three different schedules and rent instances, we need to find and deserialize
     them from the account states first. Technically these different rent / epoch schedules should be fuzzed,
@@ -408,7 +408,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let mut blockhash_queue = BlockhashQueue::default();
     context.blockhash_queue.iter().for_each(|blockhash| {
-        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
+        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap_or_else(|_| [0u8; 32]));
         blockhash_queue.register_hash(&blockhash_hash, lamports_per_signature);
     });
 
@@ -513,7 +513,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         blockhash_queue,
         ancestors,
         hash: Hash::default(),
-        parent_hash: Hash::new_from_array(slot_ctx.parent_bank_hash.try_into().unwrap()),
+        parent_hash: Hash::new_from_array(slot_ctx.parent_bank_hash.try_into().unwrap_or_else(|_| [0u8; 32])),
         parent_slot: slot_ctx.prev_slot,
         hard_forks: HardForks::default(),
         transaction_count: 0,
