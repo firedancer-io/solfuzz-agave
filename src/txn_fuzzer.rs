@@ -346,7 +346,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     /* HACK: Add dummy ALUT and config program accounts to genesis config so that their builtin versions don't get added to the program cache */
     let mut genesis_config = GenesisConfig {
         creation_time: 0,
-        rent,
+        rent: rent.clone(),
         epoch_schedule,
         ..GenesisConfig::default()
     };
@@ -387,7 +387,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         ..AccountsDbConfig::default()
     };
     // previously, Block::new_with_paths()
-    let bank = Bank::new_from_genesis(
+    let mut bank = Bank::new_from_genesis(
         &genesis_config,
         Arc::new(RuntimeConfig::default()),
         vec!["/dev/shm/a".into()],
@@ -399,6 +399,12 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         genesis_hash,
         Some(feature_set.clone()),
     );
+    /* The rent collector's rent field may change due to feature gate changes
+    in the bank's initialization, so we need to manually override it here
+    with the value from the sysvar account.
+    TODO: break the txn fuzzer's dependency on the bank so that all
+    this special casing can be removed. */
+    bank.set_rent_collector_rent(rent);
     let bank_forks = BankForks::new_rw_arc(bank);
     let mut bank = bank_forks.read().unwrap().root_bank();
     bank.rehash();
