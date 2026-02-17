@@ -38,7 +38,7 @@ source solfuzz_agave_env/bin/activate
 
 You must use the [firedancer fork](https://github.com/firedancer-io/agave) of Agave with the corresponding `patches` branch.
 
-For example, solfuzz-agave branch `agave-v3.1.0-beta.0` should checkout `agave-v3.1.0-beta.0-patches` in the fork.
+For example, solfuzz-agave branch `agave-v3.1.8` should checkout `agave-v3.1.8-patches` in the fork.
 
 Set up the python environment with instructions above first.
 
