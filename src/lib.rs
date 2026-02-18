@@ -1353,7 +1353,6 @@ mod tests {
             ],
             cu_avail: 10000u64,
             epoch_context: None,
-            slot_context: None,
         };
         let output = execute_instr_proto(input);
         assert_eq!(
