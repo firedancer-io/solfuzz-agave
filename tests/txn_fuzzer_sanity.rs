@@ -11,7 +11,7 @@ use solana_signature::Signature;
 use solana_sysvar_id::SysvarId;
 use solfuzz_agave::proto::{
     AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
-    SlotContext, TransactionMessage, TxnContext, TxnResult,
+    TransactionMessage, TxnContext, TxnResult,
 };
 use solfuzz_agave::txn_fuzzer::sol_compat_txn_execute_v1;
 use solfuzz_agave::{feature_list, proto, utils::feature_u64, HARDCODED_FEATURES};
@@ -154,18 +154,6 @@ fn test_txn_execute_clock() {
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
 
-    let slot_ctx = SlotContext {
-        slot: 20,
-        block_height: 0,
-        poh: vec![],
-        parent_bank_hash: vec![],
-        parent_lthash: vec![],
-        prev_slot: 0,
-        prev_lps: 0,
-        prev_epoch_capitalization: 0,
-        fee_rate_governor: None,
-        parent_signature_count: 0,
-    };
     let features = get_features();
     let epoch_ctx = EpochContext {
         features: Some(features),
@@ -238,7 +226,6 @@ fn test_txn_execute_clock() {
         ],
         blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
-        slot_ctx: Some(slot_ctx),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -271,18 +258,6 @@ fn test_simple_transfer() {
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
 
-    let slot_ctx = SlotContext {
-        slot: 20,
-        block_height: 0,
-        poh: vec![],
-        parent_bank_hash: vec![],
-        parent_lthash: vec![],
-        prev_slot: 0,
-        prev_lps: 0,
-        prev_epoch_capitalization: 0,
-        fee_rate_governor: None,
-        parent_signature_count: 0,
-    };
     let features = get_features();
     let epoch_ctx = EpochContext {
         features: Some(features),
@@ -381,7 +356,6 @@ fn test_simple_transfer() {
         ],
         blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
-        slot_ctx: Some(slot_ctx),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -422,18 +396,6 @@ fn test_lookup_table() {
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
 
-    let slot_ctx = SlotContext {
-        slot: 20,
-        block_height: 0,
-        poh: vec![],
-        parent_bank_hash: vec![],
-        parent_lthash: vec![],
-        prev_slot: 0,
-        prev_lps: 0,
-        prev_epoch_capitalization: 0,
-        fee_rate_governor: None,
-        parent_signature_count: 0,
-    };
     let features = get_features();
     let epoch_ctx = EpochContext {
         features: Some(features),
@@ -564,7 +526,6 @@ fn test_lookup_table() {
         ],
         blockhash_queue,
         epoch_ctx: Some(epoch_ctx),
-        slot_ctx: Some(slot_ctx),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
