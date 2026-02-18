@@ -11,7 +11,7 @@ use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_db::AccountsDbConfig;
 use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
-use solana_clock::MAX_PROCESSING_AGE;
+use solana_clock::{Clock, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
 use solana_genesis_config::GenesisConfig;
 use solana_hash::Hash;
@@ -325,11 +325,6 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     const FEE_COLLECTOR: Pubkey = Pubkey::from_str_const("1111111111111111111111111111111111");
 
-    let slot = context
-        .slot_ctx
-        .as_ref()
-        .map(|ctx| if ctx.slot == 0 { 10 } else { ctx.slot })
-        .unwrap_or(10);
     let sysvar_accounts: HashMap<&[u8], &AcctState> = context
         .account_shared_data
         .iter()
@@ -342,6 +337,8 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         &sysvar_accounts,
         solana_sysvar::epoch_schedule::id().as_ref(),
     );
+    let clock: Clock = get_sysvar(&sysvar_accounts, solana_sysvar::clock::id().as_ref());
+    let slot = clock.slot;
 
     /* HACK: Add dummy ALUT and config program accounts to genesis config so that their builtin versions don't get added to the program cache */
     let mut genesis_config = GenesisConfig {
