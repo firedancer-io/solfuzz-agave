@@ -725,6 +725,7 @@ fn create_invoke_context_fields(
     Hash,
     u64,
     ComputeBudget,
+    ProgramRuntimeEnvironments,
 )> {
     #[cfg(feature = "core-bpf-conformance")]
     // The BPF version of some builtin programs are built with the assumption
@@ -931,6 +932,7 @@ fn create_invoke_context_fields(
         blockhash,
         lamports_per_signature,
         compute_budget,
+        environments,
     ))
 }
 
@@ -958,24 +960,12 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         blockhash,
         lamports_per_signature,
         compute_budget,
+        environments,
     ) = create_invoke_context_fields(&mut input)?;
 
     // Get accounts immediately after mutable borrow is released, before creating EnvironmentConfig
     let instruction_accounts =
         get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
-
-    // Create ProgramRuntimeEnvironments
-    let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
-        &runtime_features,
-        &compute_budget.to_budget(),
-        false,                                      /* deployment */
-        std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
-    )
-    .unwrap();
-    let environments = ProgramRuntimeEnvironments {
-        program_runtime_v1: Arc::new(program_runtime_environment_v1),
-        ..ProgramRuntimeEnvironments::default()
-    };
 
     let callback_context = SnapshotInvokeContext::new(feature_set_snapshot);
 

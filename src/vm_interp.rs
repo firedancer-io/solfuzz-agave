@@ -6,8 +6,6 @@ use crate::{
     },
     InstrContext, SnapshotInvokeContext,
 };
-// feature removed from feature set surface in 3.0; direct mapping toggled via SVMFeatureSet flags
-use agave_syscalls;
 use bincode::Error;
 use prost::Message;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
@@ -176,6 +174,7 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
         blockhash,
         lamports_per_signature,
         compute_budget,
+        environments,
     ) = crate::create_invoke_context_fields(&mut instr_ctx)?;
 
     let log_collector = LogCollector::new_ref();
@@ -183,19 +182,6 @@ pub fn execute_vm_interp(syscall_context: SyscallContext) -> Option<SyscallEffec
     // Get accounts first (this borrow is released when instr_accounts is created)
     let instr_accounts =
         crate::get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
-
-    // Create ProgramRuntimeEnvironments
-    let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
-        &runtime_features,
-        &compute_budget.to_budget(),
-        false,                                      /* deployment */
-        std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
-    )
-    .unwrap();
-    let environments = solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments {
-        program_runtime_v1: std::sync::Arc::new(program_runtime_environment_v1),
-        ..solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments::default()
-    };
 
     // Now create EnvironmentConfig (accounts borrow is released, callback borrow is separate)
     let callback_context = SnapshotInvokeContext::new(feature_set_snapshot);
