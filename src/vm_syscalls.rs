@@ -14,7 +14,7 @@ use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::serialization::serialize_parameters;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{
-    invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch, mem_pool::VmMemoryPool,
+    invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
 };
 use solana_pubkey::Pubkey;
 use solana_sbpf::{
@@ -271,10 +271,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         return None;
     };
 
-    let mut mempool = VmMemoryPool::new();
     let rodata = AlignedMemory::<HOST_ALIGN>::from(&vm_ctx.rodata);
-    let mut stack = mempool.get_stack(STACK_SIZE);
-    // let mut heap = mempool.get_heap(heap_max); // this would force MIN_HEAP_FRAME_BYTES
+    let mut stack = AlignedMemory::<HOST_ALIGN>::from(&vec![0; STACK_SIZE]);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
     let rodata_stack_heap = vec![
         MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
