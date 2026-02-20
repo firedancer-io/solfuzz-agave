@@ -291,6 +291,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     vote_only_full_fec_sets,
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
+    disable_zk_elgamal_proof_program,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -314,7 +315,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_turbine_extended_fanout_experiments,
     vote_only_retransmitter_signed_fec_sets,
     mask_out_rent_epoch_in_vm_serialization,
-    disable_zk_elgamal_proof_program,
     reenable_zk_elgamal_proof_program,
     enable_extend_program_checked,
     require_static_nonce_account,
