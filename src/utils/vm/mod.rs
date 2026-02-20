@@ -1,4 +1,3 @@
-pub mod err_map;
 pub mod mem_regions;
 
 pub const STACK_SIZE: usize = 64 * STACK_GAP_SIZE as usize;

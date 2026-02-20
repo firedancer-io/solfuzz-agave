@@ -116,7 +116,6 @@ declare -A JOBS=(
   [test_exec_txn]="dump/test-vectors/txn/fixtures/programs dump/test-vectors/txn/fixtures/precompile"
   [test_exec_block]="dump/test-vectors/block/fixtures"
   [test_exec_vm_syscall]="dump/test-vectors/syscall/fixtures"
-  [test_exec_vm_interp]="dump/test-vectors/vm_interp/fixtures"
   [test_exec_elf_loader]="dump/test-vectors/elf_loader/fixtures"
 )
 

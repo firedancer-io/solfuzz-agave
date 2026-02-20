@@ -3,12 +3,8 @@
 pub mod block;
 pub mod elf_loader;
 pub mod fuzzing_entrypoints;
-pub mod pack;
-mod shred_parse;
 pub mod txn_fuzzer;
-mod types;
 pub mod utils;
-pub mod vm_interp;
 pub mod vm_syscalls;
 
 use agave_feature_set::*;
