@@ -5668,7 +5668,7 @@ dependencies = [
 [[package]]
 name = "protosol"
 version = "3.0.0"
-source = "git+https://github.com/firedancer-io/protosol?tag=v3.3.0#3e9a5a8da991a5205c82e64b3dc90cc91d32f773"
+source = "git+https://github.com/firedancer-io/protosol?tag=v3.4.0#e1e6bc4c6ed8f2f8527de152885234cd82d22749"
 dependencies = [
  "flatbuffers",
  "flatc-rust",
