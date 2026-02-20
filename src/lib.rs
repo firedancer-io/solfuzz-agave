@@ -2,7 +2,6 @@
 
 pub mod block;
 pub mod elf_loader;
-pub mod elf_loader_flatbuffers;
 pub mod fuzzing_entrypoints;
 pub mod pack;
 mod shred_parse;

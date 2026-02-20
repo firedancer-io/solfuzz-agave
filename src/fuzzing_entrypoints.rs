@@ -1,4 +1,4 @@
-use crate::elf_loader_flatbuffers::execute_elf_loader;
+use crate::elf_loader::execute_elf_loader;
 
 /// Macro to generate `sol_compat_*_execute_v2` FFI functions
 ///

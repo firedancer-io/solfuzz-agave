@@ -1,6 +1,5 @@
 use clap::Parser;
-use prost::Message;
-use solfuzz_agave::proto::ElfLoaderFixture;
+use solfuzz_agave::elf_generated::{ELFLoaderEffects, ELFLoaderFixture};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -9,33 +8,29 @@ struct Cli {
     inputs: Vec<PathBuf>,
 }
 
-fn exec(input: &PathBuf) -> bool {
-    let blob = std::fs::read(input).unwrap();
-    let fixture = ElfLoaderFixture::decode(&blob[..]).unwrap();
-    let Some(context) = fixture.input else {
-        println!("No context found.");
+fn exec(input: &PathBuf, blob: &[u8], builder: &mut flatbuffers::FlatBufferBuilder) -> bool {
+    builder.reset();
+
+    let Ok(fixture) = flatbuffers::root::<ELFLoaderFixture<'_>>(blob) else {
+        println!("Failed to parse fixture.");
         return false;
     };
 
-    let Some(expected) = fixture.output else {
-        println!("No fixture found.");
-        return false;
-    };
-    let Some(effects) = solfuzz_agave::elf_loader::execute_elf_loader(&context) else {
-        println!(
-            "FAIL: No instruction effects returned for input: {:?}",
-            input
-        );
-        return false;
-    };
+    let context = fixture.input();
+    let expected = fixture.output();
 
-    let ok = effects == expected;
+    solfuzz_agave::elf_loader::execute_elf_loader(&context, builder);
+    let effects_slice = builder.finished_data().to_vec();
+    let actual = unsafe { flatbuffers::root_unchecked::<ELFLoaderEffects<'_>>(&effects_slice) };
+
+    let ok = expected.unpack() == actual.unpack();
     if ok {
         println!("OK: {:?}", input);
     } else {
+        let actual = unsafe { flatbuffers::root_unchecked::<ELFLoaderEffects<'_>>(&effects_slice) };
         println!("FAIL: {:?}", input);
         println!("Expected: {:?}", expected);
-        println!("Actual: {:?}", effects);
+        println!("Actual: {:?}", actual);
     }
     ok
 }
@@ -43,8 +38,10 @@ fn exec(input: &PathBuf) -> bool {
 fn main() {
     let cli = Cli::parse();
     let mut fail_cnt: i32 = 0;
+    let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(1 << 12usize);
     for input in cli.inputs {
-        if !exec(&input) {
+        let blob = std::fs::read(&input).unwrap();
+        if !exec(&input, &blob, &mut builder) {
             fail_cnt = fail_cnt.saturating_add(1);
         }
     }
