@@ -118,7 +118,6 @@ declare -A JOBS=(
   [test_exec_vm_syscall]="dump/test-vectors/syscall/fixtures"
   [test_exec_vm_interp]="dump/test-vectors/vm_interp/fixtures"
   [test_exec_elf_loader]="dump/test-vectors/elf_loader/fixtures"
-  [test_exec_elf_loader_flatbuffers]="dump/test-vectors/elf_loader/fixtures_fb"
 )
 
 any_job_failed=0
