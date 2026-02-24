@@ -3,7 +3,7 @@
 pub mod block;
 pub mod elf_loader;
 pub mod fuzzing_entrypoints;
-pub mod txn_fuzzer;
+pub mod txn;
 pub mod utils;
 pub mod vm_syscalls;
 

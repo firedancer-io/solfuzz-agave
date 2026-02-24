@@ -1,41 +1,47 @@
-use crate::proto::{self, ResultingState};
+use crate::proto;
 use crate::proto::{AcctState, TxnContext, TxnResult};
-use crate::utils::program::common::{
-    build_versioned_message, get_dummy_bpf_native_programs, get_sysvar,
-};
+use crate::utils::program::common::build_versioned_message;
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
 use solana_account::{AccountSharedData, ReadableAccount};
-use solana_accounts_db::accounts_db::AccountsDbConfig;
+use solana_accounts_db::accounts::Accounts;
+use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
+use solana_accounts_db::accounts_hash::AccountsLtHash;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
-use solana_clock::{Clock, MAX_PROCESSING_AGE};
+use solana_accounts_db::ancestors::AncestorsForSerialization;
+use solana_accounts_db::blockhash_queue::BlockhashQueue;
+use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
-use solana_genesis_config::GenesisConfig;
+use solana_fee_calculator::FeeRateGovernor;
+use solana_hard_forks::HardForks;
 use solana_hash::Hash;
+use solana_inflation::Inflation;
 use solana_instruction::error::InstructionError;
+use solana_lattice_hash::lt_hash::LtHash;
 use solana_message::compiled_instruction::CompiledInstruction;
 use solana_message::v0::MessageAddressTableLookup;
 use solana_message::MessageHeader;
 use solana_message::SanitizedMessage;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
-use solana_runtime::account_saver::collect_accounts_for_failed_tx;
-use solana_runtime::bank::{Bank, LoadAndExecuteTransactionsOutput};
+use solana_runtime::bank::{
+    Bank, BankFieldsToDeserialize, BankHashStats, BankRc, LoadAndExecuteTransactionsOutput,
+};
 use solana_runtime::bank_forks::BankForks;
-use solana_runtime::runtime_config::RuntimeConfig;
-use solana_sdk_ids::{address_lookup_table, config, stake};
+use solana_runtime::epoch_stakes::VersionedEpochStakes;
+use solana_runtime::rent_collector::RentCollector;
+use solana_runtime::stakes::{SerdeStakesToStakeFormat, Stakes};
 use solana_signature::Signature;
-use solana_svm::account_loader::LoadedTransaction;
+use solana_stake_interface::state::{Delegation, Stake};
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_svm_timings::ExecuteTimings;
-use solana_sysvar;
 use solana_transaction::versioned::VersionedTransaction;
 use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::transaction_accounts::KeyedAccountSharedData;
@@ -145,7 +151,7 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
 }
 
 // A tuple of a pubkey and an AccountSharedData represents a TransactionAccount.
-impl From<KeyedAccountSharedData> for proto::AcctState {
+impl From<KeyedAccountSharedData> for AcctState {
     fn from(value: KeyedAccountSharedData) -> AcctState {
         AcctState {
             address: value.0.to_bytes().to_vec(),
@@ -153,20 +159,6 @@ impl From<KeyedAccountSharedData> for proto::AcctState {
             data: value.1.data().to_vec(),
             executable: value.1.executable(),
             owner: value.1.owner().to_bytes().to_vec(),
-        }
-    }
-}
-
-impl From<LoadedTransaction> for proto::ResultingState {
-    fn from(value: LoadedTransaction) -> proto::ResultingState {
-        let mut acct_states: Vec<AcctState> = Vec::with_capacity(value.accounts.len());
-        for item in value.accounts {
-            acct_states.push(item.into());
-        }
-        proto::ResultingState {
-            acct_states,
-            rent_debits: vec![],
-            transaction_rent: 0,
         }
     }
 }
@@ -186,9 +178,9 @@ fn output_txn_result_from_result(
         executed_units,
         return_data,
         fee_details,
-        rent,
         loaded_accounts_data_size,
-        resulting_state,
+        modified_accounts,
+        rollback_accounts,
     ) = match execution_results {
         Ok(txn) => {
             let (status, instr_err, custom_err, instr_err_idx) =
@@ -215,36 +207,36 @@ fn output_txn_result_from_result(
                         (status, instr_err, custom_err_ret, instr_err_idx)
                     }
                 };
-            let rent = 0;
-            let resulting_state: Option<ResultingState> = match txn {
+
+            /* We want to collect modified accounts as well as any rollback accounts for failed transactions */
+            let (modified_accounts, rollback_accounts) = match txn {
                 ProcessedTransaction::Executed(executed_tx) => {
-                    let mut state: ResultingState = executed_tx.loaded_transaction.clone().into();
-                    // Filter to only writable accounts for executed transactions
-                    state.acct_states = state
-                        .acct_states
+                    let loaded_transaction = &executed_tx.loaded_transaction;
+                    let modified_accounts = loaded_transaction
+                        .accounts
+                        .clone()
                         .into_iter()
                         .enumerate()
                         .filter(|&(i, _)| sanitized_message.is_writable(i))
                         .map(|(_, account)| account)
                         .collect();
-                    Some(state)
+
+                    let rollback_accounts: Vec<KeyedAccountSharedData> =
+                        if executed_tx.execution_details.status.is_err() {
+                            loaded_transaction
+                                .rollback_accounts
+                                .iter()
+                                .cloned()
+                                .collect()
+                        } else {
+                            vec![]
+                        };
+
+                    (modified_accounts, rollback_accounts)
                 }
                 ProcessedTransaction::FeesOnly(tx) => {
-                    let mut accounts = Vec::with_capacity(tx.rollback_accounts.count());
-                    collect_accounts_for_failed_tx(
-                        &mut accounts,
-                        &mut None,
-                        None,
-                        &tx.rollback_accounts,
-                    );
-                    Some(ResultingState {
-                        acct_states: accounts
-                            .iter()
-                            .map(|&(pubkey, acct)| (*pubkey, acct.clone()).into())
-                            .collect(),
-                        rent_debits: vec![],
-                        transaction_rent: 0,
-                    })
+                    let rollback_accounts = tx.rollback_accounts.iter().cloned().collect();
+                    (vec![], rollback_accounts)
                 }
             };
             let return_data = match txn {
@@ -266,9 +258,9 @@ fn output_txn_result_from_result(
                 txn.executed_units(),
                 return_data,
                 Some(txn.fee_details()),
-                rent,
                 txn.loaded_accounts_data_size(),
-                resulting_state,
+                modified_accounts,
+                rollback_accounts,
             )
         }
         Err(transaction_error) => {
@@ -285,8 +277,8 @@ fn output_txn_result_from_result(
                 vec![],
                 None,
                 0,
-                0,
-                None,
+                vec![],
+                vec![],
             )
         }
     };
@@ -294,8 +286,6 @@ fn output_txn_result_from_result(
     TxnResult {
         executed: execution_results.was_processed(),
         sanitization_error,
-        resulting_state,
-        rent,
         is_ok,
         status,
         instruction_error,
@@ -308,156 +298,172 @@ fn output_txn_result_from_result(
             prioritization_fee: fees.prioritization_fee(),
         }),
         loaded_accounts_data_size: loaded_accounts_data_size as u64,
+        modified_accounts: modified_accounts
+            .into_iter()
+            .map(|account| account.into())
+            .collect(),
+        rollback_accounts: rollback_accounts
+            .into_iter()
+            .map(|account| account.into())
+            .collect(),
     }
 }
 
 #[allow(deprecated)]
 pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
-    let fd_features = context
-        .epoch_ctx
-        .as_ref()
-        .map(|ctx| ctx.features.clone().unwrap_or_default())
-        .unwrap_or_default();
+    let txn_bank = context.bank.as_ref().unwrap();
 
-    let feature_set = FeatureSet::from(&fd_features);
-
-    // direct mapping toggling removed in Agave 3.0
-
-    const FEE_COLLECTOR: Pubkey = Pubkey::from_str_const("1111111111111111111111111111111111");
-
-    let sysvar_accounts: HashMap<&[u8], &AcctState> = context
+    let accounts_to_store = context
         .account_shared_data
         .iter()
-        .filter(|item| item.lamports > 0)
-        .map(|item| (item.address.as_slice(), item))
-        .collect();
+        .map(|account| {
+            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
+            let account_data = AccountSharedData::from(account);
+            (pubkey, account_data)
+        })
+        .collect::<Vec<_>>();
 
-    let rent: Rent = get_sysvar(&sysvar_accounts, solana_sysvar::rent::id().as_ref());
-    let epoch_schedule: EpochSchedule = get_sysvar(
-        &sysvar_accounts,
-        solana_sysvar::epoch_schedule::id().as_ref(),
-    );
-    let clock: Clock = get_sysvar(&sysvar_accounts, solana_sysvar::clock::id().as_ref());
-    let slot = clock.slot;
+    /* Construct blockhash queue */
+    let mut blockhash_queue = BlockhashQueue::default();
+    txn_bank.blockhash_queue.iter().for_each(|element| {
+        let blockhash_hash = Hash::new_from_array(element.blockhash.clone().try_into().unwrap());
+        blockhash_queue.register_hash(&blockhash_hash, element.lamports_per_signature);
+    });
 
-    /* HACK: Add dummy ALUT and config program accounts to genesis config so that their builtin versions don't get added to the program cache */
-    let mut genesis_config = GenesisConfig {
-        creation_time: 0,
-        rent: rent.clone(),
-        epoch_schedule,
-        ..GenesisConfig::default()
+    /* Construct fee rate governor. On snapshot boot the fee rate governor's
+    lamports_per_signature is obtained from the manifest so we can
+    just directly use that value here. */
+    let input_fee_rate_governor = txn_bank.fee_rate_governor.as_ref().unwrap();
+    let fee_rate_governor = FeeRateGovernor {
+        lamports_per_signature: txn_bank.rbh_lamports_per_signature as u64,
+        target_lamports_per_signature: input_fee_rate_governor.target_lamports_per_signature,
+        target_signatures_per_slot: input_fee_rate_governor.target_signatures_per_slot,
+        min_lamports_per_signature: input_fee_rate_governor.min_lamports_per_signature,
+        max_lamports_per_signature: input_fee_rate_governor.max_lamports_per_signature,
+        burn_percent: input_fee_rate_governor.burn_percent as u8,
     };
 
-    let bpf_native_program_accounts = get_dummy_bpf_native_programs();
-    bpf_native_program_accounts
+    /* Slot and parent slot */
+    let clock: Clock = accounts_to_store
         .iter()
-        .for_each(|(key, account)| {
-            genesis_config.add_account(*key, account.clone());
-        });
+        .find(|(address, account)| address == &solana_sysvar::clock::id() && account.lamports() > 0)
+        .and_then(|(_, account)| bincode::deserialize(account.data()).ok())
+        .unwrap();
+    let slot = clock.slot;
+    let parent_slot = slot.saturating_sub(1);
+    assert!(slot > 0);
 
-    let mut blockhash_queue = if context.blockhash_queue.is_empty() {
-        vec![vec![0u8; 32]]
-    } else {
-        context.blockhash_queue.clone()
+    /* Total epoch stake */
+    let total_epoch_stake = txn_bank.total_epoch_stake;
+
+    /* Epoch schedule */
+    let input_epoch_schedule = txn_bank.epoch_schedule.as_ref().unwrap();
+    let epoch_schedule = EpochSchedule {
+        slots_per_epoch: input_epoch_schedule.slots_per_epoch,
+        leader_schedule_slot_offset: input_epoch_schedule.leader_schedule_slot_offset,
+        warmup: input_epoch_schedule.warmup,
+        first_normal_epoch: input_epoch_schedule.first_normal_epoch,
+        first_normal_slot: input_epoch_schedule.first_normal_slot,
     };
-    let genesis_hash = Some(Hash::new_from_array(
-        blockhash_queue[0].clone().try_into().unwrap(),
-    ));
 
-    // Bank on slot 0
+    /* Rent */
+    let input_rent = txn_bank.rent.as_ref().unwrap();
+    let rent = Rent {
+        lamports_per_byte_year: input_rent.lamports_per_byte_year,
+        exemption_threshold: input_rent.exemption_threshold,
+        burn_percent: input_rent.burn_percent as u8,
+    };
+
+    /* Feature set */
+    let feature_set = FeatureSet::from(txn_bank.features.as_ref().unwrap());
+
+    /* Epoch */
+    let epoch = txn_bank.epoch;
+
+    /* Set up accounts DB and populate account states from input */
     let index = Some(AccountsIndexConfig {
         bins: Some(2),
         num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
         index_limit_mb: IndexLimitMb::InMemOnly,
         ..AccountsIndexConfig::default()
     });
-    // create shm path for accountsdb to never touch disk
-    #[allow(unused)]
-    let shm_path = std::path::PathBuf::from("/dev/shm");
-
-    // no more hash thread
     let accounts_db_config = AccountsDbConfig {
         index,
-        storage_access: StorageAccess::Mmap,
+        storage_access: StorageAccess::File,
         skip_initial_hash_calc: true,
-        base_working_path: Some(shm_path),
         ..AccountsDbConfig::default()
     };
-    // previously, Block::new_with_paths()
-    let mut bank = Bank::new_from_genesis(
-        &genesis_config,
-        Arc::new(RuntimeConfig::default()),
+    let accounts_db = AccountsDb::new_with_config(
         vec!["/dev/shm/a".into()],
-        None, // debug_keys
         accounts_db_config,
-        None, // accounts_update_notifier
-        Some(FEE_COLLECTOR),
+        None,
         Arc::new(AtomicBool::new(false)),
-        genesis_hash,
-        Some(feature_set.clone()),
     );
-    /* The rent collector's rent field may change due to feature gate changes
-    in the bank's initialization, so we need to manually override it here
-    with the value from the sysvar account.
-    TODO: break the txn fuzzer's dependency on the bank so that all
-    this special casing can be removed. */
-    bank.set_rent_collector_rent(rent);
+    let accounts = Accounts::new(Arc::new(accounts_db));
+    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None);
+    accounts.accounts_db.add_root(parent_slot);
+
+    /* Create the bank RC */
+    let bank_rc = BankRc::new(accounts);
+
+    /* Create a dummy versioned epoch stakes hashmap with a single entry at epoch + 1,
+    and set the total epoch stake */
+    let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
+    for key in [epoch, epoch.saturating_add(1)] {
+        let mut entry = VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::Stake(Stakes::<Stake>::default()),
+            key,
+        );
+        entry.set_total_stake(total_epoch_stake);
+        epoch_stakes.insert(key, entry);
+    }
+
+    let bank_fields = BankFieldsToDeserialize {
+        blockhash_queue,
+        ancestors: AncestorsForSerialization::default(),
+        hash: Hash::default(),        /* Unused */
+        parent_hash: Hash::default(), /* Unused */
+        parent_slot,
+        hard_forks: HardForks::default(),        /* Unused */
+        transaction_count: 0,                    /* Unused */
+        hashes_per_tick: None,                   /* Unused */
+        capitalization: 0,                       /* Unused */
+        signature_count: 0,                      /* Unused */
+        tick_height: 64u64.saturating_mul(slot), /* Unused */
+        max_tick_height: 64u64.saturating_mul(slot.saturating_add(1)), /* Unused */
+        ticks_per_slot: 64u64,                   /* Unused */
+        ns_per_slot: 0,                          /* Unused */
+        genesis_creation_time: 0,                /* Unused */
+        slots_per_year: 0f64,                    /* Unused */
+        slot,
+        epoch,
+        block_height: slot,              /* Unused */
+        collector_id: Pubkey::default(), /* Unused */
+        collector_fees: 0,               /* Unused */
+        fee_rate_governor,
+        rent_collector: RentCollector {
+            epoch,
+            epoch_schedule: epoch_schedule.clone(), /* Unused */
+            slots_per_year: 0f64,                   /* Unused */
+            rent,
+        },
+        epoch_schedule,
+        inflation: Inflation::default(),         /* Unused */
+        stakes: Stakes::<Delegation>::default(), /* Unused */
+        versioned_epoch_stakes: epoch_stakes,    /* Unused */
+        is_delta: false,                         /* Unused */
+        accounts_data_len: 0,                    /* Unused */
+        accounts_lt_hash: AccountsLtHash(LtHash::identity()), /* Unused */
+        bank_hash_stats: BankHashStats::default(), /* Unused */
+    };
+
+    /* Finally create the bank and wrap in BankForks to set up the fork graph
+    in the program cache (required by the transaction processor). */
+    let bank = Bank::new_for_txn_fuzzing(bank_rc, bank_fields, feature_set);
     let bank_forks = BankForks::new_rw_arc(bank);
-    let mut bank = bank_forks.read().unwrap().root_bank();
-    bank.rehash();
+    let bank = bank_forks.read().unwrap().root_bank();
 
-    if slot > 0 {
-        let new_bank = Bank::new_from_parent(bank.clone(), &FEE_COLLECTOR, slot);
-        bank = bank_forks
-            .write()
-            .unwrap()
-            .insert(new_bank)
-            .clone_without_scheduler();
-        bank.prune_program_cache(slot, bank.epoch());
-    }
-
-    /* Now remove the config and ALUT programs from the bank so they can be reloaded in properly */
-    bank.store_account(&address_lookup_table::id(), &AccountSharedData::default());
-    bank.store_account(&config::id(), &AccountSharedData::default());
-    bank.store_account(&stake::id(), &AccountSharedData::default());
-
-    /* Load accounts + sysvars
-    NOTE: Like in FD, we store the first instance of an account's state for a given pubkey. Account states of already-seen
-    pubkeys are ignored. */
-    bank.get_transaction_processor().reset_sysvar_cache();
-    for account in &context.account_shared_data {
-        let pubkey = Pubkey::new_from_array(account.address.clone().try_into().ok()?);
-        let account_data = AccountSharedData::from(account);
-        bank.store_account(&pubkey, &account_data);
-    }
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
-
-    /* Update rent and epoch schedule sysvar accounts to the minimum rent exempt balance */
-    bank.update_epoch_schedule();
-    bank.update_rent();
-
-    // Blockhashes are already populated via BankFieldsToDeserialize.blockhash_queue
-    let sysvar_recent_blockhashes = bank.get_sysvar_cache_for_tests().get_recent_blockhashes();
-    let mut lamports_per_signature: Option<u64> = None;
-    if let Ok(recent_blockhashes) = &sysvar_recent_blockhashes {
-        if let Some(hash) = recent_blockhashes.first() {
-            if hash.fee_calculator.lamports_per_signature != 0 {
-                lamports_per_signature = Some(hash.fee_calculator.lamports_per_signature);
-            }
-        }
-    }
-
-    // Register blockhashes in bank
-    for blockhash in blockhash_queue.iter_mut() {
-        let blockhash_hash = Hash::new_from_array(std::mem::take(blockhash).try_into().unwrap());
-        bank.register_recent_blockhash_for_test(&blockhash_hash, lamports_per_signature);
-    }
-    bank.update_recent_blockhashes();
-    bank.get_transaction_processor().reset_sysvar_cache();
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(bank.as_ref());
-
+    /* Build the transaction from input */
     let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?);
 
     let mut signatures = context
@@ -490,8 +496,6 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             return Some(TxnResult {
                 executed: false,
                 sanitization_error: true,
-                resulting_state: None,
-                rent: 0,
                 is_ok: false,
                 status,
                 instruction_error,
@@ -501,6 +505,8 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
                 executed_units: 0,
                 fee_details: None,
                 loaded_accounts_data_size: 0,
+                modified_accounts: vec![],
+                rollback_accounts: vec![],
             });
         }
     };
@@ -548,29 +554,26 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .unwrap_or_default();
 
     let mut txn_result = output_txn_result_from_result(result, runtime_transaction_ref.message());
-    if let Some(relevant_accounts) = &mut txn_result.resulting_state {
-        let mut loaded_account_keys = AHashSet::<Pubkey>::new();
-        loaded_account_keys.extend(
-            account_keys
-                .iter()
-                .map(|key| Pubkey::new_from_array(key.clone().try_into().ok().unwrap())),
-        );
-        match runtime_transaction_ref.message() {
-            SanitizedMessage::Legacy(_) => {}
-            SanitizedMessage::V0(message) => {
-                loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
-                loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
-            }
+
+    // Only keep accounts that were passed in as account_keys or as ALUT accounts
+    let mut loaded_account_keys = AHashSet::<Pubkey>::new();
+    loaded_account_keys.extend(
+        account_keys
+            .iter()
+            .map(|key| Pubkey::new_from_array(key.clone().try_into().ok().unwrap())),
+    );
+    match runtime_transaction_ref.message() {
+        SanitizedMessage::Legacy(_) => {}
+        SanitizedMessage::V0(message) => {
+            loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
+            loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
         }
-
-        // Only keep accounts that were passed in as account_keys or as ALUT accounts
-        relevant_accounts.acct_states.retain(|account| {
-            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
-            loaded_account_keys.contains(&pubkey)
-        });
-
-        txn_result.resulting_state = Some(relevant_accounts.clone());
     }
+    txn_result.modified_accounts.retain(|account| {
+        loaded_account_keys.contains(&Pubkey::new_from_array(
+            account.address.clone().try_into().unwrap(),
+        ))
+    });
 
     Some(txn_result)
 }
