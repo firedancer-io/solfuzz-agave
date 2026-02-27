@@ -19,7 +19,7 @@ import random
 
 # NOTE: this needs bumped with schema version upgrades of the protocol
 # https://crates.io/crates/protosol
-PROTOSOL_VERSION_TAG = "v4.0.0"
+PROTOSOL_VERSION_TAG = "v4.0.1"
 
 def replace_path_with_git_rev(toml_data, git_url, rev):
     """

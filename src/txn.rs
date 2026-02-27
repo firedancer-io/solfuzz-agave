@@ -104,6 +104,28 @@ impl From<&proto::CompiledInstruction> for CompiledInstruction {
     }
 }
 
+impl From<&proto::EpochSchedule> for EpochSchedule {
+    fn from(value: &proto::EpochSchedule) -> Self {
+        EpochSchedule {
+            slots_per_epoch: value.slots_per_epoch,
+            leader_schedule_slot_offset: value.leader_schedule_slot_offset,
+            warmup: value.warmup,
+            first_normal_epoch: value.first_normal_epoch,
+            first_normal_slot: value.first_normal_slot,
+        }
+    }
+}
+
+impl From<&proto::Rent> for Rent {
+    fn from(value: &proto::Rent) -> Self {
+        Rent {
+            lamports_per_byte_year: value.lamports_per_byte_year,
+            exemption_threshold: value.exemption_threshold,
+            burn_percent: value.burn_percent as u8,
+        }
+    }
+}
+
 impl From<&proto::MessageAddressTableLookup> for MessageAddressTableLookup {
     fn from(value: &proto::MessageAddressTableLookup) -> Self {
         MessageAddressTableLookup {
@@ -357,28 +379,16 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let total_epoch_stake = txn_bank.total_epoch_stake;
 
     /* Epoch schedule */
-    let input_epoch_schedule = txn_bank.epoch_schedule.as_ref().unwrap();
-    let epoch_schedule = EpochSchedule {
-        slots_per_epoch: input_epoch_schedule.slots_per_epoch,
-        leader_schedule_slot_offset: input_epoch_schedule.leader_schedule_slot_offset,
-        warmup: input_epoch_schedule.warmup,
-        first_normal_epoch: input_epoch_schedule.first_normal_epoch,
-        first_normal_slot: input_epoch_schedule.first_normal_slot,
-    };
+    let epoch_schedule: EpochSchedule = txn_bank.epoch_schedule.as_ref().unwrap().into();
 
     /* Rent */
-    let input_rent = txn_bank.rent.as_ref().unwrap();
-    let rent = Rent {
-        lamports_per_byte_year: input_rent.lamports_per_byte_year,
-        exemption_threshold: input_rent.exemption_threshold,
-        burn_percent: input_rent.burn_percent as u8,
-    };
+    let rent: Rent = txn_bank.rent.as_ref().unwrap().into();
 
     /* Feature set */
     let feature_set = FeatureSet::from(txn_bank.features.as_ref().unwrap());
 
     /* Epoch */
-    let epoch = txn_bank.epoch;
+    let epoch = epoch_schedule.get_epoch(slot);
 
     /* Set up accounts DB and populate account states from input */
     let index = Some(AccountsIndexConfig {
