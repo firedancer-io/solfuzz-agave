@@ -10,7 +10,7 @@ use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
+use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimit};
 use solana_accounts_db::ancestors::AncestorsForSerialization;
 use solana_accounts_db::blockhash_queue::BlockhashQueue;
 use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
@@ -33,9 +33,10 @@ use solana_runtime::bank::{
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::rent_collector::RentCollector;
-use solana_runtime::stakes::{SerdeStakesToStakeFormat, Stakes};
+use solana_runtime::stake_history::StakeHistory;
+use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
 use solana_signature::Signature;
-use solana_stake_interface::state::{Delegation, Stake};
+use solana_stake_interface::state::Stake;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
@@ -46,6 +47,7 @@ use solana_transaction::versioned::VersionedTransaction;
 use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::transaction_accounts::KeyedAccountSharedData;
 use solana_transaction_error::TransactionError;
+use solana_vote::vote_account::VoteAccounts;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::ffi::c_int;
@@ -53,7 +55,7 @@ use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_txn_execute_v1(
     out_ptr: *mut u8,
     out_psz: *mut u64,
@@ -63,7 +65,7 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
     if in_ptr.is_null() || in_sz == 0 {
         return 0;
     }
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
+    let in_slice = unsafe { std::slice::from_raw_parts(in_ptr, in_sz as usize) };
     let Ok(txn_context) = TxnContext::decode(&in_slice[..in_sz as usize]) else {
         return 0;
     };
@@ -72,14 +74,14 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
         return 0;
     };
 
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+    let out_slice = unsafe { std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize) };
     let out_vec = txn_result.encode_to_vec();
     if out_vec.len() > out_slice.len() {
         return 0;
     }
 
     out_slice[..out_vec.len()].copy_from_slice(&out_vec);
-    *out_psz = out_vec.len() as u64;
+    unsafe { *out_psz = out_vec.len() as u64 };
 
     1
 }
@@ -394,7 +396,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let index = Some(AccountsIndexConfig {
         bins: Some(2),
         num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
-        index_limit_mb: IndexLimitMb::InMemOnly,
+        index_limit: IndexLimit::InMemOnly,
         ..AccountsIndexConfig::default()
     });
     let accounts_db_config = AccountsDbConfig {
@@ -410,7 +412,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         Arc::new(AtomicBool::new(false)),
     );
     let accounts = Accounts::new(Arc::new(accounts_db));
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None);
+    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
     accounts.accounts_db.add_root(parent_slot);
 
     /* Create the bank RC */
@@ -427,6 +429,15 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         entry.set_total_stake(total_epoch_stake);
         epoch_stakes.insert(key, entry);
     }
+
+    /* Create dummy stakes */
+    let stakes = DeserializableStakes {
+        vote_accounts: VoteAccounts::default(),
+        stake_delegations: vec![],
+        unused: 0,
+        epoch,
+        stake_history: StakeHistory::default(),
+    };
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
@@ -447,9 +458,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         slots_per_year: 0f64,                    /* Unused */
         slot,
         epoch,
-        block_height: slot,              /* Unused */
-        collector_id: Pubkey::default(), /* Unused */
-        collector_fees: 0,               /* Unused */
+        block_height: slot,           /* Unused */
+        leader_id: Pubkey::default(), /* Unused */
+        collector_fees: 0,            /* Unused */
         fee_rate_governor,
         rent_collector: RentCollector {
             epoch,
@@ -458,18 +469,18 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             rent,
         },
         epoch_schedule,
-        inflation: Inflation::default(),         /* Unused */
-        stakes: Stakes::<Delegation>::default(), /* Unused */
-        versioned_epoch_stakes: epoch_stakes,    /* Unused */
-        is_delta: false,                         /* Unused */
-        accounts_data_len: 0,                    /* Unused */
+        inflation: Inflation::default(), /* Unused */
+        stakes,                          /* Unused */
+        versioned_epoch_stakes: vec![],  /* Unused */
+        is_delta: false,                 /* Unused */
+        accounts_data_len: 0,            /* Unused */
         accounts_lt_hash: AccountsLtHash(LtHash::identity()), /* Unused */
         bank_hash_stats: BankHashStats::default(), /* Unused */
     };
 
     /* Finally create the bank and wrap in BankForks to set up the fork graph
     in the program cache (required by the transaction processor). */
-    let bank = Bank::new_for_txn_fuzzing(bank_rc, bank_fields, feature_set);
+    let bank = Bank::new_for_txn_fuzzing(bank_rc, bank_fields, feature_set, epoch_stakes);
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.read().unwrap().root_bank();
 
@@ -537,10 +548,12 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     let configs = TransactionProcessingConfig {
         account_overrides: None,
-        check_program_modification_slot: false,
+        check_program_deployment_slot: false,
         log_messages_bytes_limit: None,
         limit_to_load_programs: true,
         recording_config,
+        drop_on_failure: false,
+        all_or_nothing: false,
     };
 
     let mut metrics = TransactionErrorMetrics::default();

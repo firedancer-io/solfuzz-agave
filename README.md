@@ -31,7 +31,7 @@ git submodule update --init --recursive
 
 Python Environment:
 ```sh
-./install.sh
+python3.11 -m venv solfuzz_agave_env
 source solfuzz_agave_env/bin/activate
 ```
 ### NOTE FOR LOCAL COPIES
@@ -42,20 +42,9 @@ For example, solfuzz-agave branch `agave-v3.1.8` should checkout `agave-v3.1.8-p
 
 Set up the python environment with instructions above first.
 
-Running with a local copy of Agave (for easily adding print statements):
+Running with a local copy of Agave and SBPF (for easily adding print statements):
 ```sh
-python scripts/generate_cargo.py -p <your_local_agave_path> -o Cargo.toml
-```
-
-Running with a specific Agave commit:
-```sh
-python scripts/generate_cargo.py -c <commit_hash> -o Cargo.toml
-```
-
-Running with a specific protosol version:
-```sh
-python scripts/generate_cargo.py -c <commit_hash> -v <version> -o Cargo.toml
-# Example: ./scripts/generate_cargo.py -c <commit_hash> -v 1.0.4 -o Cargo.toml
+python scripts/generate_local_cargo.py -a <your_local_agave_path> -s <your_local_sbpf_path> -o Cargo.toml
 ```
 
 Check and test:
