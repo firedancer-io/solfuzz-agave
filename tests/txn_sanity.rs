@@ -1,20 +1,23 @@
 use agave_feature_set::set_exempt_rent_epoch_max;
 use prost::Message;
+use solana_address_lookup_table_interface::state::{AddressLookupTable, LookupTableMeta};
 use solana_clock::Clock;
 use solana_epoch_schedule::EpochSchedule;
 use solana_hash::Hash;
 use solana_loader_v3_interface::state::UpgradeableLoaderState;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
-use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, native_loader};
+use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, native_loader, system_program};
 use solana_signature::Signature;
+use solana_slot_hashes::SlotHashes;
 use solana_sysvar_id::SysvarId;
 use solfuzz_agave::proto::{
-    AcctState, CompiledInstruction, EpochContext, FeatureSet, MessageHeader, SanitizedTransaction,
-    TransactionMessage, TxnContext, TxnResult,
+    AcctState, BlockhashQueueEntry, CompiledInstruction, FeatureSet, MessageHeader,
+    SanitizedTransaction, TransactionMessage, TxnBank, TxnContext, TxnResult,
 };
-use solfuzz_agave::txn_fuzzer::sol_compat_txn_execute_v1;
+use solfuzz_agave::txn::sol_compat_txn_execute_v1;
 use solfuzz_agave::{feature_list, proto, utils::feature_u64, HARDCODED_FEATURES};
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::{env, fs};
@@ -69,6 +72,17 @@ fn get_epoch_schedule_sysvar_account() -> AcctState {
         address: EpochSchedule::id().to_bytes().to_vec(),
         lamports: 1,
         data: bincode::serialize(&epoch_schedule).unwrap(),
+        executable: false,
+        owner: native_loader::id().to_bytes().to_vec(),
+    }
+}
+
+fn get_slot_hashes_sysvar_account() -> AcctState {
+    let slot_hashes = SlotHashes::new(&[(20, Hash::default())]);
+    AcctState {
+        address: SlotHashes::id().to_bytes().to_vec(),
+        lamports: 1,
+        data: bincode::serialize(&slot_hashes).unwrap(),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
     }
@@ -155,16 +169,6 @@ fn test_txn_execute_clock() {
     let rent = get_rent_sysvar_account();
 
     let features = get_features();
-    let epoch_ctx = EpochContext {
-        features: Some(features),
-        hashes_per_tick: 1000,
-        ticks_per_slot: 64,
-        inflation: None,
-        genesis_creation_time: 1_620_000_000,
-        vote_accounts_t_1: vec![],
-        vote_accounts_t_2: vec![],
-    };
-
     let header = MessageHeader {
         num_required_signatures: 1,
         num_readonly_signed_accounts: 0,
@@ -192,8 +196,11 @@ fn test_txn_execute_clock() {
     };
 
     let blockhash_queue = vec![
-        Hash::new_unique().to_bytes().to_vec(),
-        Hash::new_unique().to_bytes().to_vec(),
+        BlockhashQueueEntry {
+            blockhash: Hash::new_unique().to_bytes().to_vec(),
+            lamports_per_signature: 5000,
+        };
+        2
     ];
 
     let message = TransactionMessage {
@@ -203,7 +210,7 @@ fn test_txn_execute_clock() {
             fee_payer.to_bytes().to_vec(),
             program_info[0].0.to_bytes().to_vec(),
         ],
-        recent_blockhash: blockhash_queue[1].clone(),
+        recent_blockhash: blockhash_queue[1].blockhash.clone(),
         instructions: vec![instr],
         address_table_lookups: vec![],
     };
@@ -224,8 +231,15 @@ fn test_txn_execute_clock() {
             epoch_schedule,
             rent,
         ],
-        blockhash_queue,
-        epoch_ctx: Some(epoch_ctx),
+        bank: Some(TxnBank {
+            blockhash_queue,
+            rbh_lamports_per_signature: 5000,
+            features: Some(features),
+            fee_rate_governor: Some(proto::FeeRateGovernor::default()),
+            rent: Some(proto::Rent::default()),
+            epoch_schedule: Some(proto::EpochSchedule::default()),
+            ..Default::default()
+        }),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -257,17 +271,9 @@ fn test_simple_transfer() {
     let clock_sysvar = get_clock_sysvar_account();
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
+    let slot_hashes = get_slot_hashes_sysvar_account();
 
     let features = get_features();
-    let epoch_ctx = EpochContext {
-        features: Some(features),
-        hashes_per_tick: 1000,
-        ticks_per_slot: 64,
-        inflation: None,
-        genesis_creation_time: 1_620_000_000,
-        vote_accounts_t_1: vec![],
-        vote_accounts_t_2: vec![],
-    };
 
     let header = MessageHeader {
         num_required_signatures: 2,
@@ -314,8 +320,11 @@ fn test_simple_transfer() {
     };
 
     let blockhash_queue = vec![
-        Hash::new_unique().to_bytes().to_vec(),
-        Hash::new_unique().to_bytes().to_vec(),
+        BlockhashQueueEntry {
+            blockhash: Hash::new_unique().to_bytes().to_vec(),
+            lamports_per_signature: 5000,
+        };
+        2
     ];
 
     let message = TransactionMessage {
@@ -330,7 +339,7 @@ fn test_simple_transfer() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![],
-        recent_blockhash: blockhash_queue[1].clone(),
+        recent_blockhash: blockhash_queue[1].blockhash.clone(),
     };
 
     let tx = SanitizedTransaction {
@@ -342,6 +351,14 @@ fn test_simple_transfer() {
         ],
     };
 
+    let system_program_acc = AcctState {
+        address: system_program::id().to_bytes().to_vec(),
+        lamports: 1,
+        data: vec![],
+        executable: true,
+        owner: native_loader::id().to_bytes().to_vec(),
+    };
+
     let txn_input = TxnContext {
         tx: Some(tx),
         account_shared_data: vec![
@@ -350,12 +367,21 @@ fn test_simple_transfer() {
             sender_data,
             p_acc,
             pd_acc,
+            system_program_acc,
             clock_sysvar,
             epoch_schedule,
             rent,
+            slot_hashes,
         ],
-        blockhash_queue,
-        epoch_ctx: Some(epoch_ctx),
+        bank: Some(TxnBank {
+            blockhash_queue,
+            rbh_lamports_per_signature: 5000,
+            features: Some(features),
+            fee_rate_governor: Some(proto::FeeRateGovernor::default()),
+            rent: Some(proto::Rent::default()),
+            epoch_schedule: Some(proto::EpochSchedule::default()),
+            ..Default::default()
+        }),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -379,13 +405,11 @@ fn test_simple_transfer() {
     let result = TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap();
     assert!(result.executed);
     assert!(result.is_ok);
-    if let Some(state) = &result.resulting_state {
-        for item in &state.acct_states {
-            if item.address.eq(&sender.to_bytes()) {
-                assert_eq!(item.lamports, 899990);
-            } else if item.address.eq(&recipient.to_bytes()) {
-                assert_eq!(item.lamports, 900010);
-            }
+    for item in &result.modified_accounts {
+        if item.address.eq(&sender.to_bytes()) {
+            assert_eq!(item.lamports, 899990);
+        } else if item.address.eq(&recipient.to_bytes()) {
+            assert_eq!(item.lamports, 900010);
         }
     }
 }
@@ -395,17 +419,9 @@ fn test_lookup_table() {
     let clock_sysvar = get_clock_sysvar_account();
     let epoch_schedule = get_epoch_schedule_sysvar_account();
     let rent = get_rent_sysvar_account();
+    let slot_hashes = get_slot_hashes_sysvar_account();
 
     let features = get_features();
-    let epoch_ctx = EpochContext {
-        features: Some(features),
-        hashes_per_tick: 1000,
-        ticks_per_slot: 64,
-        inflation: None,
-        genesis_creation_time: 1_620_000_000,
-        vote_accounts_t_1: vec![],
-        vote_accounts_t_2: vec![],
-    };
 
     let header = MessageHeader {
         num_required_signatures: 2,
@@ -466,13 +482,11 @@ fn test_lookup_table() {
         readonly_indexes: vec![1],
     };
 
-    // Fill ALUT account data (first 56 bytes dont matter except discriminant)
-    let mut alut_data = vec![1];
-    for _ in 0..55 {
-        alut_data.push(0);
-    }
-    alut_data.extend_from_slice(&recipient.to_bytes());
-    alut_data.extend_from_slice(&extra_account.to_bytes());
+    let alut = AddressLookupTable {
+        meta: LookupTableMeta::default(),
+        addresses: Cow::Owned(vec![recipient, extra_account]),
+    };
+    let alut_data = alut.serialize_for_tests().unwrap();
 
     let address_lookup_table_acc = AcctState {
         address: vec![1; 32],
@@ -483,8 +497,11 @@ fn test_lookup_table() {
     };
 
     let blockhash_queue = vec![
-        Hash::new_unique().to_bytes().to_vec(),
-        Hash::new_unique().to_bytes().to_vec(),
+        BlockhashQueueEntry {
+            blockhash: Hash::new_unique().to_bytes().to_vec(),
+            lamports_per_signature: 5000,
+        };
+        2
     ];
 
     let message = TransactionMessage {
@@ -498,7 +515,7 @@ fn test_lookup_table() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
-        recent_blockhash: blockhash_queue[1].clone(),
+        recent_blockhash: blockhash_queue[1].blockhash.clone(),
     };
 
     let tx = SanitizedTransaction {
@@ -508,6 +525,14 @@ fn test_lookup_table() {
             Signature::default().as_ref().to_vec(),
             Signature::default().as_ref().to_vec(),
         ],
+    };
+
+    let system_program_acc = AcctState {
+        address: system_program::id().to_bytes().to_vec(),
+        lamports: 1,
+        data: vec![],
+        executable: true,
+        owner: native_loader::id().to_bytes().to_vec(),
     };
 
     let txn_input = TxnContext {
@@ -520,12 +545,21 @@ fn test_lookup_table() {
             pd_acc,
             extra_data,
             address_lookup_table_acc,
+            system_program_acc,
             clock_sysvar,
             epoch_schedule,
             rent,
+            slot_hashes,
         ],
-        blockhash_queue,
-        epoch_ctx: Some(epoch_ctx),
+        bank: Some(TxnBank {
+            blockhash_queue,
+            rbh_lamports_per_signature: 5000,
+            features: Some(features),
+            fee_rate_governor: Some(proto::FeeRateGovernor::default()),
+            rent: Some(proto::Rent::default()),
+            epoch_schedule: Some(proto::EpochSchedule::default()),
+            ..Default::default()
+        }),
     };
 
     let mut buffer: Vec<u8> = txn_input.encode_to_vec();
@@ -549,13 +583,11 @@ fn test_lookup_table() {
     let result = TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap();
     assert!(result.executed);
     assert!(result.is_ok);
-    if let Some(state) = &result.resulting_state {
-        for item in &state.acct_states {
-            if item.address.eq(&sender.to_bytes()) {
-                assert_eq!(item.lamports, 899985);
-            } else if item.address.eq(&recipient.to_bytes()) {
-                assert_eq!(item.lamports, 900015);
-            }
+    for item in &result.modified_accounts {
+        if item.address.eq(&sender.to_bytes()) {
+            assert_eq!(item.lamports, 899985);
+        } else if item.address.eq(&recipient.to_bytes()) {
+            assert_eq!(item.lamports, 900015);
         }
     }
 }
