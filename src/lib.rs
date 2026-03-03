@@ -335,6 +335,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
     // relax_intrabatch_account_locks, // not worth fuzzing
     // enable_loader_v4,
+    enable_bls12_381_syscall,
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
