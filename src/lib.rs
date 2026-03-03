@@ -505,9 +505,8 @@ impl TryFrom<proto::InstrContext> for InstrContext {
         );
 
         let feature_set: FeatureSet = input
-            .epoch_context
+            .features
             .as_ref()
-            .and_then(|epoch_ctx| epoch_ctx.features.as_ref())
             .map(|fs| fs.into())
             .unwrap_or_default();
 
@@ -1340,7 +1339,7 @@ mod tests {
                 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             ],
             cu_avail: 10000u64,
-            epoch_context: None,
+            features: None,
         };
         let output = execute_instr_proto(input);
         assert_eq!(
