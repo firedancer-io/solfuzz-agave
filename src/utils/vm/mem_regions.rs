@@ -8,7 +8,7 @@ use crate::proto::InputDataRegion;
 /* From a MemoryMapping, extract the input data regions and convert
 them into InputDataRegions. The regions themselves are not copied,
 so be mindful of lifetimes. */
-pub fn extract_input_data_regions<'a>(mapping: &'a MemoryMapping<'a>) -> Vec<InputDataRegion> {
+pub fn extract_input_data_regions(mapping: &MemoryMapping) -> Vec<InputDataRegion> {
     match mapping {
         MemoryMapping::Aligned(_mapping) => {
             // regions in AlignedMemoryMapping are sorted by vm_addr

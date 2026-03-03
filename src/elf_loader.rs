@@ -69,7 +69,7 @@ pub fn load_elf(
             err_code: 0,
             rodata_hash: Some(&rodata_hash),
             entry_pc: elf_exec.get_entrypoint_instruction_offset() as u64,
-            text_off: text_vaddr.saturating_sub(ebpf::MM_RODATA_START),
+            text_off: text_vaddr.saturating_sub(ebpf::MM_BYTECODE_START),
             text_cnt: (raw_text_sz / 8) as u64,
             calldests_hash: Some(&calldests_hash),
         },

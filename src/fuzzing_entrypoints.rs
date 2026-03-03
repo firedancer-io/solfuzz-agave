@@ -21,7 +21,7 @@ use crate::elf_loader::execute_elf_loader;
 /// ```
 macro_rules! define_sol_compat_execute_v2 {
     ($fn_name:ident, $context_type:ident, $execute_fn:ident, $module_path:path) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn_name(
             out_ptr: *mut u8,
             out_psz: *mut u64,
@@ -36,12 +36,14 @@ macro_rules! define_sol_compat_execute_v2 {
             }
 
             // Parse input slice as flatbuffers root
-            let in_slice = ::std::slice::from_raw_parts(in_ptr, in_sz as usize);
-            let context =
-                ::flatbuffers::root_unchecked::<context_module::$context_type<'_>>(in_slice);
+            let in_slice = unsafe { ::std::slice::from_raw_parts(in_ptr, in_sz as usize) };
+            let context = unsafe {
+                ::flatbuffers::root_unchecked::<context_module::$context_type<'_>>(in_slice)
+            };
 
             // Setup output slice and build effects
-            let out_slice = ::std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+            let out_psz_val = unsafe { *out_psz } as usize;
+            let out_slice = unsafe { ::std::slice::from_raw_parts_mut(out_ptr, out_psz_val) };
             $crate::FBB.with(|fbb| {
                 let mut effects_builder = fbb.borrow_mut();
                 effects_builder.reset();
@@ -49,7 +51,7 @@ macro_rules! define_sol_compat_execute_v2 {
 
                 let out_data = effects_builder.finished_data();
                 out_slice[..out_data.len()].copy_from_slice(out_data);
-                *out_psz = out_data.len() as u64;
+                unsafe { *out_psz = out_data.len() as u64 };
             });
 
             return 0;

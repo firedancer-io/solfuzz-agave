@@ -27,17 +27,17 @@ use solana_sbpf::{
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm_feature_set::SVMFeatureSet;
 use solana_svm_log_collector::LogCollector;
-use solana_transaction_context::TransactionContext;
+use solana_transaction_context::transaction::TransactionContext;
 use std::ffi::c_int;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     out_ptr: *mut u8,
     out_psz: *mut u64,
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
+    let in_slice = unsafe { std::slice::from_raw_parts(in_ptr, in_sz as usize) };
     let Ok(syscall_context) = SyscallContext::decode(in_slice) else {
         return 0;
     };
@@ -45,13 +45,13 @@ pub unsafe extern "C" fn sol_compat_vm_syscall_execute_v1(
     let Some(syscall_effects) = execute_vm_syscall(syscall_context) else {
         return 0;
     };
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+    let out_slice = unsafe { std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize) };
     let out_vec = syscall_effects.encode_to_vec();
     if out_vec.len() > out_slice.len() {
         return 0;
     }
     out_slice[..out_vec.len()].copy_from_slice(&out_vec);
-    *out_psz = out_vec.len() as u64;
+    unsafe { *out_psz = out_vec.len() as u64 };
 
     1
 }
@@ -175,12 +175,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let stricter_abi_and_runtime_constraints = invoke_ctx
         .get_feature_set()
         .stricter_abi_and_runtime_constraints;
-    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
-        .get_feature_set()
-        .mask_out_rent_epoch_in_vm_serialization;
     invoke_ctx
         .transaction_context
-        .configure_next_instruction_for_tests(program_idx, instr_accounts, instruction_data)
+        .configure_top_level_instruction_for_tests(program_idx, instr_accounts, instruction_data)
         .unwrap();
 
     match invoke_ctx.push() {
@@ -219,7 +216,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             &caller_instr_ctx,
             stricter_abi_and_runtime_constraints,
             direct_mapping,
-            mask_out_rent_epoch_in_vm_serialization,
         )
         .expect("invariant violation: serialize_parameters failed");
 
@@ -263,11 +259,11 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut stack = AlignedMemory::<HOST_ALIGN>::from(&vec![0; STACK_SIZE]);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
     let rodata_stack_heap = vec![
-        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_RODATA_START),
+        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_BYTECODE_START),
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
-            if !sbpf_version.dynamic_stack_frames() && config.enable_stack_frame_gaps {
+            if sbpf_version.stack_frame_gaps() && config.enable_stack_frame_gaps {
                 config.stack_frame_size as u64
             } else {
                 0

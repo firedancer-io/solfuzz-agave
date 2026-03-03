@@ -38,8 +38,8 @@ use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
 use solana_transaction_context::MAX_INSTRUCTION_DATA_LEN;
 use solana_transaction_context::{
-    transaction_accounts::KeyedAccountSharedData, IndexOfAccount, InstructionAccount,
-    TransactionContext,
+    instruction_accounts::InstructionAccount, transaction::TransactionContext,
+    transaction_accounts::KeyedAccountSharedData, IndexOfAccount,
 };
 
 use crate::utils::err_map::instr_err_to_num;
@@ -834,6 +834,7 @@ fn create_invoke_context_fields(
         (*rent).clone(),
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
+        1,
     );
 
     // sigh ... What is this mess?
@@ -907,13 +908,12 @@ fn create_invoke_context_fields(
                 epoch_schedule: &EpochSchedule,
                 reload: bool,
             ) -> Option<Arc<ProgramCacheEntry>> { */
-            if let Some(loaded_program) = program_loader::load_program_with_pubkey(
+            if let Some((loaded_program, _)) = program_loader::load_program_with_pubkey(
                 input,
                 &environments,
                 &acc.0,
                 clock.slot,
                 &mut ExecuteTimings::default(),
-                false,
             ) {
                 program_cache_for_tx_batch.replenish(acc.0, loaded_program);
             }
@@ -992,7 +992,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
 
     invoke_context
         .transaction_context
-        .configure_next_instruction_for_tests(
+        .configure_top_level_instruction_for_tests(
             program_idx,
             instruction_accounts,
             instruction_data.clone(),
@@ -1170,10 +1170,12 @@ impl TryFrom<proto::AcctState> for (Pubkey, Account) {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
-    env::set_var("SOLANA_RAYON_THREADS", "1");
-    env::set_var("RAYON_NUM_THREADS", "1");
+    unsafe {
+        env::set_var("SOLANA_RAYON_THREADS", "1");
+        env::set_var("RAYON_NUM_THREADS", "1");
+    }
     if env::var("ENABLE_SOLANA_LOGGER").is_ok() {
         /* Pairs with RUST_LOG={trace,debug,info,etc} */
         agave_logger::setup(); // renamed in Agave v3.1
@@ -1209,40 +1211,40 @@ static METADATA: SolCompatMetadata = SolCompatMetadata {
     validator_type: 2, // solfuzz-agave
 };
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeatures {
     &FEATURES
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_get_metadata_v1() -> *const SolCompatMetadata {
     &METADATA
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_fini() {}
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_instr_execute_v1(
     out_ptr: *mut u8,
     out_psz: *mut u64,
     in_ptr: *mut u8,
     in_sz: u64,
 ) -> c_int {
-    let in_slice = std::slice::from_raw_parts(in_ptr, in_sz as usize);
+    let in_slice = unsafe { std::slice::from_raw_parts(in_ptr, in_sz as usize) };
     let Ok(instr_context) = proto::InstrContext::decode(in_slice) else {
         return 0;
     };
     let Some(instr_effects) = execute_instr_proto(instr_context) else {
         return 0;
     };
-    let out_slice = std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize);
+    let out_slice = unsafe { std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize) };
     let out_vec = instr_effects.encode_to_vec();
     if out_vec.len() > out_slice.len() {
         return 0;
     }
     out_slice[..out_vec.len()].copy_from_slice(&out_vec);
-    *out_psz = out_vec.len() as u64;
+    unsafe { *out_psz = out_vec.len() as u64 };
 
     1
 }
@@ -1261,7 +1263,7 @@ mod tests {
     fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> proto::AcctState {
         proto::AcctState {
             address: id.to_bytes().to_vec(),
-            owner: solana_sysvar_id::id().to_bytes().to_vec(),
+            owner: solana_sdk_ids::sysvar::id().to_bytes().to_vec(),
             lamports: 1,
             data: bincode::serialize(&sysvar).unwrap(),
             executable: false,
