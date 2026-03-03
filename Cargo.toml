@@ -96,3 +96,13 @@ core-bpf = []
 # conformance testing a BPF program against a builtin.
 core-bpf-conformance = []
 bpf-program-conformance = []
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+strip = false
+split-debuginfo = "off"
+
+[profile.release]
+split-debuginfo = "unpacked"
+lto = "thin"
