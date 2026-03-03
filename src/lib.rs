@@ -287,7 +287,10 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     vote_only_full_fec_sets,
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
+    enable_turbine_extended_fanout_experiments,
+    mask_out_rent_epoch_in_vm_serialization,
     disable_zk_elgamal_proof_program,
+    enable_vote_address_leader_schedule
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -308,13 +311,10 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // enable_sbpf_v3_deployment_and_execution, // still actively being worked on
     enable_get_epoch_stake_syscall,
     verify_retransmitter_signature,
-    enable_turbine_extended_fanout_experiments,
     vote_only_retransmitter_signed_fec_sets,
-    mask_out_rent_epoch_in_vm_serialization,
     reenable_zk_elgamal_proof_program,
     enable_extend_program_checked,
     require_static_nonce_account,
-    enable_vote_address_leader_schedule,
     enshrine_slashing_program,
     // stricter_abi_and_runtime_constraints, // fuzz in 4.0+
     // account_data_direct_mapping, // fuzz in 4.0+
