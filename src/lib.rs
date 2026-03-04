@@ -290,7 +290,8 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_turbine_extended_fanout_experiments,
     mask_out_rent_epoch_in_vm_serialization,
     disable_zk_elgamal_proof_program,
-    enable_vote_address_leader_schedule
+    enable_vote_address_leader_schedule,
+    vote_state_v4,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -328,7 +329,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     replace_spl_token_with_p_token,
     static_instruction_limit,
     switch_to_chacha8_turbine,
-    vote_state_v4,
     raise_block_limits_to_100m, // to be activated in v3.1
     // alpenglow, // TBD
     raise_account_cu_limit,
