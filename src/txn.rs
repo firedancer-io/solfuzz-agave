@@ -1,18 +1,14 @@
 use crate::proto;
 use crate::proto::{AcctState, TxnContext, TxnResult};
 use crate::utils::program::common::build_versioned_message;
+use crate::utils::{create_accounts_db, restore_blockhash_queue};
 use agave_feature_set::*;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
 use solana_account::{AccountSharedData, ReadableAccount};
-use solana_accounts_db::accounts::Accounts;
-use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
-use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimit};
 use solana_accounts_db::ancestors::AncestorsForSerialization;
-use solana_accounts_db::blockhash_queue::BlockhashQueue;
 use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
@@ -51,9 +47,6 @@ use solana_vote::vote_account::VoteAccounts;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::ffi::c_int;
-use std::num::NonZeroUsize;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_txn_execute_v1(
@@ -102,28 +95,6 @@ impl From<&proto::CompiledInstruction> for CompiledInstruction {
             program_id_index: value.program_id_index as u8,
             accounts: value.accounts.iter().map(|idx| *idx as u8).collect(),
             data: value.data.clone(),
-        }
-    }
-}
-
-impl From<&proto::EpochSchedule> for EpochSchedule {
-    fn from(value: &proto::EpochSchedule) -> Self {
-        EpochSchedule {
-            slots_per_epoch: value.slots_per_epoch,
-            leader_schedule_slot_offset: value.leader_schedule_slot_offset,
-            warmup: value.warmup,
-            first_normal_epoch: value.first_normal_epoch,
-            first_normal_slot: value.first_normal_slot,
-        }
-    }
-}
-
-impl From<&proto::Rent> for Rent {
-    fn from(value: &proto::Rent) -> Self {
-        Rent {
-            lamports_per_byte_year: value.lamports_per_byte_year,
-            exemption_threshold: value.exemption_threshold,
-            burn_percent: value.burn_percent as u8,
         }
     }
 }
@@ -348,11 +319,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .collect::<Vec<_>>();
 
     /* Construct blockhash queue */
-    let mut blockhash_queue = BlockhashQueue::default();
-    txn_bank.blockhash_queue.iter().for_each(|element| {
-        let blockhash_hash = Hash::new_from_array(element.blockhash.clone().try_into().unwrap());
-        blockhash_queue.register_hash(&blockhash_hash, element.lamports_per_signature);
-    });
+    let blockhash_queue = restore_blockhash_queue(&txn_bank.blockhash_queue);
 
     /* Construct fee rate governor. On snapshot boot the fee rate governor's
     lamports_per_signature is obtained from the manifest so we can
@@ -393,25 +360,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let epoch = epoch_schedule.get_epoch(slot);
 
     /* Set up accounts DB and populate account states from input */
-    let index = Some(AccountsIndexConfig {
-        bins: Some(2),
-        num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
-        index_limit: IndexLimit::InMemOnly,
-        ..AccountsIndexConfig::default()
-    });
-    let accounts_db_config = AccountsDbConfig {
-        index,
-        storage_access: StorageAccess::File,
-        skip_initial_hash_calc: true,
-        ..AccountsDbConfig::default()
-    };
-    let accounts_db = AccountsDb::new_with_config(
-        vec!["/dev/shm/a".into()],
-        accounts_db_config,
-        None,
-        Arc::new(AtomicBool::new(false)),
-    );
-    let accounts = Accounts::new(Arc::new(accounts_db));
+    let accounts = create_accounts_db(vec!["/dev/shm/a".into()]);
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
     accounts.accounts_db.add_root(parent_slot);
 
