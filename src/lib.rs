@@ -336,6 +336,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // relax_intrabatch_account_locks, // not worth fuzzing
     // enable_loader_v4,
     enable_bls12_381_syscall,
+    alt_bn128_little_endian,
+    enable_alt_bn128_g2_syscalls,
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
