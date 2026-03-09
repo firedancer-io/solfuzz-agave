@@ -292,6 +292,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     disable_zk_elgamal_proof_program,
     enable_vote_address_leader_schedule,
     vote_state_v4,
+    fix_alt_bn128_pairing_length_check,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -322,7 +323,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
     enforce_fixed_fec_set,
-    fix_alt_bn128_pairing_length_check,
     increase_cpi_account_info_limit,
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
