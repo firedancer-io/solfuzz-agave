@@ -16,10 +16,12 @@ RUSTFLAGS_8BIT+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
 RUSTFLAGS_PCGUARD:=$(RUSTFLAGS_BASE)
 RUSTFLAGS_PCGUARD+=-Cllvm-args=-sanitizer-coverage-trace-pc-guard
 
-# Honggfuzz mode: PC guards with all trace features
+# Honggfuzz mode: PC guards + 8-bit counters with all trace features
 # https://github.com/rust-fuzz/honggfuzz-rs/blob/master/src/bin/cargo-hfuzz.rs
 # Note: indirect-calls is enabled via level=4 in RUSTFLAGS_BASE
+# inline-8bit-counters is required for edge bucket coverage signals
 RUSTFLAGS_HFUZZ:=$(RUSTFLAGS_PCGUARD)
+RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-compares
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-divs
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-geps
