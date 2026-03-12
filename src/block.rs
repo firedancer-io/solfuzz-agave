@@ -2,68 +2,55 @@ use crate::proto::{self, AcctState};
 use crate::proto::{BlockContext, BlockEffects};
 use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{build_versioned_message, get_sysvar};
+use crate::utils::{
+    compute_accounts_data_size, create_accounts_db, deserialize_accounts, restore_blockhash_queue,
+};
 use agave_feature_set::*;
 use agave_votor_messages::migration::MigrationStatus;
 use prost::Message;
 #[allow(deprecated)]
 use solana_account::{AccountSharedData, ReadableAccount};
-use solana_accounts_db::accounts::Accounts;
-use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
-use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimit};
 use solana_accounts_db::ancestors::AncestorsForSerialization;
-use solana_accounts_db::blockhash_queue::BlockhashQueue;
 use solana_clock::Epoch;
-use solana_cluster_type::ClusterType;
 use solana_entry::entry::Entry;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
-use solana_genesis_config::GenesisConfig;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
-use solana_inflation::Inflation;
 use solana_lattice_hash::lt_hash::LtHash;
 use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
 };
-use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
-use solana_poh_config::PohConfig;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
-use solana_runtime::bank::accounts_lt_hash::CacheValue as AccountsLtHashCacheValue;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
 };
-use solana_runtime::bank::{null_tracer, Bank, BankFieldsToDeserialize, BankHashStats, BankRc};
+use solana_runtime::bank::{Bank, BankFieldsToDeserialize, BankHashStats, BankRc};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::leader_schedule_utils;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 use solana_runtime::rent_collector::RentCollector;
-use solana_runtime::runtime_config::RuntimeConfig;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
 use solana_sdk_ids::sysvar::stake_history;
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
-use solana_sysvar;
-#[allow(deprecated)]
-use solana_sysvar::recent_blockhashes::RecentBlockhashes;
 use solana_transaction::versioned::VersionedTransaction;
 use solana_vote::vote_account::{VoteAccount, VoteAccounts};
+use solana_vote_interface::state::{VoteState1_14_11, VoteStateV3, VoteStateV4, VoteStateVersions};
 use std::collections::HashMap;
 use std::ffi::c_int;
-use std::num::NonZeroUsize;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-use std::time::Duration;
 
 // Firedancer-compatible seed for leader schedule hashing
 const LEADER_SCHEDULE_HASH_SEED: u64 = 0xDEADFACE;
+const TICKS_PER_SLOT: u64 = 64;
+const SECONDS_PER_YEAR: f64 = 365.242199 * 24.0 * 60.0 * 60.0;
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_block_execute_v1(
@@ -95,18 +82,6 @@ pub unsafe extern "C" fn sol_compat_block_execute_v1(
     unsafe { *out_psz = out_vec.len() as u64 };
 
     1
-}
-
-impl From<proto::Inflation> for Inflation {
-    fn from(input: proto::Inflation) -> Self {
-        let mut inflation = Inflation::default();
-        inflation.initial = input.initial;
-        inflation.terminal = input.terminal;
-        inflation.taper = input.taper;
-        inflation.foundation = input.foundation;
-        inflation.foundation_term = input.foundation_term;
-        inflation
-    }
 }
 
 /* This is a little bit hacky because there's no direct Agave API that gets us a populated Stakes<Delegation> object
@@ -170,44 +145,96 @@ fn build_latest_stake_delegations(
     stakes
 }
 
-/* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_deleations()` is that
+fn synthesize_vote_account(pva: &proto::PrevVoteAccount) -> (Pubkey, u64, VoteAccount) {
+    let vote_pubkey = Pubkey::new_from_array(pva.address.clone().try_into().unwrap());
+    let node_pk = Pubkey::new_from_array(pva.node_pubkey.clone().try_into().unwrap());
+
+    let epoch_credits: Vec<(Epoch, u64, u64)> = pva
+        .epoch_credits
+        .iter()
+        .map(|ec| (ec.epoch, ec.credits, ec.prev_credits))
+        .collect();
+
+    let versioned = match pva.version() {
+        proto::VoteAccountVersion::V11411 => {
+            VoteStateVersions::V1_14_11(Box::new(VoteState1_14_11 {
+                node_pubkey: node_pk,
+                commission: pva.commission as u8,
+                epoch_credits,
+                ..VoteState1_14_11::default()
+            }))
+        }
+        proto::VoteAccountVersion::V3 => VoteStateVersions::new_v3(VoteStateV3 {
+            node_pubkey: node_pk,
+            commission: pva.commission as u8,
+            epoch_credits,
+            ..VoteStateV3::default()
+        }),
+        proto::VoteAccountVersion::V4 => VoteStateVersions::new_v4(VoteStateV4 {
+            node_pubkey: node_pk,
+            inflation_rewards_commission_bps: (pva.commission as u16) * 100,
+            epoch_credits,
+            ..VoteStateV4::default()
+        }),
+    };
+
+    let serialized = bincode::serialize(&versioned).unwrap();
+    let mut account = AccountSharedData::new(1, serialized.len(), &solana_sdk_ids::vote::id());
+    account.set_data_from_slice(&serialized);
+
+    let vote_account = VoteAccount::try_from(account).unwrap();
+    (vote_pubkey, pva.stake, vote_account)
+}
+
+/* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_delegations()` is that
 we use the provided votes cache instead of the latest input account states. */
-fn build_prev_stake_delegations(
-    vote_accounts: &[proto::VoteAccount],
+#[allow(deprecated)]
+fn build_prev_epoch_stakes(
+    vote_accounts: &[proto::PrevVoteAccount],
+    stake_delegations: &[proto::StakeDelegation],
 ) -> Stakes<stake_account::StakeAccount<Delegation>> {
-    /* TODO: Unclear if these values need to be filled in with legit values */
     let mut stakes = DeserializableStakes::<Delegation> {
         vote_accounts: VoteAccounts::default(),
-        stake_delegations: vec![],
+        stake_delegations: stake_delegations
+            .iter()
+            .map(|sd| {
+                let stake_pubkey =
+                    Pubkey::new_from_array(sd.stake_account.clone().try_into().unwrap());
+                let voter_pubkey =
+                    Pubkey::new_from_array(sd.vote_account.clone().try_into().unwrap());
+                let warmup_cooldown_rate = match sd.warmup_cooldown_rate() {
+                    proto::WarmupCooldownRate::Rate025 => 0.25,
+                    proto::WarmupCooldownRate::Rate009 => 0.09,
+                };
+                (
+                    stake_pubkey,
+                    Delegation {
+                        voter_pubkey,
+                        stake: sd.stake,
+                        activation_epoch: sd.activation_epoch,
+                        deactivation_epoch: sd.deactivation_epoch,
+                        warmup_cooldown_rate,
+                    },
+                )
+            })
+            .collect(),
         unused: 0,
         epoch: Epoch::default(),
         stake_history: StakeHistory::default(),
     };
-    vote_accounts.iter().for_each(|input_vote_account| {
-        let (pubkey, account) = input_vote_account
-            .vote_account
-            .clone()
-            .unwrap()
-            .try_into()
-            .unwrap();
 
-        /* Due to the way Agave and FD's stakes caches differ, we need to use the latest account states for the current epoch's stake delegations */
-        let account_shared_data = AccountSharedData::from(account);
+    for pva in vote_accounts {
+        let (pubkey, stake, vote_account) = synthesize_vote_account(pva);
+        stakes.vote_accounts.insert(pubkey, vote_account, || stake);
+    }
 
-        if let Ok(vote_account) = VoteAccount::try_from(account_shared_data) {
-            stakes.vote_accounts.insert(pubkey, vote_account, || input_vote_account.stake);
-        }
-    });
-
-    let stake_accounts: Stakes<stake_account::StakeAccount<Delegation>> =
-        Stakes::load_from_deserialized_delegations(stakes.clone(), |pubkey| {
-            stakes
-                .vote_accounts
-                .get(pubkey)
-                .map(|vote_account| vote_account.account().clone())
-        })
-        .unwrap();
-    stake_accounts
+    Stakes::load_from_deserialized_delegations(stakes.clone(), |pubkey| {
+        stakes
+            .vote_accounts
+            .get(pubkey)
+            .map(|vote_account| vote_account.account().clone())
+    })
+    .unwrap()
 }
 
 fn get_changed_accounts(
@@ -368,110 +395,63 @@ pub fn hash_epoch_leaders(
 
 #[allow(deprecated)]
 pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
-    let slot_ctx = context.slot_ctx.unwrap();
-    let epoch_ctx = context.epoch_ctx.unwrap();
-    let fd_features = epoch_ctx.features.unwrap_or_default();
+    let bank_ctx = context.bank.unwrap();
+    let fd_features = bank_ctx.features.unwrap_or_default();
     let feature_set = FeatureSet::from(&fd_features);
-    let current_slot = slot_ctx.slot;
-    let parent_slot = slot_ctx.prev_slot;
-    let poh = Hash::new_from_array(slot_ctx.poh.clone().try_into().unwrap());
 
-    /* HACK: Because there are three different schedules and rent instances, we need to find and deserialize
-    them from the account states first. Technically these different rent / epoch schedules should be fuzzed,
-    but that will be out of scope for this fuzzer. */
+    let current_slot = bank_ctx.slot;
+    let parent_slot = bank_ctx.parent_slot;
+    let poh = Hash::new_from_array(bank_ctx.poh.clone().try_into().unwrap());
+
+    let epoch_schedule: EpochSchedule = bank_ctx.epoch_schedule.as_ref().unwrap().into();
+    let rent: Rent = bank_ctx.rent.as_ref().unwrap().into();
+
     let sysvar_accounts: HashMap<&[u8], &AcctState> = context
         .acct_states
         .iter()
         .filter(|item| item.lamports > 0)
         .map(|item| (item.address.as_slice(), item))
         .collect();
-    let rent: Rent = get_sysvar(&sysvar_accounts, solana_sysvar::rent::id().as_ref());
-    let epoch_schedule: EpochSchedule = get_sysvar(
-        &sysvar_accounts,
-        solana_sysvar::epoch_schedule::id().as_ref(),
-    );
-    let recent_blockhashes: RecentBlockhashes = get_sysvar(
-        &sysvar_accounts,
-        solana_sysvar::recent_blockhashes::id().as_ref(),
-    );
     let stake_history: StakeHistory = get_sysvar(&sysvar_accounts, stake_history::id().as_ref());
 
-    let genesis_config = GenesisConfig {
-        creation_time: epoch_ctx.genesis_creation_time as i64,
-        inflation: epoch_ctx.inflation.unwrap().into(),
-        epoch_schedule: epoch_schedule.clone(),
-        cluster_type: ClusterType::Development,
-        poh_config: PohConfig {
-            target_tick_duration: Duration::from_micros(6250), /* TODO: Restore this from input */
-            ..PohConfig::default()
-        },
-        ..GenesisConfig::default()
-    };
+    let lamports_per_signature = bank_ctx.rbh_lamports_per_signature as u64;
 
-    let lamports_per_signature = recent_blockhashes
-        .first()
-        .map(|blockhash| blockhash.fee_calculator.lamports_per_signature)
-        .unwrap_or(5000u64);
-
-    let mut blockhash_queue = BlockhashQueue::default();
-    context.blockhash_queue.iter().for_each(|blockhash| {
-        let blockhash_hash = Hash::new_from_array(blockhash.clone().try_into().unwrap());
-        blockhash_queue.register_hash(&blockhash_hash, lamports_per_signature);
-    });
+    let blockhash_queue = restore_blockhash_queue(&bank_ctx.blockhash_queue);
 
     let mut ancestors = AncestorsForSerialization::default();
     ancestors.insert(current_slot.saturating_sub(1), 1);
     ancestors.insert(current_slot, 1);
 
-    /* Accounts DB config and initialization. Agave v3.1 uses a new Accounts
-    interface, which is not compatible with the old one. */
-    let index = Some(AccountsIndexConfig {
-        bins: Some(2),
-        num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
-        index_limit: IndexLimit::InMemOnly,
-        ..AccountsIndexConfig::default()
-    });
-    let accounts_db_config = AccountsDbConfig {
-        index,
-        storage_access: StorageAccess::File,
-        skip_initial_hash_calc: true,
-        ..AccountsDbConfig::default()
-    };
-    let accounts_db = AccountsDb::new_with_config(
-        vec![],
-        accounts_db_config.clone(),
-        None,
-        Arc::new(AtomicBool::new(false)),
-    );
-    let accounts = Accounts::new(Arc::new(accounts_db));
-    let accounts_to_store = context
-        .acct_states
-        .iter()
-        .map(|account| {
-            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
-            let account_data = AccountSharedData::from(account);
-            (pubkey, account_data)
-        })
-        .collect::<Vec<_>>();
+    /* Accounts DB config and initialization */
+    let accounts = create_accounts_db(vec![]);
+    let accounts_to_store = deserialize_accounts(&context.acct_states);
 
-    let storage_slot = slot_ctx.prev_slot;
-    accounts.store_accounts_seq((storage_slot, &accounts_to_store[..]), None, None);
-    // Add the root slot to the accounts DB
-    // Now needed when calling Bank::new_from_snapshot() in Agave v3.1
-    accounts.accounts_db.add_root(storage_slot);
-    let accounts_data_size_initial: u64 = accounts_to_store
-        .iter()
-        .map(|(_, account)| account.data().len() as u64)
-        .sum();
+    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
+    accounts.accounts_db.add_root(parent_slot);
+    let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
 
     /* Build the stakes separately */
     let current_epoch = epoch_schedule.get_epoch(current_slot);
     let parent_epoch = epoch_schedule.get_epoch(parent_slot);
     let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
+
     let stakes_t =
         build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history);
-    let stakes_t_1 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_1);
-    let stakes_t_2 = build_prev_stake_delegations(&epoch_ctx.vote_accounts_t_2);
+
+    // Convert stakes_t (current epoch delegations + stake_history from sysvar) into
+    // Stakes<StakeAccount> for the StakesCache. This mirrors new_from_snapshot which
+    // loads the StakesCache from the deserialized snapshot stakes.
+    let stakes_for_cache = Stakes::load_from_deserialized_delegations(stakes_t.clone(), |pubkey| {
+        accounts_to_store
+            .iter()
+            .find(|(pk, _)| pk == pubkey)
+            .map(|(_, acct)| acct.clone())
+    })
+    .unwrap();
+
+    let stakes_t_1 =
+        build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1, &bank_ctx.stake_delegations_t_1);
+    let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2, &[]);
 
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
@@ -489,57 +469,61 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         ),
     );
 
-    let fee_rate_governor = slot_ctx.fee_rate_governor.unwrap();
+    let input_fee_rate_governor = bank_ctx.fee_rate_governor.as_ref().unwrap();
+    let fee_rate_governor = FeeRateGovernor::new_derived(
+        &FeeRateGovernor {
+            lamports_per_signature,
+            target_lamports_per_signature: input_fee_rate_governor.target_lamports_per_signature,
+            target_signatures_per_slot: input_fee_rate_governor.target_signatures_per_slot,
+            min_lamports_per_signature: input_fee_rate_governor.min_lamports_per_signature,
+            max_lamports_per_signature: input_fee_rate_governor.max_lamports_per_signature,
+            burn_percent: input_fee_rate_governor.burn_percent as u8,
+        },
+        bank_ctx.parent_signature_count,
+    );
 
     let mut parent_lthash = LtHash::identity();
-    for (i, chunk) in slot_ctx.parent_lthash.chunks_exact(2).enumerate() {
+    for (i, chunk) in bank_ctx.parent_lt_hash.chunks_exact(2).enumerate() {
         parent_lthash.0[i] = u16::from_le_bytes(chunk.try_into().unwrap());
     }
 
+    assert!(bank_ctx.ns_per_slot.len() == 16);
+    let ns_per_slot = u128::from_le_bytes(bank_ctx.ns_per_slot[..16].try_into().unwrap());
+    let slots_per_year = SECONDS_PER_YEAR * 1e9 / ns_per_slot as f64;
     // Clone epoch_schedule for later use since it will be moved into bank_fields
-    let epoch_schedule_for_effects: EpochSchedule = epoch_schedule.clone();
+    let epoch_schedule_for_effects = epoch_schedule.clone();
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
         ancestors,
         hash: Hash::default(),
-        parent_hash: Hash::new_from_array(slot_ctx.parent_bank_hash.try_into().unwrap()),
-        parent_slot: slot_ctx.prev_slot,
+        parent_hash: Hash::new_from_array(bank_ctx.parent_bank_hash.try_into().unwrap()),
+        parent_slot,
         hard_forks: HardForks::default(),
         transaction_count: 0,
         hashes_per_tick: None,
-        capitalization: slot_ctx.prev_epoch_capitalization,
+        capitalization: bank_ctx.capitalization,
         signature_count: 0,
-        tick_height: 64u64.saturating_mul(current_slot),
-        max_tick_height: 64u64.saturating_mul(current_slot.saturating_add(1)),
-        ticks_per_slot: 64u64,
-        ns_per_slot: genesis_config.ns_per_slot(),
-        genesis_creation_time: epoch_ctx.genesis_creation_time as i64,
-        slots_per_year: genesis_config.slots_per_year(),
+        tick_height: TICKS_PER_SLOT.saturating_mul(current_slot),
+        max_tick_height: TICKS_PER_SLOT.saturating_mul(current_slot.saturating_add(1)),
+        ticks_per_slot: TICKS_PER_SLOT,
+        ns_per_slot,
+        genesis_creation_time: 0,
+        slots_per_year,
         slot: current_slot,
         epoch: current_epoch,
-        block_height: slot_ctx.block_height,
+        block_height: bank_ctx.block_height,
         leader_id: Pubkey::default(),
         collector_fees: 0,
-        fee_rate_governor: FeeRateGovernor::new_derived(
-            &FeeRateGovernor {
-                lamports_per_signature,
-                target_lamports_per_signature: fee_rate_governor.target_lamports_per_signature,
-                target_signatures_per_slot: fee_rate_governor.target_signatures_per_slot,
-                min_lamports_per_signature: fee_rate_governor.min_lamports_per_signature,
-                max_lamports_per_signature: fee_rate_governor.max_lamports_per_signature,
-                burn_percent: fee_rate_governor.burn_percent as u8,
-            },
-            slot_ctx.parent_signature_count,
-        ),
+        fee_rate_governor,
         rent_collector: RentCollector {
-            epoch: epoch_schedule.get_epoch(parent_slot),
+            epoch: current_epoch,
             epoch_schedule: epoch_schedule.clone(),
-            slots_per_year: genesis_config.slots_per_year(),
+            slots_per_year,
             rent,
         },
         epoch_schedule,
-        inflation: epoch_ctx.inflation.unwrap().into(),
+        inflation: bank_ctx.inflation.unwrap().into(),
         stakes: stakes_t,
         versioned_epoch_stakes: vec![],
         is_delta: false,
@@ -549,70 +533,31 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     };
 
     let bank_rc = BankRc::new(accounts);
-    let mut bank = Bank::new_from_snapshot(
+    let mut bank = Bank::new_for_block_fuzzing(
         bank_rc,
-        &genesis_config,
-        Arc::new(RuntimeConfig::default()),
         bank_fields,
-        None,
-        accounts_data_size_initial, // precomputed above
+        feature_set,
         epoch_stakes,
-        Some(feature_set),
+        stakes_for_cache,
+        accounts_data_size_initial,
     );
 
-    // Store the accounts in the bank using the new interface.
+    // Store the accounts in the bank. Must happen before prepare_for_block_execution
+    // so that sysvar updates and epoch processing operate on the correct base state.
     for (pubkey, account_data) in &accounts_to_store {
         if account_data.lamports() > 0 {
             bank.store_account(pubkey, account_data);
         }
     }
 
-    let leader_schedule = LeaderScheduleCache::new_from_bank(&bank);
-    let leader = leader_schedule
-        .slot_leader_at(current_slot, Some(&bank))
-        .unwrap_or_default();
-    bank.set_leader_id_for_tests(leader.id);
+    // Complete initialization: epoch processing, sysvar updates, LT hash cache
+    bank.prepare_for_block_execution();
 
-    /* Have we crossed an epoch boundary? */
-    if parent_epoch < current_epoch {
-        bank.process_new_epoch(
-            parent_epoch,
-            parent_slot,
-            bank.block_height(),
-            null_tracer(),
-        );
-    }
     let l_sched = leader_schedule_utils::leader_schedule(current_epoch, &bank).unwrap();
 
-    bank.distribute_partitioned_epoch_rewards();
-
-    bank.get_transaction_processor().reset_sysvar_cache();
-
-    bank.update_slot_hashes();
-    bank.update_stake_history(Some(parent_epoch));
-    bank.update_clock(Some(parent_epoch));
-    bank.update_last_restart_slot();
-    bank.update_recent_blockhashes();
-    bank.get_transaction_processor()
-        .fill_missing_sysvar_cache_entries(&bank);
-
-    /* See this comment to understand why we need to populate the lthash
-    cache before executing:
-    https://github.com/anza-xyz/agave/blob/v3.0.3/runtime/src/bank.rs#L1409-L1423
-
-    Ideally, caches shouldn't have consensus-relevant effects, and a
-    cache miss would just result in a slow fetch insteead of an
-    outright divergence... */
-    let accounts_modified_this_slot = bank
-        .rc
-        .accounts
-        .accounts_db
-        .get_pubkeys_for_slot(current_slot);
-    for pubkey in accounts_modified_this_slot {
-        bank.cache_for_accounts_lt_hash
-            .entry(pubkey)
-            .or_insert(AccountsLtHashCacheValue::BankNew);
-    }
+    let (_, slot_index) = epoch_schedule_for_effects.get_epoch_and_slot_index(current_slot);
+    let leader = l_sched[slot_index];
+    bank.set_leader_id_for_tests(leader.id);
 
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.write().unwrap().root_bank();
@@ -695,10 +640,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let first_slot = epoch_schedule_for_effects.get_first_slot_in_epoch(current_epoch);
     let slots_in_epoch = epoch_schedule_for_effects.get_slots_in_epoch(current_epoch);
 
-    // Attempt to retrieve the leader schedule for this epoch from the cache
-
-    // Schedule found, obtain effects and hash
-    // Generate a deterministic 128-bit hash of the entire leader schedule
+    // Generate a deterministic 128-bit hash of the entire leader schedule.
     // This hash encodes both WHO the leaders are and WHEN they lead.
     // We use a fixed seed for reproducibility across implementations.
     let mut schedule_hash = [0u8; 16];
@@ -714,11 +656,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     // Package all the schedule metadata for output
     let leader_schedule_effects = proto::LeaderScheduleEffects {
-        leaders_epoch: current_epoch, // Which epoch this schedule applies to
-        leaders_slot0: first_slot,    // First absolute slot in this epoch
-        leaders_slot_cnt: slots_in_epoch as u64, // Total slots in this epoch
+        leaders_epoch: current_epoch,     // Which epoch this schedule applies to
+        leaders_slot0: first_slot,        // First absolute slot in this epoch
+        leaders_slot_cnt: slots_in_epoch, // Total slots in this epoch
         leader_pub_cnt: unique_cnt as u64, // Number of unique leader validators
-        leaders_sched_cnt: slots_in_epoch as u64, // Number of scheduled leader slots (verification field)
+        leaders_sched_cnt: slots_in_epoch, // Number of scheduled leader slots (verification field)
         leader_schedule_hash: schedule_hash.to_vec(), // 128-bit fingerprint of the schedule
     };
 
