@@ -294,6 +294,9 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_vote_address_leader_schedule,
     vote_state_v4,
     fix_alt_bn128_pairing_length_check,
+    static_instruction_limit,
+    switch_to_chacha8_turbine,
+    enforce_fixed_fec_set,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -323,13 +326,10 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // account_data_direct_mapping, // fuzz in 4.0+
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
-    enforce_fixed_fec_set,
     increase_cpi_account_info_limit,
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
     replace_spl_token_with_p_token,
-    static_instruction_limit,
-    switch_to_chacha8_turbine,
     raise_block_limits_to_100m, // to be activated in v3.1
     // alpenglow, // TBD
     raise_account_cu_limit,
@@ -339,6 +339,14 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_bls12_381_syscall,
     alt_bn128_little_endian,
     enable_alt_bn128_g2_syscalls,
+    bls_pubkey_management_in_vote_account,
+    relax_programdata_account_check_migration,
+    // remove_simple_vote_from_cost_model, // need to bump solfuzz-agave version
+    limit_instruction_accounts,
+    validator_admission_ticket,
+    create_account_allow_prefund,
+    delay_commission_updates,
+    validate_chained_block_id,
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
