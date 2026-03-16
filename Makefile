@@ -16,14 +16,20 @@ RUSTFLAGS_8BIT+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
 RUSTFLAGS_PCGUARD:=$(RUSTFLAGS_BASE)
 RUSTFLAGS_PCGUARD+=-Cllvm-args=-sanitizer-coverage-trace-pc-guard
 
-# Honggfuzz mode: PC guards with all trace features
-# https://github.com/rust-fuzz/honggfuzz-rs/blob/master/src/bin/cargo-hfuzz.rs
+# Honggfuzz mode: BOTH PC guards AND 8-bit counters, plus trace features
+# - trace-pc-guard: per-edge function-call coverage (honggfuzz supervisor)
+# - inline-8bit-counters: per-edge counter coverage (instrument8BitCountersCount)
+# - trace-compares/divs/geps: value-profile feedback for comparison operands
+# - stack-depth OMITTED: uses __sancov_lowest_stack with initial-exec TLS,
+#   which sets DF_STATIC_TLS and crashes dlopen on glibc 2.34 (SIGFPE in
+#   _dl_try_allocate_static_tls due to division by zero when the process
+#   has no pre-existing static TLS alignment).
 # Note: indirect-calls is enabled via level=4 in RUSTFLAGS_BASE
 RUSTFLAGS_HFUZZ:=$(RUSTFLAGS_PCGUARD)
+RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-compares
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-divs
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-geps
-RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-stack-depth
 
 RUSTFLAGS:=$(RUSTFLAGS_8BIT)
 
