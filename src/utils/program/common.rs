@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::proto::{AcctState, TransactionMessage};
+use protosol::protos::{AcctState, TransactionMessage};
 use solana_account::AccountSharedData;
 use solana_hash::Hash;
 use solana_message::compiled_instruction::CompiledInstruction;

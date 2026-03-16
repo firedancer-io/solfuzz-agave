@@ -33,7 +33,6 @@ use solana_sdk_ids::{
 use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
-use solana_svm::rent_calculator::RENT_EXEMPT_RENT_EPOCH;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
@@ -44,7 +43,7 @@ use solana_transaction_context::{
 };
 
 use crate::utils::err_map::instr_err_to_num;
-use crate::utils::feature_u64;
+use crate::utils::{feature_set_from_protos, feature_u64};
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::{
     declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
@@ -356,9 +355,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
 // BPF version will use different amounts of CUs.
 declare_core_bpf_default_compute_units!();
 
-pub mod proto {
-    include!(concat!(env!("OUT_DIR"), "/org.solana.sealevel.v1.rs"));
-}
+use protosol::protos;
 
 #[allow(
     unused_imports,
@@ -504,10 +501,10 @@ impl TransactionProcessingCallback for InstrContext {
     }
 }
 
-impl TryFrom<proto::InstrContext> for InstrContext {
+impl TryFrom<protos::InstrContext> for InstrContext {
     type Error = Error;
 
-    fn try_from(input: proto::InstrContext) -> Result<Self, Self::Error> {
+    fn try_from(input: protos::InstrContext) -> Result<Self, Self::Error> {
         let program_id = Pubkey::new_from_array(
             input
                 .program_id
@@ -518,14 +515,10 @@ impl TryFrom<proto::InstrContext> for InstrContext {
         let feature_set: FeatureSet = input
             .features
             .as_ref()
-            .map(|fs| fs.into())
+            .map(feature_set_from_protos)
             .unwrap_or_default();
 
-        let accounts: Vec<(Pubkey, Account)> = input
-            .accounts
-            .into_iter()
-            .map(|acct_state| acct_state.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+        let accounts: Vec<(Pubkey, Account)> = input.accounts.into_iter().map(Into::into).collect();
 
         // Match Firedancer harness limit (FD_INSTR_ACCT_MAX = 1094)
         // which is derived from the MTU
@@ -605,9 +598,9 @@ pub struct InstrEffects {
     pub return_data: Vec<u8>,
 }
 
-impl From<InstrEffects> for proto::InstrEffects {
+impl From<InstrEffects> for protos::InstrEffects {
     fn from(val: InstrEffects) -> Self {
-        proto::InstrEffects {
+        protos::InstrEffects {
             result: val
                 .result
                 .as_ref()
@@ -617,7 +610,7 @@ impl From<InstrEffects> for proto::InstrEffects {
             modified_accounts: val
                 .modified_accounts
                 .into_iter()
-                .map(|(pubkey, account)| proto::AcctState {
+                .map(|(pubkey, account)| protos::AcctState {
                     address: pubkey.to_bytes().to_vec(),
                     owner: account.owner.to_bytes().to_vec(),
                     lamports: account.lamports,
@@ -631,7 +624,7 @@ impl From<InstrEffects> for proto::InstrEffects {
     }
 }
 
-pub fn execute_instr_proto(input: proto::InstrContext) -> Option<proto::InstrEffects> {
+pub fn execute_instr_proto(input: protos::InstrContext) -> Option<protos::InstrEffects> {
     let Ok(instr_context) = InstrContext::try_from(input) else {
         return None;
     };
@@ -1151,36 +1144,6 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     })
 }
 
-impl TryFrom<proto::AcctState> for (Pubkey, Account) {
-    type Error = Error;
-
-    fn try_from(input: proto::AcctState) -> Result<Self, Self::Error> {
-        let pubkey = Pubkey::new_from_array(
-            input
-                .address
-                .try_into()
-                .map_err(|_| Error::InvalidPubkeyBytes)?,
-        );
-        let owner = Pubkey::new_from_array(
-            input
-                .owner
-                .try_into()
-                .map_err(|_| Error::InvalidPubkeyBytes)?,
-        );
-
-        Ok((
-            pubkey,
-            Account {
-                lamports: input.lamports,
-                data: input.data,
-                owner,
-                executable: input.executable,
-                rent_epoch: RENT_EXEMPT_RENT_EPOCH,
-            },
-        ))
-    }
-}
-
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
     unsafe {
@@ -1243,7 +1206,7 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
     in_sz: u64,
 ) -> c_int {
     let in_slice = unsafe { std::slice::from_raw_parts(in_ptr, in_sz as usize) };
-    let Ok(instr_context) = proto::InstrContext::decode(in_slice) else {
+    let Ok(instr_context) = protos::InstrContext::decode(in_slice) else {
         return 0;
     };
     let Some(instr_effects) = execute_instr_proto(instr_context) else {
@@ -1271,8 +1234,8 @@ mod tests {
     use solana_sysvar::recent_blockhashes::RecentBlockhashes;
     use solana_sysvar::SysvarSerialize;
 
-    fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> proto::AcctState {
-        proto::AcctState {
+    fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> protos::AcctState {
+        protos::AcctState {
             address: id.to_bytes().to_vec(),
             owner: solana_sdk_ids::sysvar::id().to_bytes().to_vec(),
             lamports: 1,
@@ -1281,7 +1244,7 @@ mod tests {
         }
     }
 
-    fn make_sysvar_accounts() -> Vec<proto::AcctState> {
+    fn make_sysvar_accounts() -> Vec<protos::AcctState> {
         vec![
             create_sysvar_account(&solana_sysvar::clock::id(), Clock::default()),
             create_sysvar_account(&solana_sysvar::rent::id(), Rent::default()),
@@ -1297,7 +1260,7 @@ mod tests {
         ]
     }
 
-    fn with_sysvars(mut v: Vec<proto::AcctState>) -> Vec<proto::AcctState> {
+    fn with_sysvars(mut v: Vec<protos::AcctState>) -> Vec<protos::AcctState> {
         v.extend(make_sysvar_accounts());
         v
     }
@@ -1307,24 +1270,24 @@ mod tests {
         let native_loader_id = native_loader::id().to_bytes().to_vec();
 
         // Ensure that a basic account transfer works
-        let input = proto::InstrContext {
+        let input = protos::InstrContext {
             program_id: vec![0u8; 32],
             accounts: with_sysvars(vec![
-                proto::AcctState {
+                protos::AcctState {
                     address: vec![1u8; 32],
                     owner: vec![0u8; 32],
                     lamports: 1000,
                     data: vec![],
                     executable: false,
                 },
-                proto::AcctState {
+                protos::AcctState {
                     address: vec![2u8; 32],
                     owner: vec![0u8; 32],
                     lamports: 0,
                     data: vec![],
                     executable: false,
                 },
-                proto::AcctState {
+                protos::AcctState {
                     address: vec![0u8; 32],
                     owner: native_loader_id.clone(),
                     lamports: 10000000,
@@ -1333,12 +1296,12 @@ mod tests {
                 },
             ]),
             instr_accounts: vec![
-                proto::InstrAcct {
+                protos::InstrAcct {
                     index: 0,
                     is_signer: true,
                     is_writable: true,
                 },
-                proto::InstrAcct {
+                protos::InstrAcct {
                     index: 1,
                     is_signer: false,
                     is_writable: true,
@@ -1355,25 +1318,25 @@ mod tests {
         let output = execute_instr_proto(input);
         assert_eq!(
             output,
-            Some(proto::InstrEffects {
+            Some(protos::InstrEffects {
                 result: 0,
                 custom_err: 0,
                 modified_accounts: with_sysvars(vec![
-                    proto::AcctState {
+                    protos::AcctState {
                         address: vec![1u8; 32],
                         owner: vec![0u8; 32],
                         lamports: 999,
                         data: vec![],
                         executable: false,
                     },
-                    proto::AcctState {
+                    protos::AcctState {
                         address: vec![2u8; 32],
                         owner: vec![0u8; 32],
                         lamports: 1,
                         data: vec![],
                         executable: false,
                     },
-                    proto::AcctState {
+                    protos::AcctState {
                         address: vec![0u8; 32],
                         owner: native_loader_id.clone(),
                         lamports: 10000000,

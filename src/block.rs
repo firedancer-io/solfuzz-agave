@@ -1,13 +1,13 @@
-use crate::proto::{self, AcctState};
-use crate::proto::{BlockContext, BlockEffects};
 use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{build_versioned_message, get_sysvar};
 use crate::utils::{
-    compute_accounts_data_size, create_accounts_db, deserialize_accounts, restore_blockhash_queue,
+    compute_accounts_data_size, create_accounts_db, deserialize_accounts, feature_set_from_protos,
+    restore_blockhash_queue,
 };
-use agave_feature_set::*;
 use agave_votor_messages::migration::MigrationStatus;
 use prost::Message;
+use protosol::protos::{self, AcctState};
+use protosol::protos::{BlockContext, BlockEffects};
 #[allow(deprecated)]
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
@@ -87,7 +87,7 @@ pub unsafe extern "C" fn sol_compat_block_execute_v1(
 /* This is a little bit hacky because there's no direct Agave API that gets us a populated Stakes<Delegation> object
 from a set of account states. Fine, I'll do it myself... */
 fn build_latest_stake_delegations(
-    account_states: &[proto::AcctState],
+    account_states: &[protos::AcctState],
     epoch: Epoch,
     stake_history: &StakeHistory,
 ) -> DeserializableStakes<Delegation> {
@@ -145,7 +145,7 @@ fn build_latest_stake_delegations(
     stakes
 }
 
-fn synthesize_vote_account(pva: &proto::PrevVoteAccount) -> (Pubkey, u64, VoteAccount) {
+fn synthesize_vote_account(pva: &protos::PrevVoteAccount) -> (Pubkey, u64, VoteAccount) {
     let vote_pubkey = Pubkey::new_from_array(pva.address.clone().try_into().unwrap());
     let node_pk = Pubkey::new_from_array(pva.node_pubkey.clone().try_into().unwrap());
 
@@ -156,7 +156,7 @@ fn synthesize_vote_account(pva: &proto::PrevVoteAccount) -> (Pubkey, u64, VoteAc
         .collect();
 
     let versioned = match pva.version() {
-        proto::VoteAccountVersion::V11411 => {
+        protos::VoteAccountVersion::V11411 => {
             VoteStateVersions::V1_14_11(Box::new(VoteState1_14_11 {
                 node_pubkey: node_pk,
                 commission: pva.commission as u8,
@@ -164,13 +164,13 @@ fn synthesize_vote_account(pva: &proto::PrevVoteAccount) -> (Pubkey, u64, VoteAc
                 ..VoteState1_14_11::default()
             }))
         }
-        proto::VoteAccountVersion::V3 => VoteStateVersions::new_v3(VoteStateV3 {
+        protos::VoteAccountVersion::V3 => VoteStateVersions::new_v3(VoteStateV3 {
             node_pubkey: node_pk,
             commission: pva.commission as u8,
             epoch_credits,
             ..VoteStateV3::default()
         }),
-        proto::VoteAccountVersion::V4 => VoteStateVersions::new_v4(VoteStateV4 {
+        protos::VoteAccountVersion::V4 => VoteStateVersions::new_v4(VoteStateV4 {
             node_pubkey: node_pk,
             inflation_rewards_commission_bps: (pva.commission as u16) * 100,
             epoch_credits,
@@ -190,8 +190,8 @@ fn synthesize_vote_account(pva: &proto::PrevVoteAccount) -> (Pubkey, u64, VoteAc
 we use the provided votes cache instead of the latest input account states. */
 #[allow(deprecated)]
 fn build_prev_epoch_stakes(
-    vote_accounts: &[proto::PrevVoteAccount],
-    stake_delegations: &[proto::StakeDelegation],
+    vote_accounts: &[protos::PrevVoteAccount],
+    stake_delegations: &[protos::StakeDelegation],
 ) -> Stakes<stake_account::StakeAccount<Delegation>> {
     let mut stakes = DeserializableStakes::<Delegation> {
         vote_accounts: VoteAccounts::default(),
@@ -203,8 +203,8 @@ fn build_prev_epoch_stakes(
                 let voter_pubkey =
                     Pubkey::new_from_array(sd.vote_account.clone().try_into().unwrap());
                 let warmup_cooldown_rate = match sd.warmup_cooldown_rate() {
-                    proto::WarmupCooldownRate::Rate025 => 0.25,
-                    proto::WarmupCooldownRate::Rate009 => 0.09,
+                    protos::WarmupCooldownRate::Rate025 => 0.25,
+                    protos::WarmupCooldownRate::Rate009 => 0.09,
                 };
                 (
                     stake_pubkey,
@@ -238,7 +238,7 @@ fn build_prev_epoch_stakes(
 }
 
 fn get_changed_accounts(
-    initial_accounts: &[proto::AcctState],
+    initial_accounts: &[protos::AcctState],
     bank: &Bank,
 ) -> Vec<(Pubkey, AccountSharedData)> {
     let mut changed_accounts = Vec::new();
@@ -268,7 +268,7 @@ fn accounts_differ(account1: &AccountSharedData, account2: &AccountSharedData) -
 
 fn create_changed_accounts_bank_hash_details(
     bank: &Bank,
-    initial_accounts: &[proto::AcctState],
+    initial_accounts: &[protos::AcctState],
 ) -> Result<BankHashDetails, String> {
     let slot = bank.slot();
     if !bank.is_frozen() {
@@ -397,7 +397,7 @@ pub fn hash_epoch_leaders(
 pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let bank_ctx = context.bank.unwrap();
     let fd_features = bank_ctx.features.unwrap_or_default();
-    let feature_set = FeatureSet::from(&fd_features);
+    let feature_set = feature_set_from_protos(&fd_features);
 
     let current_slot = bank_ctx.slot;
     let parent_slot = bank_ctx.parent_slot;
@@ -655,7 +655,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     );
 
     // Package all the schedule metadata for output
-    let leader_schedule_effects = proto::LeaderScheduleEffects {
+    let leader_schedule_effects = protos::LeaderScheduleEffects {
         leaders_epoch: current_epoch,     // Which epoch this schedule applies to
         leaders_slot0: first_slot,        // First absolute slot in this epoch
         leaders_slot_cnt: slots_in_epoch, // Total slots in this epoch
@@ -681,7 +681,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         has_error: result.is_err(),
         slot_capitalization: capitalization,
         bank_hash: bank_hash.to_bytes().to_vec(),
-        cost_tracker: Some(proto::CostTracker {
+        cost_tracker: Some(protos::CostTracker {
             block_cost: cost_tracker.block_cost(),
             vote_cost: cost_tracker.vote_cost(),
         }),

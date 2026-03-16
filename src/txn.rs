@@ -1,11 +1,10 @@
-use crate::proto;
-use crate::proto::{AcctState, TxnContext, TxnResult};
 use crate::utils::program::common::build_versioned_message;
-use crate::utils::{create_accounts_db, restore_blockhash_queue};
-use agave_feature_set::*;
+use crate::utils::{create_accounts_db, feature_set_from_protos, restore_blockhash_queue};
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
+use protosol::protos;
+use protosol::protos::{TxnContext, TxnResult};
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
 use solana_accounts_db::ancestors::AncestorsForSerialization;
@@ -17,9 +16,6 @@ use solana_hash::Hash;
 use solana_inflation::Inflation;
 use solana_instruction::error::InstructionError;
 use solana_lattice_hash::lt_hash::LtHash;
-use solana_message::compiled_instruction::CompiledInstruction;
-use solana_message::v0::MessageAddressTableLookup;
-use solana_message::MessageHeader;
 use solana_message::SanitizedMessage;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
@@ -44,7 +40,6 @@ use solana_transaction::TransactionVerificationMode;
 use solana_transaction_context::transaction_accounts::KeyedAccountSharedData;
 use solana_transaction_error::TransactionError;
 use solana_vote::vote_account::VoteAccounts;
-use std::cmp::max;
 use std::collections::HashMap;
 use std::ffi::c_int;
 
@@ -79,44 +74,6 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
     1
 }
 
-impl From<&proto::MessageHeader> for MessageHeader {
-    fn from(value: &proto::MessageHeader) -> Self {
-        MessageHeader {
-            num_required_signatures: max(1, value.num_required_signatures as u8),
-            num_readonly_signed_accounts: value.num_readonly_signed_accounts as u8,
-            num_readonly_unsigned_accounts: value.num_readonly_unsigned_accounts as u8,
-        }
-    }
-}
-
-impl From<&proto::CompiledInstruction> for CompiledInstruction {
-    fn from(value: &proto::CompiledInstruction) -> Self {
-        CompiledInstruction {
-            program_id_index: value.program_id_index as u8,
-            accounts: value.accounts.iter().map(|idx| *idx as u8).collect(),
-            data: value.data.clone(),
-        }
-    }
-}
-
-impl From<&proto::MessageAddressTableLookup> for MessageAddressTableLookup {
-    fn from(value: &proto::MessageAddressTableLookup) -> Self {
-        MessageAddressTableLookup {
-            account_key: Pubkey::new_from_array(value.account_key.clone().try_into().unwrap()),
-            writable_indexes: value
-                .writable_indexes
-                .iter()
-                .map(|idx| *idx as u8)
-                .collect(),
-            readonly_indexes: value
-                .readonly_indexes
-                .iter()
-                .map(|idx| *idx as u8)
-                .collect(),
-        }
-    }
-}
-
 /* Returns (txn_err, instr_err, custom_err, instr_err_idx) */
 fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, u32, u32, u32) {
     let (instr_err_no, custom_err_no, instr_err_idx) = match transaction_error.clone() {
@@ -143,19 +100,6 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
         custom_err_no,
         instr_err_idx.into(),
     )
-}
-
-// A tuple of a pubkey and an AccountSharedData represents a TransactionAccount.
-impl From<KeyedAccountSharedData> for AcctState {
-    fn from(value: KeyedAccountSharedData) -> AcctState {
-        AcctState {
-            address: value.0.to_bytes().to_vec(),
-            lamports: value.1.lamports(),
-            data: value.1.data().to_vec(),
-            executable: value.1.executable(),
-            owner: value.1.owner().to_bytes().to_vec(),
-        }
-    }
 }
 
 fn output_txn_result_from_result(
@@ -288,7 +232,7 @@ fn output_txn_result_from_result(
         custom_error,
         return_data,
         executed_units,
-        fee_details: fee_details.map(|fees| proto::FeeDetails {
+        fee_details: fee_details.map(|fees| protos::FeeDetails {
             transaction_fee: fees.transaction_fee(),
             prioritization_fee: fees.prioritization_fee(),
         }),
@@ -354,7 +298,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let rent: Rent = txn_bank.rent.as_ref().unwrap().into();
 
     /* Feature set */
-    let feature_set = FeatureSet::from(txn_bank.features.as_ref().unwrap());
+    let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());
 
     /* Epoch */
     let epoch = epoch_schedule.get_epoch(slot);

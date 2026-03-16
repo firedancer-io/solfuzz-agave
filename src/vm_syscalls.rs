@@ -1,12 +1,9 @@
 use crate::{
-    proto::{SyscallContext, SyscallEffects},
-    utils::err_map::unpack_stable_result,
-    utils::vm::mem_regions,
-    utils::vm::HEAP_MAX,
-    utils::vm::STACK_SIZE,
-    InstrContext, SnapshotInvokeContext,
+    utils::err_map::unpack_stable_result, utils::vm::mem_regions, utils::vm::HEAP_MAX,
+    utils::vm::STACK_SIZE, InstrContext, SnapshotInvokeContext,
 };
 use prost::Message;
+use protosol::protos::{SyscallContext, SyscallEffects};
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
 use solana_instruction::AccountMeta;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
