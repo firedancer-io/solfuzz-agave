@@ -339,12 +339,12 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     alt_bn128_little_endian,
     enable_alt_bn128_g2_syscalls,
     bls_pubkey_management_in_vote_account,
-    relax_programdata_account_check_migration,
+    // relax_programdata_account_check_migration, TODO: build kunorpus generators first
     // remove_simple_vote_from_cost_model, // need to bump solfuzz-agave version
     limit_instruction_accounts,
     validator_admission_ticket,
-    create_account_allow_prefund,
-    delay_commission_updates,
+    // create_account_allow_prefund, TODO: build kunorpus generators first
+    // delay_commission_updates, TODO: build kunorpus generators first
     validate_chained_block_id,
 ];
 
