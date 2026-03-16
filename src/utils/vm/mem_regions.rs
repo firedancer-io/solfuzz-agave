@@ -3,7 +3,7 @@ use solana_sbpf::{
     memory_region::{MemoryMapping, MemoryRegion},
 };
 
-use crate::proto::InputDataRegion;
+use protosol::protos::InputDataRegion;
 
 /* From a MemoryMapping, extract the input data regions and convert
 them into InputDataRegions. The regions themselves are not copied,

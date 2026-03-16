@@ -1,5 +1,9 @@
 use agave_feature_set::set_exempt_rent_epoch_max;
 use prost::Message;
+use protosol::protos::{
+    self, AcctState, BlockhashQueueEntry, CompiledInstruction, FeatureSet, MessageHeader,
+    SanitizedTransaction, TransactionMessage, TxnBank, TxnContext, TxnResult,
+};
 use solana_address_lookup_table_interface::state::{AddressLookupTable, LookupTableMeta};
 use solana_clock::Clock;
 use solana_epoch_schedule::EpochSchedule;
@@ -11,12 +15,8 @@ use solana_sdk_ids::{address_lookup_table, bpf_loader_upgradeable, native_loader
 use solana_signature::Signature;
 use solana_slot_hashes::SlotHashes;
 use solana_sysvar_id::SysvarId;
-use solfuzz_agave::proto::{
-    AcctState, BlockhashQueueEntry, CompiledInstruction, FeatureSet, MessageHeader,
-    SanitizedTransaction, TransactionMessage, TxnBank, TxnContext, TxnResult,
-};
 use solfuzz_agave::txn::sol_compat_txn_execute_v1;
-use solfuzz_agave::{feature_list, proto, utils::feature_u64, HARDCODED_FEATURES};
+use solfuzz_agave::{feature_list, utils::feature_u64, HARDCODED_FEATURES};
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -235,9 +235,9 @@ fn test_txn_execute_clock() {
             blockhash_queue,
             rbh_lamports_per_signature: 5000,
             features: Some(features),
-            fee_rate_governor: Some(proto::FeeRateGovernor::default()),
-            rent: Some(proto::Rent::default()),
-            epoch_schedule: Some(proto::EpochSchedule::default()),
+            fee_rate_governor: Some(protos::FeeRateGovernor::default()),
+            rent: Some(protos::Rent::default()),
+            epoch_schedule: Some(protos::EpochSchedule::default()),
             ..Default::default()
         }),
     };
@@ -377,9 +377,9 @@ fn test_simple_transfer() {
             blockhash_queue,
             rbh_lamports_per_signature: 5000,
             features: Some(features),
-            fee_rate_governor: Some(proto::FeeRateGovernor::default()),
-            rent: Some(proto::Rent::default()),
-            epoch_schedule: Some(proto::EpochSchedule::default()),
+            fee_rate_governor: Some(protos::FeeRateGovernor::default()),
+            rent: Some(protos::Rent::default()),
+            epoch_schedule: Some(protos::EpochSchedule::default()),
             ..Default::default()
         }),
     };
@@ -476,7 +476,7 @@ fn test_lookup_table() {
         data: vec![0, 0, 0, 0, 0, 0, 0, 10],
     };
 
-    let table_lookup = proto::MessageAddressTableLookup {
+    let table_lookup = protos::MessageAddressTableLookup {
         account_key: vec![1; 32],
         writable_indexes: vec![0],
         readonly_indexes: vec![1],
@@ -555,9 +555,9 @@ fn test_lookup_table() {
             blockhash_queue,
             rbh_lamports_per_signature: 5000,
             features: Some(features),
-            fee_rate_governor: Some(proto::FeeRateGovernor::default()),
-            rent: Some(proto::Rent::default()),
-            epoch_schedule: Some(proto::EpochSchedule::default()),
+            fee_rate_governor: Some(protos::FeeRateGovernor::default()),
+            rent: Some(protos::Rent::default()),
+            epoch_schedule: Some(protos::EpochSchedule::default()),
             ..Default::default()
         }),
     };

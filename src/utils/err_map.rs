@@ -1,5 +1,5 @@
-use crate::proto::ErrKind;
 use agave_syscalls::SyscallError;
+use protosol::protos::ErrKind;
 use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{
     cpi::CpiError, invoke_context::InvokeContext, memory::MemoryTranslationError, stable_log,

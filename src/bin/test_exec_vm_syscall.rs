@@ -1,6 +1,6 @@
 use clap::Parser;
 use prost::Message;
-use solfuzz_agave::proto::SyscallFixture;
+use protosol::protos::SyscallFixture;
 use std::path::PathBuf;
 
 #[derive(Parser)]

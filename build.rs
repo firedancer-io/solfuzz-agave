@@ -32,26 +32,6 @@ fn monitor_and_get_files(
     Ok((files, dir))
 }
 
-fn compile_protos() -> Result<(), Box<dyn std::error::Error>> {
-    let (proto_files, proto_dir) = monitor_and_get_files("DEP_PROTOSOL_PROTO_DIR", "proto")?;
-
-    // Compile protos into Rust
-    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    let mut config = prost_build::Config::new();
-    let protoc_path = PathBuf::from(env::var("PROTOC_EXECUTABLE")?);
-    config.protoc_executable(protoc_path);
-    config.out_dir(&out_dir);
-    config.compile_protos(
-        &proto_files
-            .iter()
-            .map(|p| p.display().to_string())
-            .collect::<Vec<_>>(),
-        &[proto_dir.to_str().unwrap()],
-    )?;
-
-    Ok(())
-}
-
 fn compile_flatbuffers() -> Result<(), Box<dyn std::error::Error>> {
     let (flatbuffer_files, flatbuffer_dir) =
         monitor_and_get_files("DEP_PROTOSOL_FLATBUFFERS_DIR", "fbs")?;
@@ -88,7 +68,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rerun-if-changed=force_rebuild");
     }
 
-    compile_protos()?;
     compile_flatbuffers()?;
 
     Ok(())
