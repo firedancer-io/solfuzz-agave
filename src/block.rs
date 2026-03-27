@@ -11,7 +11,6 @@ use protosol::protos::{BlockContext, BlockEffects};
 #[allow(deprecated)]
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_accounts_db::ancestors::AncestorsForSerialization;
 use solana_clock::Epoch;
 use solana_entry::entry::Entry;
 use solana_epoch_schedule::EpochSchedule;
@@ -33,7 +32,6 @@ use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::leader_schedule_utils;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
-use solana_runtime::rent_collector::RentCollector;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
@@ -404,7 +402,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let poh = Hash::new_from_array(bank_ctx.poh.clone().try_into().unwrap());
 
     let epoch_schedule: EpochSchedule = bank_ctx.epoch_schedule.as_ref().unwrap().into();
-    let rent: Rent = bank_ctx.rent.as_ref().unwrap().into();
 
     let sysvar_accounts: HashMap<&[u8], &AcctState> = context
         .acct_states
@@ -418,13 +415,27 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let blockhash_queue = restore_blockhash_queue(&bank_ctx.blockhash_queue);
 
-    let mut ancestors = AncestorsForSerialization::default();
-    ancestors.insert(current_slot.saturating_sub(1), 1);
-    ancestors.insert(current_slot, 1);
-
     /* Accounts DB config and initialization */
     let accounts = create_accounts_db(vec![]);
-    let accounts_to_store = deserialize_accounts(&context.acct_states);
+    let mut accounts_to_store = deserialize_accounts(&context.acct_states);
+
+    /* Rent: if the input provides a rent value, ensure the rent sysvar account
+    in the accounts DB reflects it so Bank::get_rent() reads the correct value. */
+    if let Some(input_rent) = bank_ctx.rent.as_ref() {
+        let rent: Rent = input_rent.into();
+        let rent_data = bincode::serialize(&rent).unwrap();
+        if let Some((_, account)) = accounts_to_store
+            .iter_mut()
+            .find(|(address, _)| *address == solana_sysvar::rent::id())
+        {
+            account.set_data_from_slice(&rent_data);
+        } else {
+            let mut rent_account =
+                AccountSharedData::new(1, rent_data.len(), &solana_sdk_ids::sysvar::id());
+            rent_account.set_data_from_slice(&rent_data);
+            accounts_to_store.push((solana_sysvar::rent::id(), rent_account));
+        }
+    }
 
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
     accounts.accounts_db.add_root(parent_slot);
@@ -495,7 +506,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
-        ancestors,
         hash: Hash::default(),
         parent_hash: Hash::new_from_array(bank_ctx.parent_bank_hash.try_into().unwrap()),
         parent_slot,
@@ -511,17 +521,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         genesis_creation_time: 0,
         slots_per_year,
         slot: current_slot,
-        epoch: current_epoch,
         block_height: bank_ctx.block_height,
         leader_id: Pubkey::default(),
-        collector_fees: 0,
         fee_rate_governor,
-        rent_collector: RentCollector {
-            epoch: current_epoch,
-            epoch_schedule: epoch_schedule.clone(),
-            slots_per_year,
-            rent,
-        },
         epoch_schedule,
         inflation: bank_ctx.inflation.unwrap().into(),
         stakes: stakes_t,

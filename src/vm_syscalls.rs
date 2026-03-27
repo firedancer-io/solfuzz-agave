@@ -169,9 +169,12 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         "invariant violation: program_idx must be <= 255"
     );
     let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
-    let stricter_abi_and_runtime_constraints = invoke_ctx
+    let virtual_address_space_adjustments = invoke_ctx
         .get_feature_set()
-        .stricter_abi_and_runtime_constraints;
+        .virtual_address_space_adjustments;
+    let direct_account_pointers = invoke_ctx
+        .get_feature_set()
+        .direct_account_pointers_in_program_input;
     invoke_ctx
         .transaction_context
         .configure_top_level_instruction_for_tests(program_idx, instr_accounts, instruction_data)
@@ -211,8 +214,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
         serialize_parameters(
             &caller_instr_ctx,
-            stricter_abi_and_runtime_constraints,
+            virtual_address_space_adjustments,
             direct_mapping,
+            direct_account_pointers,
         )
         .expect("invariant violation: serialize_parameters failed");
 
@@ -279,7 +283,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
+            .access_violation_handler(virtual_address_space_adjustments, direct_mapping),
     ) else {
         cleanup_static_ptrs(
             transaction_context_ptr,

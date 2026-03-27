@@ -7,7 +7,6 @@ use protosol::protos;
 use protosol::protos::{TxnContext, TxnResult};
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_accounts_db::ancestors::AncestorsForSerialization;
 use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
@@ -24,7 +23,6 @@ use solana_runtime::bank::{
 };
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
-use solana_runtime::rent_collector::RentCollector;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
 use solana_signature::Signature;
@@ -252,7 +250,7 @@ fn output_txn_result_from_result(
 pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let txn_bank = context.bank.as_ref().unwrap();
 
-    let accounts_to_store = context
+    let mut accounts_to_store = context
         .account_shared_data
         .iter()
         .map(|account| {
@@ -294,8 +292,23 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     /* Epoch schedule */
     let epoch_schedule: EpochSchedule = txn_bank.epoch_schedule.as_ref().unwrap().into();
 
-    /* Rent */
-    let rent: Rent = txn_bank.rent.as_ref().unwrap().into();
+    /* Rent: if the input provides a rent value, ensure the rent sysvar account
+    in the accounts DB reflects it so Bank::get_rent() reads the correct value. */
+    if let Some(input_rent) = txn_bank.rent.as_ref() {
+        let rent: Rent = input_rent.into();
+        let rent_data = bincode::serialize(&rent).unwrap();
+        if let Some((_, account)) = accounts_to_store
+            .iter_mut()
+            .find(|(address, _)| *address == solana_sysvar::rent::id())
+        {
+            account.set_data_from_slice(&rent_data);
+        } else {
+            let mut rent_account =
+                AccountSharedData::new(1, rent_data.len(), &solana_sdk_ids::sysvar::id());
+            rent_account.set_data_from_slice(&rent_data);
+            accounts_to_store.push((solana_sysvar::rent::id(), rent_account));
+        }
+    }
 
     /* Feature set */
     let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());
@@ -334,7 +347,6 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
-        ancestors: AncestorsForSerialization::default(),
         hash: Hash::default(),        /* Unused */
         parent_hash: Hash::default(), /* Unused */
         parent_slot,
@@ -350,17 +362,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         genesis_creation_time: 0,                /* Unused */
         slots_per_year: 0f64,                    /* Unused */
         slot,
-        epoch,
         block_height: slot,           /* Unused */
         leader_id: Pubkey::default(), /* Unused */
-        collector_fees: 0,            /* Unused */
         fee_rate_governor,
-        rent_collector: RentCollector {
-            epoch,
-            epoch_schedule: epoch_schedule.clone(), /* Unused */
-            slots_per_year: 0f64,                   /* Unused */
-            rent,
-        },
         epoch_schedule,
         inflation: Inflation::default(), /* Unused */
         stakes,                          /* Unused */
