@@ -22,7 +22,6 @@ use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
 };
 use solana_pubkey::Pubkey;
-use solana_rent::Rent;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
 };
@@ -417,25 +416,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     /* Accounts DB config and initialization */
     let accounts = create_accounts_db(vec![]);
-    let mut accounts_to_store = deserialize_accounts(&context.acct_states);
-
-    /* Rent: if the input provides a rent value, ensure the rent sysvar account
-    in the accounts DB reflects it so Bank::get_rent() reads the correct value. */
-    if let Some(input_rent) = bank_ctx.rent.as_ref() {
-        let rent: Rent = input_rent.into();
-        let rent_data = bincode::serialize(&rent).unwrap();
-        if let Some((_, account)) = accounts_to_store
-            .iter_mut()
-            .find(|(address, _)| *address == solana_sysvar::rent::id())
-        {
-            account.set_data_from_slice(&rent_data);
-        } else {
-            let mut rent_account =
-                AccountSharedData::new(1, rent_data.len(), &solana_sdk_ids::sysvar::id());
-            rent_account.set_data_from_slice(&rent_data);
-            accounts_to_store.push((solana_sysvar::rent::id(), rent_account));
-        }
-    }
+    let accounts_to_store = deserialize_accounts(&context.acct_states);
 
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
     accounts.accounts_db.add_root(parent_slot);

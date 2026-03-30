@@ -17,7 +17,6 @@ use solana_instruction::error::InstructionError;
 use solana_lattice_hash::lt_hash::LtHash;
 use solana_message::SanitizedMessage;
 use solana_pubkey::Pubkey;
-use solana_rent::Rent;
 use solana_runtime::bank::{
     Bank, BankFieldsToDeserialize, BankHashStats, BankRc, LoadAndExecuteTransactionsOutput,
 };
@@ -250,7 +249,7 @@ fn output_txn_result_from_result(
 pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let txn_bank = context.bank.as_ref().unwrap();
 
-    let mut accounts_to_store = context
+    let accounts_to_store = context
         .account_shared_data
         .iter()
         .map(|account| {
@@ -291,24 +290,6 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Epoch schedule */
     let epoch_schedule: EpochSchedule = txn_bank.epoch_schedule.as_ref().unwrap().into();
-
-    /* Rent: if the input provides a rent value, ensure the rent sysvar account
-    in the accounts DB reflects it so Bank::get_rent() reads the correct value. */
-    if let Some(input_rent) = txn_bank.rent.as_ref() {
-        let rent: Rent = input_rent.into();
-        let rent_data = bincode::serialize(&rent).unwrap();
-        if let Some((_, account)) = accounts_to_store
-            .iter_mut()
-            .find(|(address, _)| *address == solana_sysvar::rent::id())
-        {
-            account.set_data_from_slice(&rent_data);
-        } else {
-            let mut rent_account =
-                AccountSharedData::new(1, rent_data.len(), &solana_sdk_ids::sysvar::id());
-            rent_account.set_data_from_slice(&rent_data);
-            accounts_to_store.push((solana_sysvar::rent::id(), rent_account));
-        }
-    }
 
     /* Feature set */
     let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());
