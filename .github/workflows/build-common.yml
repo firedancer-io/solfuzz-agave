@@ -57,6 +57,27 @@ jobs:
           cargo check --release
           cargo test --release
 
+      - name: Build agave upstream tests
+        run: |
+          # Build test binaries for the agave crates we link against.
+          # This catches compilation errors (e.g. missing args, API changes)
+          # that only surface when building tests in the upstream checkout.
+          AGAVE_REV=$(grep -A2 'name = "agave-feature-set"' Cargo.lock \
+              | grep -oP '#\K[0-9a-f]+' | head -c7)
+          AGAVE_CHECKOUT=$(find ~/.cargo/git/checkouts/ -maxdepth 2 -type d \
+              -path "*agave*/$AGAVE_REV" | head -1)
+          if [ -d "$AGAVE_CHECKOUT" ]; then
+            echo "Building agave tests in $AGAVE_CHECKOUT"
+            pushd "$AGAVE_CHECKOUT"
+            cargo test --release --no-run \
+              --workspace \
+              --exclude solana-test-validator
+            popd
+          else
+            echo "::error::Agave checkout not found for rev $AGAVE_REV"
+            exit 1
+          fi
+
       - name: Build shared objects
         if: ${{ inputs.upload_artifacts }}
         run: make shared_obj
