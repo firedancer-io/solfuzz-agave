@@ -59,7 +59,7 @@ jobs:
 
       - name: Build agave upstream tests
         run: |
-          # Build test binaries for the agave crates we link against.
+          # Build test binaries for all agave workspace crates.
           # This catches compilation errors (e.g. missing args, API changes)
           # that only surface when building tests in the upstream checkout.
           AGAVE_REV=$(grep -A2 'name = "agave-feature-set"' Cargo.lock \
@@ -69,38 +69,7 @@ jobs:
           if [ -d "$AGAVE_CHECKOUT" ]; then
             echo "Building agave tests in $AGAVE_CHECKOUT"
             pushd "$AGAVE_CHECKOUT"
-            cargo test --release --no-run \
-              -p solana-runtime \
-              -p solana-accounts-db \
-              -p solana-svm \
-              -p solana-program-runtime \
-              -p solana-bpf-loader-program \
-              -p solana-compute-budget-program \
-              -p solana-system-program \
-              -p solana-vote-program \
-              -p solana-loader-v4-program \
-              -p solana-zk-elgamal-proof-program \
-              -p solana-entry \
-              -p solana-gossip \
-              -p solana-ledger \
-              -p solana-transaction-context \
-              -p solana-vote \
-              -p solana-lattice-hash \
-              -p solana-cost-model \
-              -p solana-core \
-              -p solana-poh \
-              -p solana-streamer \
-              -p solana-bloom \
-              -p solana-bucket-map \
-              -p solana-merkle-tree \
-              -p solana-perf \
-              -p solana-rpc \
-              -p solana-runtime-transaction \
-              -p solana-unified-scheduler-logic \
-              -p solana-unified-scheduler-pool \
-              -p agave-feature-set \
-              -p agave-syscalls \
-              -p agave-precompiles
+            cargo test --release --no-run --workspace
             popd
           else
             echo "::error::Agave checkout not found for rev $AGAVE_REV"
