@@ -236,7 +236,6 @@ fn test_txn_execute_clock() {
             rbh_lamports_per_signature: 5000,
             features: Some(features),
             fee_rate_governor: Some(protos::FeeRateGovernor::default()),
-            rent: Some(protos::Rent::default()),
             epoch_schedule: Some(protos::EpochSchedule::default()),
             ..Default::default()
         }),
@@ -378,7 +377,6 @@ fn test_simple_transfer() {
             rbh_lamports_per_signature: 5000,
             features: Some(features),
             fee_rate_governor: Some(protos::FeeRateGovernor::default()),
-            rent: Some(protos::Rent::default()),
             epoch_schedule: Some(protos::EpochSchedule::default()),
             ..Default::default()
         }),
@@ -556,7 +554,6 @@ fn test_lookup_table() {
             rbh_lamports_per_signature: 5000,
             features: Some(features),
             fee_rate_governor: Some(protos::FeeRateGovernor::default()),
-            rent: Some(protos::Rent::default()),
             epoch_schedule: Some(protos::EpochSchedule::default()),
             ..Default::default()
         }),

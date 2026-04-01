@@ -4412,8 +4412,8 @@ dependencies = [
 
 [[package]]
 name = "protosol"
-version = "5.0.1"
-source = "git+https://github.com/firedancer-io/protosol?tag=v5.0.1#d67813cfc11d41d4eab9e5d8aacc79991a1fa789"
+version = "5.1.0"
+source = "git+https://github.com/firedancer-io/protosol?tag=v5.1.0#206da5a5367b66e04c229d521c5cd06ce592b81b"
 dependencies = [
  "flatbuffers",
  "flatc-rust",
@@ -4424,7 +4424,6 @@ dependencies = [
  "solana-inflation",
  "solana-message",
  "solana-pubkey 4.1.0",
- "solana-rent 3.0.0",
 ]
 
 [[package]]
