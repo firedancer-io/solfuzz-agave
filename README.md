@@ -47,6 +47,11 @@ Running with a local copy of Agave and SBPF (for easily adding print statements)
 python scripts/generate_local_cargo.py -a <your_local_agave_path> -s <your_local_sbpf_path> -o Cargo.toml
 ```
 
+Set up pre-commit hooks:
+```sh
+git config core.hooksPath .githooks
+```
+
 Check and test:
 
 ```sh
