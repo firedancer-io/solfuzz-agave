@@ -12,7 +12,7 @@ clap = { version = "4.5.59", features = ["derive"] }
 solfuzz-agave-macro = { path = "macro" }
 lazy_static = "1.5.0"
 thiserror = "2.0.18"
-flatbuffers = "25.9.23"
+flatbuffers = { git = "https://github.com/firedancer-io/flatbuffers", rev = "6623cece6f758e37f5a30e9d41d030e24e0c62bb" }
 prost = "0.11.9"
 protosol = {git = "https://github.com/firedancer-io/protosol", tag = "v5.2.0", features = ["solana-types"]}
 ahash = "0.8.12"
@@ -105,3 +105,6 @@ split-debuginfo = "off"
 [profile.release]
 split-debuginfo = "unpacked"
 lto = "thin"
+
+[patch.crates-io]
+flatbuffers = { git = "https://github.com/firedancer-io/flatbuffers", rev = "6623cece6f758e37f5a30e9d41d030e24e0c62bb" }
