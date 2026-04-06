@@ -24,9 +24,6 @@ Install dependencies:
 apt install libudev-dev pkg-config
 # For RHEL:
 sudo dnf install -y systemd-devel
-
-git submodule update --init --recursive
-./deps.sh
 ```
 
 Python Environment:

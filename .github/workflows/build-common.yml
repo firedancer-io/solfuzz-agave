@@ -18,8 +18,6 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       # TODO: change back to stable once rust releases the coverage fix
       # - uses: dtolnay/rust-toolchain@1.86.0
@@ -32,8 +30,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
-
-      - uses: ./.github/actions/deps
 
       - name: Check lints and clippy
         run: |
@@ -105,8 +101,6 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       # TODO: change back to stable once rust releases the coverage fix
       # - uses: dtolnay/rust-toolchain@1.86.0
@@ -119,8 +113,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
-
-      - uses: ./.github/actions/deps
 
       - name: check out test-vectors (persistent)
         run: |
