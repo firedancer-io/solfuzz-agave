@@ -5,7 +5,7 @@ echo "[pre-commit] Checking formatting..."
 cargo fmt --all -- --check
 
 echo "[pre-commit] Checking Cargo.lock is up to date..."
-cargo update --workspace --locked
+cargo metadata --locked >/dev/null
 
 echo "[pre-commit] Running clippy..."
-cargo clippy --all -- -D warnings
+cargo clippy --all --locked -- -D warnings

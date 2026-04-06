@@ -38,10 +38,7 @@ jobs:
       - name: Check lints and clippy
         run: |
           cargo fmt --all -- --check
-          cargo clippy --all -- -D warnings
-
-      - name: Check Cargo.lock is up to date
-        run: cargo update --workspace --locked
+          cargo clippy --all --locked -- -D warnings
 
       - name: Log Cargo.toml
         run: |
@@ -57,8 +54,8 @@ jobs:
 
       - name: Run cargo check + test
         run: |
-          cargo check --release
-          cargo test --release
+          cargo check --release --locked
+          cargo test --release --locked
 
       - name: Build agave upstream tests
         run: |
