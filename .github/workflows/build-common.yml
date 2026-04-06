@@ -40,6 +40,9 @@ jobs:
           cargo fmt --all -- --check
           cargo clippy --all -- -D warnings
 
+      - name: Check Cargo.lock is up to date
+        run: cargo update --workspace --locked
+
       - name: Log Cargo.toml
         run: |
           echo "=== Cargo.toml ==="

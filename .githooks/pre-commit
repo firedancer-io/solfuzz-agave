@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[pre-commit] Checking formatting..."
+cargo fmt --all -- --check
+
+echo "[pre-commit] Checking Cargo.lock is up to date..."
+cargo update --workspace --locked
+
+echo "[pre-commit] Running clippy..."
+cargo clippy --all -- -D warnings
