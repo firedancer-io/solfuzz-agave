@@ -355,49 +355,10 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
 // BPF version will use different amounts of CUs.
 declare_core_bpf_default_compute_units!();
 
+pub use protosol::context_generated;
+pub use protosol::elf_generated;
+pub use protosol::metadata_generated;
 use protosol::protos;
-
-#[allow(
-    unused_imports,
-    dead_code,
-    clippy::default_trait_access,
-    clippy::derivable_impls,
-    clippy::needless_lifetimes,
-    clippy::used_underscore_binding,
-    clippy::extra_unused_lifetimes
-)]
-pub mod context_generated {
-    include!(concat!(env!("OUT_DIR"), "/context_generated.rs"));
-    pub use self::org::solana::sealevel::v_2::*;
-}
-
-#[allow(
-    unused_imports,
-    dead_code,
-    clippy::default_trait_access,
-    clippy::derivable_impls,
-    clippy::needless_lifetimes,
-    clippy::used_underscore_binding,
-    clippy::extra_unused_lifetimes
-)]
-pub mod elf_generated {
-    include!(concat!(env!("OUT_DIR"), "/elf_generated.rs"));
-    pub use self::org::solana::sealevel::v_2::*;
-}
-
-#[allow(
-    unused_imports,
-    dead_code,
-    clippy::default_trait_access,
-    clippy::derivable_impls,
-    clippy::needless_lifetimes,
-    clippy::used_underscore_binding,
-    clippy::extra_unused_lifetimes
-)]
-pub mod metadata_generated {
-    include!(concat!(env!("OUT_DIR"), "/metadata_generated.rs"));
-    pub use self::org::solana::sealevel::v_2::*;
-}
 
 #[derive(Debug, Error, PartialEq)]
 pub enum Error {

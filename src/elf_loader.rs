@@ -3,7 +3,7 @@ use crate::elf_generated;
 use crate::utils::err_map::elf_err_to_num;
 use crate::utils::fd_hash::fd_hash_u64_without_seed;
 use crate::utils::fd_hash::fd_hash_without_seed;
-use agave_feature_set::*;
+use crate::utils::program::common_flatbuffers::feature_set_from_fbs;
 use agave_syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionBudget;
 use solana_sbpf::{ebpf, elf::Executable};
@@ -15,7 +15,7 @@ pub fn load_elf(
     features: &context_generated::FeatureSet,
     deploy_checks: bool,
 ) {
-    let feature_set = FeatureSet::from(features);
+    let feature_set = feature_set_from_fbs(features);
 
     let program_runtime_environment_v1 = create_program_runtime_environment_v1(
         &feature_set.runtime_features(),
