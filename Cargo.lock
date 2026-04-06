@@ -4330,7 +4330,7 @@ dependencies = [
 [[package]]
 name = "protosol"
 version = "5.2.0"
-source = "git+https://github.com/firedancer-io/protosol#191ec6a11cb527045216b3a96ac16cf2a6ed720e"
+source = "git+https://github.com/firedancer-io/protosol?tag=v5.2.0#191ec6a11cb527045216b3a96ac16cf2a6ed720e"
 dependencies = [
  "flatbuffers",
  "prost",
