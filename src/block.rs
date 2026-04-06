@@ -188,42 +188,20 @@ we use the provided votes cache instead of the latest input account states. */
 #[allow(deprecated)]
 fn build_prev_epoch_stakes(
     vote_accounts: &[protos::PrevVoteAccount],
-    stake_delegations: &[protos::StakeDelegation],
 ) -> Stakes<stake_account::StakeAccount<Delegation>> {
-    let mut stakes = DeserializableStakes::<Delegation> {
-        vote_accounts: VoteAccounts::default(),
-        stake_delegations: stake_delegations
+    let stakes = DeserializableStakes::<Delegation> {
+        vote_accounts: vote_accounts
             .iter()
-            .map(|sd| {
-                let stake_pubkey =
-                    Pubkey::new_from_array(sd.stake_account.clone().try_into().unwrap());
-                let voter_pubkey =
-                    Pubkey::new_from_array(sd.vote_account.clone().try_into().unwrap());
-                let warmup_cooldown_rate = match sd.warmup_cooldown_rate() {
-                    protos::WarmupCooldownRate::Rate025 => 0.25,
-                    protos::WarmupCooldownRate::Rate009 => 0.09,
-                };
-                (
-                    stake_pubkey,
-                    Delegation {
-                        voter_pubkey,
-                        stake: sd.stake,
-                        activation_epoch: sd.activation_epoch,
-                        deactivation_epoch: sd.deactivation_epoch,
-                        warmup_cooldown_rate,
-                    },
-                )
-            })
-            .collect(),
+            .fold(VoteAccounts::default(), |mut acc, pva| {
+                let (pubkey, stake, vote_account) = synthesize_vote_account(pva);
+                acc.insert(pubkey, vote_account, || stake);
+                acc
+            }),
+        stake_delegations: Vec::default(),
         unused: 0,
         epoch: Epoch::default(),
         stake_history: StakeHistory::default(),
     };
-
-    for pva in vote_accounts {
-        let (pubkey, stake, vote_account) = synthesize_vote_account(pva);
-        stakes.vote_accounts.insert(pubkey, vote_account, || stake);
-    }
 
     Stakes::load_from_deserialized_delegations(stakes.clone(), |pubkey| {
         stakes
@@ -441,9 +419,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
 
-    let stakes_t_1 =
-        build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1, &bank_ctx.stake_delegations_t_1);
-    let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2, &[]);
+    let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
+    let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
 
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
