@@ -11,13 +11,14 @@ use protosol::protos::{BlockContext, BlockEffects};
 #[allow(deprecated)]
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_clock::Epoch;
+use solana_clock::{Epoch, NUM_CONSECUTIVE_LEADER_SLOTS};
 use solana_entry::entry::Entry;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_lattice_hash::lt_hash::LtHash;
+use solana_leader_schedule::LeaderSchedule;
 use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
 };
@@ -29,7 +30,6 @@ use solana_runtime::bank::{Bank, BankFieldsToDeserialize, BankHashStats, BankRc}
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
-use solana_runtime::leader_schedule_utils;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
@@ -422,13 +422,24 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
     let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
 
+    let current_epoch_stakes = VersionedEpochStakes::new(
+        SerdeStakesToStakeFormat::from(stakes_t_2),
+        leader_schedule_epoch.saturating_sub(1),
+    );
+
+    let l_sched = LeaderSchedule::new(
+        current_epoch_stakes.stakes().vote_accounts().as_ref(),
+        current_epoch,
+        epoch_schedule.get_slots_in_epoch(current_epoch),
+        NUM_CONSECUTIVE_LEADER_SLOTS,
+    );
+    let (_, slot_index) = epoch_schedule.get_epoch_and_slot_index(current_slot);
+    let leader = l_sched[slot_index];
+
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
         leader_schedule_epoch.saturating_sub(1),
-        VersionedEpochStakes::new(
-            SerdeStakesToStakeFormat::from(stakes_t_2),
-            leader_schedule_epoch.saturating_sub(1),
-        ),
+        current_epoch_stakes,
     );
     epoch_stakes.insert(
         leader_schedule_epoch,
@@ -480,7 +491,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         slots_per_year,
         slot: current_slot,
         block_height: bank_ctx.block_height,
-        leader_id: Pubkey::default(),
+        leader_id: leader.id,
         fee_rate_governor,
         epoch_schedule,
         inflation: bank_ctx.inflation.unwrap().into(),
@@ -513,12 +524,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     // Complete initialization: epoch processing, sysvar updates, LT hash cache
     bank.prepare_for_block_execution();
 
-    let l_sched = leader_schedule_utils::leader_schedule(current_epoch, &bank).unwrap();
-
-    let (_, slot_index) = epoch_schedule_for_effects.get_epoch_and_slot_index(current_slot);
-    let leader = l_sched[slot_index];
-    bank.set_leader_id_for_tests(leader.id);
-
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.write().unwrap().root_bank();
 
@@ -548,9 +553,20 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         })
         .collect::<Option<Vec<Entry>>>()?;
 
-    let mut entries = vec![Entry::new_tick(1, &poh); 63];
+    let mut entries = vec![
+        Entry {
+            num_hashes: 1,
+            hash: poh,
+            transactions: vec![],
+        };
+        63
+    ];
     entries.extend(tx_entries);
-    entries.push(Entry::new_tick(1, &poh));
+    entries.push(Entry {
+        num_hashes: 1,
+        hash: poh,
+        transactions: vec![],
+    });
 
     let replay_tx_thread_pool = create_thread_pool(1);
     let no_schedule_bank = BankWithScheduler::new_without_scheduler(bank);
