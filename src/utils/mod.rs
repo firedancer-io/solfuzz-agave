@@ -85,6 +85,7 @@ pub fn create_accounts_db(paths: Vec<PathBuf>) -> Accounts {
 pub fn deserialize_accounts(acct_states: &[AcctState]) -> Vec<(Pubkey, AccountSharedData)> {
     acct_states
         .iter()
+        .filter(|account| account.lamports > 0)
         .map(|account| {
             let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
             let account_data = AccountSharedData::from(account);

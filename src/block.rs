@@ -393,10 +393,11 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let blockhash_queue = restore_blockhash_queue(&bank_ctx.blockhash_queue);
 
     /* Accounts DB config and initialization */
-    let accounts = create_accounts_db(vec![]);
+    let accounts = create_accounts_db(vec!["/dev/shm/a".into()]);
     let accounts_to_store = deserialize_accounts(&context.acct_states);
 
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
+    accounts.store_accounts_seq((current_slot, &accounts_to_store[..]), None, None);
     accounts.accounts_db.add_root(parent_slot);
     let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
 
@@ -504,7 +505,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     };
 
     let bank_rc = BankRc::new(accounts);
-    let mut bank = Bank::new_for_block_fuzzing(
+    let bank = Bank::new_for_block_tests(
         bank_rc,
         bank_fields,
         feature_set,
@@ -512,17 +513,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         stakes_for_cache,
         accounts_data_size_initial,
     );
-
-    // Store the accounts in the bank. Must happen before prepare_for_block_execution
-    // so that sysvar updates and epoch processing operate on the correct base state.
-    for (pubkey, account_data) in &accounts_to_store {
-        if account_data.lamports() > 0 {
-            bank.store_account(pubkey, account_data);
-        }
-    }
-
-    // Complete initialization: epoch processing, sysvar updates, LT hash cache
-    bank.prepare_for_block_execution();
 
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.write().unwrap().root_bank();
