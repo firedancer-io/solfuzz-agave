@@ -1,11 +1,13 @@
 use crate::utils::program::common::build_versioned_message;
-use crate::utils::{create_accounts_db, feature_set_from_protos, restore_blockhash_queue};
+use crate::utils::{
+    create_accounts_db, deserialize_accounts, feature_set_from_protos, restore_blockhash_queue,
+};
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
 use protosol::protos;
 use protosol::protos::{TxnContext, TxnResult};
-use solana_account::{AccountSharedData, ReadableAccount};
+use solana_account::ReadableAccount;
 use solana_accounts_db::accounts_hash::AccountsLtHash;
 use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
@@ -249,15 +251,7 @@ fn output_txn_result_from_result(
 pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let txn_bank = context.bank.as_ref().unwrap();
 
-    let accounts_to_store = context
-        .account_shared_data
-        .iter()
-        .map(|account| {
-            let pubkey = Pubkey::new_from_array(account.address.clone().try_into().unwrap());
-            let account_data = AccountSharedData::from(account);
-            (pubkey, account_data)
-        })
-        .collect::<Vec<_>>();
+    let accounts_to_store = deserialize_accounts(&context.account_shared_data);
 
     /* Construct blockhash queue */
     let blockhash_queue = restore_blockhash_queue(&txn_bank.blockhash_queue);
@@ -358,7 +352,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Finally create the bank and wrap in BankForks to set up the fork graph
     in the program cache (required by the transaction processor). */
-    let bank = Bank::new_for_txn_fuzzing(bank_rc, bank_fields, feature_set, epoch_stakes);
+    let bank = Bank::new_for_txn_tests(bank_rc, bank_fields, feature_set, epoch_stakes);
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.read().unwrap().root_bank();
 
