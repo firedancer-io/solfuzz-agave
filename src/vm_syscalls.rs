@@ -96,6 +96,16 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .collect::<Vec<_>>()
         .into();
 
+    /* Optimization: only populate program cache for CPI syscalls */
+    let populate_program_cache = input
+        .syscall_invocation
+        .as_ref()
+        .map(|inv| {
+            inv.function_name == b"sol_invoke_signed_c"
+                || inv.function_name == b"sol_invoke_signed_rust"
+        })
+        .unwrap_or(false);
+
     let instr_ctx = Box::leak(Box::new(instr_ctx));
     let instr_ctx_ptr = instr_ctx as *mut InstrContext as usize;
 
@@ -107,7 +117,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         lamports_per_signature,
         compute_budget,
         environments,
-    ) = crate::create_invoke_context_fields(instr_ctx)?;
+    ) = crate::create_invoke_context_fields(instr_ctx, populate_program_cache)?;
 
     /* MemoryCowCallback requires moved objects to have the 'static lifetime
       so we promote them to 'static and drop at the end as we are sure they are not used anymore
