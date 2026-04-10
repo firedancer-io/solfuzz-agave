@@ -678,6 +678,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
 
 fn create_invoke_context_fields(
     input: &mut InstrContext,
+    populate_program_cache: bool,
 ) -> Option<(
     TransactionContext<'_>,
     SysvarCache,
@@ -833,54 +834,56 @@ fn create_invoke_context_fields(
     input.rent_collector.epoch_schedule = (*epoch_schedule).clone();
     input.rent_collector.rent = (*rent).clone();
 
-    let mut newly_loaded_programs = HashSet::<Pubkey>::new();
+    if populate_program_cache {
+        let mut newly_loaded_programs = HashSet::<Pubkey>::new();
 
-    for acc in &input.accounts {
-        #[cfg(any(
-            feature = "bpf-program-conformance",
-            feature = "core-bpf",
-            feature = "core-bpf-conformance",
-        ))]
-        // The Core BPF program's ELF has already been added to the cache.
-        // Its transaction account was stubbed out, so it can't be loaded via
-        // callback (inputs), since the account doesn't contain the ELF.
-        // Skip it here.
-        if acc.0 == input.instruction.program_id {
-            continue;
-        }
-
-        // FD rejects duplicate account loads
-        if !newly_loaded_programs.insert(acc.0) {
-            return None;
-        }
-
-        if program_cache_for_tx_batch.find(&acc.0).is_none() {
-            // load_program_with_pubkey expects the owner to be one of the bpf loader
-            if !loader_v4::check_id(&acc.1.owner)
-                && !bpf_loader_deprecated::check_id(&acc.1.owner)
-                && !bpf_loader::check_id(&acc.1.owner)
-                && !bpf_loader_upgradeable::check_id(&acc.1.owner)
-            {
+        for acc in &input.accounts {
+            #[cfg(any(
+                feature = "bpf-program-conformance",
+                feature = "core-bpf",
+                feature = "core-bpf-conformance",
+            ))]
+            // The Core BPF program's ELF has already been added to the cache.
+            // Its transaction account was stubbed out, so it can't be loaded via
+            // callback (inputs), since the account doesn't contain the ELF.
+            // Skip it here.
+            if acc.0 == input.instruction.program_id {
                 continue;
             }
-            // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
-            /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
-                callbacks: &CB,
-                program_cache: &ProgramCache<FG>,
-                pubkey: &Pubkey,
-                slot: Slot,
-                effective_epoch: Epoch,
-                epoch_schedule: &EpochSchedule,
-                reload: bool,
-            ) -> Option<Arc<ProgramCacheEntry>> { */
-            if let Some((loaded_program, _)) = program_loader::load_program_with_pubkey(
-                input,
-                &environments,
-                &acc.0,
-                clock.slot,
-                &mut ExecuteTimings::default(),
-            ) {
-                program_cache_for_tx_batch.replenish(acc.0, loaded_program);
+
+            // FD rejects duplicate account loads
+            if !newly_loaded_programs.insert(acc.0) {
+                return None;
+            }
+
+            if program_cache_for_tx_batch.find(&acc.0).is_none() {
+                // load_program_with_pubkey expects the owner to be one of the bpf loader
+                if !loader_v4::check_id(&acc.1.owner)
+                    && !bpf_loader_deprecated::check_id(&acc.1.owner)
+                    && !bpf_loader::check_id(&acc.1.owner)
+                    && !bpf_loader_upgradeable::check_id(&acc.1.owner)
+                {
+                    continue;
+                }
+                // https://github.com/anza-xyz/agave/blob/af6930da3a99fd0409d3accd9bbe449d82725bd6/svm/src/program_loader.rs#L124
+                /* pub fn load_program_with_pubkey<CB: TransactionProcessingCallback, FG: ForkGraph>(
+                    callbacks: &CB,
+                    program_cache: &ProgramCache<FG>,
+                    pubkey: &Pubkey,
+                    slot: Slot,
+                    effective_epoch: Epoch,
+                    epoch_schedule: &EpochSchedule,
+                    reload: bool,
+                ) -> Option<Arc<ProgramCacheEntry>> { */
+                if let Some((loaded_program, _)) = program_loader::load_program_with_pubkey(
+                    input,
+                    &environments,
+                    &acc.0,
+                    clock.slot,
+                    &mut ExecuteTimings::default(),
+                ) {
+                    program_cache_for_tx_batch.replenish(acc.0, loaded_program);
+                }
             }
         }
     }
@@ -921,7 +924,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         lamports_per_signature,
         compute_budget,
         environments,
-    ) = create_invoke_context_fields(&mut input)?;
+    ) = create_invoke_context_fields(&mut input, true)?;
 
     // Get accounts immediately after mutable borrow is released, before creating EnvironmentConfig
     let instruction_accounts =
