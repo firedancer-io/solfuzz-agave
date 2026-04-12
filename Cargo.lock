@@ -4328,8 +4328,9 @@ dependencies = [
 
 [[package]]
 name = "protosol"
-version = "5.4.0"
-source = "git+https://github.com/firedancer-io/protosol?tag=v5.4.0#587033cc468b1c4e47ab11e4421fa7de1dcd2756"
+version = "5.5.0-beta.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15f08e9ca6fc72e50580c94e103d90b1d6447dcaf18d2d72911c97bb1f64f5ff"
 dependencies = [
  "flatbuffers",
  "prost",
@@ -6025,13 +6026,17 @@ dependencies = [
  "solana-compute-budget-instruction",
  "solana-compute-budget-interface",
  "solana-fee-structure",
+ "solana-hash 4.2.0",
+ "solana-message",
  "solana-metrics",
  "solana-packet 4.1.0",
  "solana-pubkey 4.1.0",
  "solana-runtime-transaction",
  "solana-sdk-ids 3.1.0",
+ "solana-signature",
  "solana-svm-transaction",
  "solana-system-interface 3.1.0",
+ "solana-transaction",
  "solana-transaction-error",
  "solana-vote-program",
 ]
@@ -8530,6 +8535,7 @@ dependencies = [
  "solana-clock",
  "solana-compute-budget",
  "solana-compute-budget-program",
+ "solana-cost-model",
  "solana-entry",
  "solana-epoch-schedule",
  "solana-fee-calculator",
@@ -8551,6 +8557,7 @@ dependencies = [
  "solana-pubkey 4.1.0",
  "solana-rent 3.0.0",
  "solana-runtime",
+ "solana-runtime-transaction",
  "solana-sanitize 3.0.1",
  "solana-sbpf",
  "solana-sdk-ids 3.1.0",
