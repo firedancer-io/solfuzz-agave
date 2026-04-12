@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod block;
+pub mod cost;
 pub mod elf_loader;
 pub mod fuzzing_entrypoints;
 pub mod gossip;

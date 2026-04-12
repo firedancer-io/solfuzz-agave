@@ -8,3 +8,4 @@ dump
 protosol
 env/
 opt/
+solfuzz_agave_env/
