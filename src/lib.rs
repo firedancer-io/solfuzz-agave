@@ -313,7 +313,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
-    // enable_sbpf_v3_deployment_and_execution, // still actively being worked on
+    enable_sbpf_v3_deployment_and_execution,
     enable_get_epoch_stake_syscall,
     verify_retransmitter_signature,
     vote_only_retransmitter_signed_fec_sets,
