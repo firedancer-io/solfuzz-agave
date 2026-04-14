@@ -345,7 +345,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     limit_instruction_accounts,
     validator_admission_ticket,
     // create_account_allow_prefund, TODO: build kunorpus generators first
-    // delay_commission_updates, TODO: build kunorpus generators first
+    delay_commission_updates,
     validate_chained_block_id,
 ];
 
