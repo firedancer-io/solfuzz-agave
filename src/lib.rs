@@ -303,7 +303,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     blake3_syscall_enabled,
     // zk_token_sdk_enabled, // NOT supported in fd
     stake_raise_minimum_delegation_to_1_sol,
-    stake_minimum_delegation_for_rewards,
+    // stake_minimum_delegation_for_rewards, // reverted in fd (firedancer-io/firedancer#9325)
     increase_tx_account_lock_limit,
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
