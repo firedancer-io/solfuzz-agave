@@ -76,7 +76,7 @@ solana-loader-v4-program = {git = "https://github.com/firedancer-io/agave", rev 
 solana-compute-budget-program = {git = "https://github.com/firedancer-io/agave", rev = "5098c63f614d7e4ee319d761027a1ccda233489c", version = "=4.0.0-beta.6", features = ["agave-unstable-api"]}
 solana-system-program = {git = "https://github.com/firedancer-io/agave", rev = "5098c63f614d7e4ee319d761027a1ccda233489c", version = "=4.0.0-beta.6", features = ["agave-unstable-api"]}
 solana-zk-elgamal-proof-program = {git = "https://github.com/firedancer-io/agave", rev = "5098c63f614d7e4ee319d761027a1ccda233489c", version = "=4.0.0-beta.6", features = ["agave-unstable-api"]}
-solana-gossip = {git = "https://github.com/firedancer-io/agave", rev = "5098c63f614d7e4ee319d761027a1ccda233489c", version = "=4.0.0-beta.6", features = ["agave-unstable-api"]}
+solana-gossip = {git = "https://github.com/firedancer-io/agave", rev = "5098c63f614d7e4ee319d761027a1ccda233489c", version = "=4.0.0-beta.6", features = ["agave-unstable-api", "conformance"]}
 solana-sanitize = "3.0.1"
 five8_core = "=1.0.0"  # Pin to 1.0.0 — five8 1.0.0 incorrectly allows 0.1.2 which lacks core::error::Error impl
 solana-sbpf = {git = "https://github.com/firedancer-io/sbpf", branch = "sbpf-v0.14.4-patches", version = "=0.14.4", default-features = false}
