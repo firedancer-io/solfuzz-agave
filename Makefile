@@ -42,14 +42,15 @@ CC:=clang
 
 CARGO?=cargo
 
-.PHONY: build clean binaries shared_obj shared_obj_hfuzz shared_obj_pcguard
+.PHONY: clean binaries shared_obj shared_obj_hfuzz shared_obj_pcguard
 
 all: | shared_obj binaries
 
-# Alias for backwards compatibility
-build: | shared_obj
+conformance:
+	$(CARGO) build --lib
 
-conformance: | shared_obj_debug
+conformance_release:
+	$(CARGO) build --lib --release
 
 shared_obj:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
@@ -71,9 +72,6 @@ shared_obj_cov:
 
 	# to avoid conflicts when uploading as GH artifact
 	cp target/cov/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave+cov.so
-
-shared_obj_debug:
-	$(CARGO) build --lib
 
 shared_obj_core_bpf:
 	./scripts/fetch_program.sh $(PROGRAM)
