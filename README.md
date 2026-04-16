@@ -1,20 +1,25 @@
-# SolFuzz-Agave
+# Solfuzz-Agave
 
-SolFuzz-Agave provides [SolFuzz](https://github.com/firedancer-io/solfuzz) API bindings for Agave components. These API bindings have native support in Firedancer, but not in Agave. This harness simply wraps pieces of Agave's execution layer to provide the necessary APIs to run fuzz tests on Agave components.
+Solfuzz-Agave provides [Solfuzz](https://github.com/firedancer-io/solfuzz) API bindings for Agave components. These API bindings have native support in Firedancer, but not in Agave. This harness simply wraps pieces of Agave's execution layer to provide the necessary APIs to run fuzz tests on Agave components.
 
 It only supports `x86_64-unknown-linux-gnu` targets.
 
 Supported APIs:
 
+- `sol_compat_block_execute_v1`
 - `sol_compat_elf_loader_v2`
 - `sol_compat_get_features_v1`
 - `sol_compat_get_metadata_v1`
+- `sol_compat_gossip_decode_v1`
 - `sol_compat_instr_execute_v1`
-- `sol_compat_pack_compute_budget_v1`
-- `sol_compat_shred_parse_v1`
+- `sol_compat_txn_cost_v1`
 - `sol_compat_txn_execute_v1`
-- `sol_compat_vm_interp_v1`
 - `sol_compat_vm_syscall_execute_v1`
+
+Lifecycle:
+
+- `sol_compat_init`
+- `sol_compat_fini`
 
 ## How to Use
 
@@ -26,44 +31,25 @@ apt install libudev-dev pkg-config
 sudo dnf install -y systemd-devel
 ```
 
-Python Environment:
-```sh
-python3.11 -m venv solfuzz_agave_env
-source solfuzz_agave_env/bin/activate
-```
-### NOTE FOR LOCAL COPIES
-
-You must use the [firedancer fork](https://github.com/firedancer-io/agave) of Agave with the corresponding `patches` branch.
-
-For example, solfuzz-agave branch `agave-v3.1.8` should checkout `agave-v3.1.8-patches` in the fork.
-
-Set up the python environment with instructions above first.
-
-Running with a local copy of Agave and SBPF (for easily adding print statements):
-```sh
-python scripts/generate_local_cargo.py -a <your_local_agave_path> -s <your_local_sbpf_path> -o Cargo.toml
-```
-
 Set up pre-commit hooks:
 ```sh
 git config core.hooksPath .githooks
 ```
 
-Check and test:
-
-```sh
-cargo check
-cargo test
-```
-
 Build:
 
 ```sh
-make build
+# Debug target
 make conformance
+
+# Release target
+make conformance_release
+
+# Fuzzing target (for Honggfuzz, with instrumentation)
+make shared_obj_hfuzz
 ```
 
-Produces file `target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so`, which is a SolFuzz target that can be used with [Solana-Conformance](https://github.com/firedancer-io/solana-conformance) and [SolFuzz](https://github.com/firedancer-io/solfuzz).
+`make shared_obj_hfuzz` produces file `target/hfuzz/x86_64-unknown-linux-gnu/release-with-debug/libsolfuzz_agave.so`, which is a Solfuzz target that can be used with [Solana-Conformance](https://github.com/firedancer-io/solana-conformance) and [Solfuzz](https://github.com/firedancer-io/solfuzz).
 
 The resulting file is instrumented with sancov.
 
@@ -83,15 +69,34 @@ $ nm -D target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so | grep '__sa
                  U __sanitizer_cov_trace_pc_indir
 ```
 
-**Note:** Protobuf definitions are now managed through the `protosol` Rust crate dependency. The `protosol` crate is automatically included in the generated Cargo.toml with a specific version tag. When protobuf schema changes are needed, maintainers should update the `PROTOSOL_VERSION_TAG` in `scripts/generate_cargo.py` to the appropriate version tag from the [protosol repository](https://github.com/firedancer-io/protosol/).
+**Note:** Protobuf definitions are now managed through the `protosol` Rust crate dependency. The `protosol` crate is automatically included in the generated Cargo.toml with a specific version tag. When protobuf schema changes are needed, update to the appropriate version tag from the [protosol repository](https://github.com/firedancer-io/protosol/).
+
+# Using a local Agave copy
+
+**Note:** Cannot be used with `make shared_obj_hfuzz`!
+
+You must use the [firedancer fork](https://github.com/firedancer-io/agave) of Agave with the corresponding `patches` branch.
+
+For example, solfuzz-agave branch `agave-v3.1.8` should checkout `agave-v3.1.8-patches` in the fork.
+
+Set up the python environment first (requires python3.11):
+```sh
+python3.11 -m venv solfuzz_agave_env
+source solfuzz_agave_env/bin/activate
+```
+
+Running with a local copy of Agave and SBPF (for easily adding print statements):
+```sh
+python scripts/generate_local_cargo.py -a <your_local_agave_path> -s <your_local_sbpf_path> -o Cargo.toml
+```
 
 ## Building Targets with Core BPF Programs
 
-SolFuzz-Agave can be used with tools like [Solana-Conformance](https://github.com/firedancer-io/solana-conformance) and [SolFuzz](https://github.com/firedancer-io/solfuzz) to test for conformance between a builtin program and its [Core BPF](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0088-enable-core-bpf-programs.md) version.
+Solfuzz-Agave can be used with tools like [Solfuzz](https://github.com/firedancer-io/solfuzz) and [Solana-Conformance](https://github.com/firedancer-io/solfuzz/tree/main/solana-conformance) to test for conformance between a builtin program and its [Core BPF](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0088-enable-core-bpf-programs.md) version.
 
 For this use case, contributors may wish to build one target which contains the builtin version, and then another target which contains the BPF version. This concept is oriented around the contents of the compiled target's [program JIT cache](https://github.com/anza-xyz/agave/blob/6c6c26eec4317e06e334609ea686b0192a210092/program-runtime/src/loaded_programs.rs#L654).
 
-By default, SolFuzz-Agave populates the program JIT cache with each of the Solana protocol's builtin programs when the entrypoint for an instruction (`sol_compat_instr_execute_v1`) is invoked (see the `load_builtins` function in `lib.rs`). A combination of a feature flag and compile-time environment variables can be used to override a builtin in the program JIT cache.
+By default, Solfuzz-Agave populates the program JIT cache with each of the Solana protocol's builtin programs when the entrypoint for an instruction (`sol_compat_instr_execute_v1`) is invoked (see the `load_builtins` function in `lib.rs`). A combination of a feature flag and compile-time environment variables can be used to override a builtin in the program JIT cache.
 
 Available features:
 * `core-bpf`: Simply overrides the builtin with the provided BPF program, no other special-casing.
