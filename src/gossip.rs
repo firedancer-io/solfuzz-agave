@@ -22,7 +22,7 @@ pub unsafe extern "C" fn sol_compat_gossip_decode_v1(
         unsafe { std::slice::from_raw_parts(in_ptr, in_sz as usize) }
     };
 
-    let effects = solana_gossip::conformance::gossip_decode_to_effects(input);
+    let effects = solana_gossip::gossip_decode_to_effects(input);
     let out_vec = effects.encode_to_vec();
     let out_cap = unsafe { *out_psz } as usize;
     if out_vec.len() > out_cap {
@@ -54,7 +54,7 @@ pub unsafe extern "C" fn sol_compat_gossip_message_deserialize_v1(
         unsafe { std::slice::from_raw_parts(in_ptr, in_sz as usize) }
     };
 
-    let effects = solana_gossip::conformance::gossip_decode_to_effects(input);
+    let effects = solana_gossip::gossip_decode_to_effects(input);
     let out_cap = unsafe { *out_psz } as usize;
     if out_cap < 1 {
         return 0;
