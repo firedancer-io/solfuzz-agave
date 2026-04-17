@@ -347,6 +347,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     create_account_allow_prefund, // TODO: build kunorpus generators
     delay_commission_updates,
     validate_chained_block_id,
+    upgrade_bpf_stake_program_to_v5
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
