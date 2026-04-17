@@ -334,19 +334,20 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // alpenglow, // TBD
     raise_account_cu_limit,
     // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
-    // relax_intrabatch_account_locks, // not worth fuzzing
+    relax_intrabatch_account_locks,
     // enable_loader_v4,
     enable_bls12_381_syscall,
     alt_bn128_little_endian,
     enable_alt_bn128_g2_syscalls,
     bls_pubkey_management_in_vote_account,
-    // relax_programdata_account_check_migration, TODO: build kunorpus generators first
-    // remove_simple_vote_from_cost_model, // need to bump solfuzz-agave version
+    relax_programdata_account_check_migration,
+    remove_simple_vote_from_cost_model,
     limit_instruction_accounts,
     validator_admission_ticket,
-    // create_account_allow_prefund, TODO: build kunorpus generators first
+    create_account_allow_prefund,
     delay_commission_updates,
     validate_chained_block_id,
+    upgrade_bpf_stake_program_to_v5
 ];
 
 // If the `CORE_BPF_PROGRAM_ID` variable is set, declares the default compute
