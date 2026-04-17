@@ -340,7 +340,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     alt_bn128_little_endian,
     enable_alt_bn128_g2_syscalls,
     bls_pubkey_management_in_vote_account,
-    relax_programdata_account_check_migration, // TODO: build kunorpus generators
+    relax_programdata_account_check_migration,
     remove_simple_vote_from_cost_model,
     limit_instruction_accounts,
     validator_admission_ticket,
