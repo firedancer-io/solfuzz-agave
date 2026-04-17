@@ -1,5 +1,6 @@
 use clap::Parser;
-use solfuzz_agave::elf_generated::{ELFLoaderEffects, ELFLoaderFixture};
+use prost::Message;
+use protosol::protos::ElfLoaderFixture;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -8,26 +9,29 @@ struct Cli {
     inputs: Vec<PathBuf>,
 }
 
-fn exec(input: &PathBuf, blob: &[u8], builder: &mut flatbuffers::FlatBufferBuilder) -> bool {
-    builder.reset();
-
-    let Ok(fixture) = flatbuffers::root::<ELFLoaderFixture<'_>>(blob) else {
+fn exec(input: &PathBuf) -> bool {
+    let blob = std::fs::read(input).unwrap();
+    let Ok(fixture) = ElfLoaderFixture::decode(&blob[..]) else {
         println!("Failed to parse fixture.");
         return false;
     };
 
-    let context = fixture.input();
-    let expected = fixture.output();
+    let Some(context) = fixture.input else {
+        println!("No context found.");
+        return false;
+    };
 
-    solfuzz_agave::elf_loader::execute_elf_loader(&context, builder);
-    let effects_slice = builder.finished_data().to_vec();
-    let actual = unsafe { flatbuffers::root_unchecked::<ELFLoaderEffects<'_>>(&effects_slice) };
+    let Some(expected) = fixture.output else {
+        println!("No fixture found.");
+        return false;
+    };
 
-    let ok = expected.unpack() == actual.unpack();
+    let actual = solfuzz_agave::elf_loader::execute_elf_loader(&context);
+
+    let ok = actual == expected;
     if ok {
         println!("OK: {:?}", input);
     } else {
-        let actual = unsafe { flatbuffers::root_unchecked::<ELFLoaderEffects<'_>>(&effects_slice) };
         println!("FAIL: {:?}", input);
         println!("Expected: {:?}", expected);
         println!("Actual: {:?}", actual);
@@ -38,10 +42,8 @@ fn exec(input: &PathBuf, blob: &[u8], builder: &mut flatbuffers::FlatBufferBuild
 fn main() {
     let cli = Cli::parse();
     let mut fail_cnt: i32 = 0;
-    let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(1 << 12usize);
     for input in cli.inputs {
-        let blob = std::fs::read(&input).unwrap();
-        if !exec(&input, &blob, &mut builder) {
+        if !exec(&input) {
             fail_cnt = fail_cnt.saturating_add(1);
         }
     }
