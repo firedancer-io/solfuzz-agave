@@ -344,7 +344,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     remove_simple_vote_from_cost_model,
     limit_instruction_accounts,
     validator_admission_ticket,
-    create_account_allow_prefund, // TODO: build kunorpus generators
+    create_account_allow_prefund,
     delay_commission_updates,
     validate_chained_block_id,
     upgrade_bpf_stake_program_to_v5
