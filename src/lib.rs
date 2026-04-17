@@ -3,7 +3,6 @@
 pub mod block;
 pub mod cost;
 pub mod elf_loader;
-pub mod fuzzing_entrypoints;
 pub mod gossip;
 pub mod txn;
 pub mod utils;
@@ -49,7 +48,6 @@ use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solfuzz_agave_macro::{
     declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
 };
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::env;
 use std::ffi::c_int;
@@ -64,12 +62,6 @@ use thiserror::Error;
 use solana_account::WritableAccount;
 #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
 use solana_slot_hashes::{SlotHash, SlotHashes};
-
-/* TODO: Consider migrating this to a custom allocator with true zero-copy behavior. */
-thread_local! {
-    static FBB: RefCell<flatbuffers::FlatBufferBuilder<'static>> =
-        RefCell::new(flatbuffers::FlatBufferBuilder::with_capacity(1 << 12usize));
-}
 
 // macro to rewrite &[IDENTIFIER, ...] to &[feature_u64(IDENTIFIER::id()), ...]
 #[macro_export]
@@ -357,9 +349,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
 // BPF version will use different amounts of CUs.
 declare_core_bpf_default_compute_units!();
 
-pub use protosol::context_generated;
-pub use protosol::elf_generated;
-pub use protosol::metadata_generated;
 use protosol::protos;
 
 #[derive(Debug, Error, PartialEq)]

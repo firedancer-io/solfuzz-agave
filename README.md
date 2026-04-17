@@ -7,7 +7,7 @@ It only supports `x86_64-unknown-linux-gnu` targets.
 Supported APIs:
 
 - `sol_compat_block_execute_v1`
-- `sol_compat_elf_loader_v2`
+- `sol_compat_elf_loader_v1`
 - `sol_compat_get_features_v1`
 - `sol_compat_get_metadata_v1`
 - `sol_compat_gossip_decode_v1`
