@@ -74,6 +74,7 @@ pub fn create_accounts_db(paths: Vec<PathBuf>) -> Accounts {
         num_background_threads: Some(NonZeroUsize::new(1).unwrap()),
         num_foreground_threads: Some(NonZeroUsize::new(1).unwrap()),
         exhaustively_verify_refcounts: false,
+        read_cache_num_shards: Some(2),
         ..AccountsDbConfig::default()
     };
     let accounts_db = AccountsDb::new_with_config(
