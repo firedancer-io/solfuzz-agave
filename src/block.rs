@@ -401,7 +401,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     accounts.accounts_db.add_root(parent_slot);
     let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
 
-    /* Build the stakes separately */
     let current_epoch = epoch_schedule.get_epoch(current_slot);
     let parent_epoch = epoch_schedule.get_epoch(parent_slot);
     let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
@@ -423,13 +422,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
     let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
 
-    let current_epoch_stakes = VersionedEpochStakes::new(
-        SerdeStakesToStakeFormat::from(stakes_t_2),
-        leader_schedule_epoch.saturating_sub(1),
-    );
-
     let l_sched = LeaderSchedule::new(
-        current_epoch_stakes.stakes().vote_accounts().as_ref(),
+        stakes_t_1.vote_accounts().as_ref(),
         current_epoch,
         epoch_schedule.get_slots_in_epoch(current_epoch),
         NUM_CONSECUTIVE_LEADER_SLOTS,
@@ -437,10 +431,16 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let (_, slot_index) = epoch_schedule.get_epoch_and_slot_index(current_slot);
     let leader = l_sched[slot_index];
 
+    // epoch_stakes keyed by absolute epoch number:
+    //   current_epoch     = T-1
+    //   current_epoch - 1 = T-2
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
         leader_schedule_epoch.saturating_sub(1),
-        current_epoch_stakes,
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stakes_t_2),
+            leader_schedule_epoch.saturating_sub(1),
+        ),
     );
     epoch_stakes.insert(
         leader_schedule_epoch,
