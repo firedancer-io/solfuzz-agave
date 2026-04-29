@@ -316,7 +316,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enshrine_slashing_program,
     syscall_parameter_address_restrictions,
     virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
-    account_data_direct_mapping, // depends on virtual_address_space_adjustments
+    account_data_direct_mapping,       // depends on virtual_address_space_adjustments
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
     increase_cpi_account_info_limit,
