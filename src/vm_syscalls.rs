@@ -13,7 +13,7 @@ use solana_program_runtime::{
     invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
 };
 use solana_pubkey::Pubkey;
-use solana_sbpf::error::{EbpfError, StableResult};
+use solana_sbpf::error::StableResult;
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
