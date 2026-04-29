@@ -13,6 +13,7 @@ use solana_program_runtime::{
     invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
 };
 use solana_pubkey::Pubkey;
+use solana_sbpf::error::StableResult;
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
@@ -346,6 +347,15 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
+
+    // When virtual_address_space_adjustments is enabled, Agave calls
+    // update_caller_account_region only after a _successful_ CPI
+    // execution. This means that if the CPI fails, the input regions
+    // can contain stale data. So we return an empty list on failure.
+    let input_data_regions = match &program_result {
+        StableResult::Err(_) if virtual_address_space_adjustments => vec![],
+        _ => mem_regions::extract_input_data_regions(&vm.memory_mapping),
+    };
     let (error, error_kind, r0) =
         unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
 
@@ -377,7 +387,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         cu_avail: vm.context_object_pointer.get_remaining(),
         heap: heap.as_slice().into(),
         stack: stack.as_slice().into(),
-        input_data_regions: mem_regions::extract_input_data_regions(&vm.memory_mapping),
+        input_data_regions,
         rodata: rodata.as_slice().into(),
         frame_count: vm.call_depth,
         error,
