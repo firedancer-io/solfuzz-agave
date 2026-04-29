@@ -314,8 +314,9 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_extend_program_checked,
     require_static_nonce_account,
     enshrine_slashing_program,
-    // stricter_abi_and_runtime_constraints, // fuzz in 4.0+
-    // account_data_direct_mapping, // fuzz in 4.0+
+    syscall_parameter_address_restrictions,
+    virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
+    account_data_direct_mapping,       // depends on virtual_address_space_adjustments
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
     increase_cpi_account_info_limit,
