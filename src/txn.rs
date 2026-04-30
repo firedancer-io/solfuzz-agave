@@ -292,7 +292,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let epoch = epoch_schedule.get_epoch(slot);
 
     /* Set up accounts DB and populate account states from input */
-    let accounts = create_accounts_db(vec!["/dev/shm/a".into()]);
+    let accounts = create_accounts_db(vec![]);
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
     accounts.accounts_db.add_root(parent_slot);
 
