@@ -393,7 +393,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let blockhash_queue = restore_blockhash_queue(&bank_ctx.blockhash_queue);
 
     /* Accounts DB config and initialization */
-    let accounts = create_accounts_db(vec!["/dev/shm/a".into()]);
+    let accounts = create_accounts_db(vec![]);
     let accounts_to_store = deserialize_accounts(&context.acct_states);
 
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
