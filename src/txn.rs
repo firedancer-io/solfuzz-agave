@@ -2,6 +2,7 @@ use crate::utils::program::common::build_versioned_message;
 use crate::utils::{
     create_accounts_db, deserialize_accounts, feature_set_from_protos, restore_blockhash_queue,
 };
+use agave_feature_set::virtual_address_space_adjustments;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
@@ -30,7 +31,7 @@ use solana_signature::Signature;
 use solana_stake_interface::state::Stake;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
-    ProcessedTransaction, TransactionProcessingResultExtensions,
+    ProcessedTransaction, TransactionProcessingResult, TransactionProcessingResultExtensions,
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_svm_timings::ExecuteTimings;
@@ -102,7 +103,7 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
 }
 
 fn output_txn_result_from_result(
-    value: LoadAndExecuteTransactionsOutput,
+    value: &LoadAndExecuteTransactionsOutput,
     sanitized_message: &SanitizedMessage,
 ) -> TxnResult {
     let execution_results = &value.processing_results[0];
@@ -247,6 +248,33 @@ fn output_txn_result_from_result(
     }
 }
 
+/// Due to how Firedancer's VM CU accounting works, when
+/// virtual_address_space_adjustments is enabled and the transaction
+/// fails due to the CU meter being exhausted, we cannot compare the
+/// data region of the accounts with Agave.
+fn direct_mapping_handle_cu_exhaustion(
+    virtual_address_space_adjustments_active: bool,
+    processing_result: &TransactionProcessingResult,
+    txn_result: &mut TxnResult,
+) {
+    let cu_exhausted = matches!(
+        processing_result,
+        Ok(ProcessedTransaction::Executed(executed_tx))
+            if matches!(
+                executed_tx.execution_details.status,
+                Err(TransactionError::InstructionError(
+                    _,
+                    InstructionError::ComputationalBudgetExceeded,
+                ))
+            )
+    );
+    if virtual_address_space_adjustments_active && cu_exhausted {
+        for acc in txn_result.modified_accounts.iter_mut() {
+            acc.data.clear();
+        }
+    }
+}
+
 #[allow(deprecated)]
 pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let txn_bank = context.bank.as_ref().unwrap();
@@ -287,6 +315,8 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Feature set */
     let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());
+    let virtual_address_space_adjustments_active =
+        feature_set.is_active(&virtual_address_space_adjustments::id());
 
     /* Epoch */
     let epoch = epoch_schedule.get_epoch(slot);
@@ -448,7 +478,12 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
 
-    let mut txn_result = output_txn_result_from_result(result, runtime_transaction_ref.message());
+    let mut txn_result = output_txn_result_from_result(&result, runtime_transaction_ref.message());
+    direct_mapping_handle_cu_exhaustion(
+        virtual_address_space_adjustments_active,
+        &result.processing_results[0],
+        &mut txn_result,
+    );
 
     // Only keep accounts that were passed in as account_keys or as ALUT accounts
     let mut loaded_account_keys = AHashSet::<Pubkey>::new();
