@@ -462,7 +462,10 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
                 TransactionError::InstructionError(_, ie) => Some(ie),
                 _ => None,
             }),
-        txn_result.modified_accounts.iter_mut().map(|acc| &mut acc.data),
+        txn_result
+            .modified_accounts
+            .iter_mut()
+            .map(|acc| &mut acc.data),
     );
 
     // Only keep accounts that were passed in as account_keys or as ALUT accounts

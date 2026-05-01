@@ -1104,7 +1104,10 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     crate::utils::direct_mapping_handle_cu_exhaustion(
         runtime_features.virtual_address_space_adjustments,
         instr_err.as_ref(),
-        effects.modified_accounts.iter_mut().map(|(_, acc)| &mut acc.data),
+        effects
+            .modified_accounts
+            .iter_mut()
+            .map(|(_, acc)| &mut acc.data),
     );
 
     Some(effects)
