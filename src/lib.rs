@@ -988,6 +988,16 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         })
         .collect::<Vec<_>>();
 
+    // Due to how Firedancer's VM CU accounting works, when
+    // virtual_address_space_adjustments is enabled and the transaction
+    // fails due to the CU meter being exhausted, we cannot compare the
+    // data region of the accounts with Agave.
+    //
+    // We only need to do this for the instruction harness.
+    let zero_acc_data = runtime_features.virtual_address_space_adjustments
+        && cu_avail == 0
+        && result.is_err();
+
     Some(InstrEffects {
         custom_err: if let Err(InstructionError::Custom(code)) = result {
             #[cfg(feature = "core-bpf-conformance")]
@@ -1092,7 +1102,11 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
                 {
                     return (program_account.0, program_account.1.clone());
                 }
-                (key, account.into())
+                let mut acc: Account = account.into();
+                if zero_acc_data {
+                    acc.data.clear();
+                }
+                (key, acc)
             })
             .collect(),
         cu_avail,
