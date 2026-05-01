@@ -104,3 +104,25 @@ pub fn compute_accounts_data_size(accounts: &[(Pubkey, AccountSharedData)]) -> u
         .map(|(_, account)| account.data().len() as u64)
         .sum()
 }
+
+/// Due to how Firedancer's VM CU accounting works, when
+/// virtual_address_space_adjustments is enabled and execution
+/// fails due to the CU meter being exhausted, we cannot compare
+/// the data region of the accounts with Agave.  Clears each
+/// supplied data buffer in that case.
+pub fn direct_mapping_handle_cu_exhaustion<'a>(
+    virtual_address_space_adjustments_active: bool,
+    instruction_error: Option<&solana_instruction::error::InstructionError>,
+    account_data: impl IntoIterator<Item = &'a mut Vec<u8>>,
+) {
+    if virtual_address_space_adjustments_active
+        && matches!(
+            instruction_error,
+            Some(solana_instruction::error::InstructionError::ComputationalBudgetExceeded)
+        )
+    {
+        for data in account_data {
+            data.clear();
+        }
+    }
+}

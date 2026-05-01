@@ -31,7 +31,7 @@ use solana_signature::Signature;
 use solana_stake_interface::state::Stake;
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
-    ProcessedTransaction, TransactionProcessingResult, TransactionProcessingResultExtensions,
+    ProcessedTransaction, TransactionProcessingResultExtensions,
 };
 use solana_svm::transaction_processor::{ExecutionRecordingConfig, TransactionProcessingConfig};
 use solana_svm_timings::ExecuteTimings;
@@ -248,33 +248,6 @@ fn output_txn_result_from_result(
     }
 }
 
-/// Due to how Firedancer's VM CU accounting works, when
-/// virtual_address_space_adjustments is enabled and the transaction
-/// fails due to the CU meter being exhausted, we cannot compare the
-/// data region of the accounts with Agave.
-fn direct_mapping_handle_cu_exhaustion(
-    virtual_address_space_adjustments_active: bool,
-    processing_result: &TransactionProcessingResult,
-    txn_result: &mut TxnResult,
-) {
-    let cu_exhausted = matches!(
-        processing_result,
-        Ok(ProcessedTransaction::Executed(executed_tx))
-            if matches!(
-                executed_tx.execution_details.status,
-                Err(TransactionError::InstructionError(
-                    _,
-                    InstructionError::ComputationalBudgetExceeded,
-                ))
-            )
-    );
-    if virtual_address_space_adjustments_active && cu_exhausted {
-        for acc in txn_result.modified_accounts.iter_mut() {
-            acc.data.clear();
-        }
-    }
-}
-
 #[allow(deprecated)]
 pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let txn_bank = context.bank.as_ref().unwrap();
@@ -479,10 +452,20 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .unwrap_or_default();
 
     let mut txn_result = output_txn_result_from_result(&result, runtime_transaction_ref.message());
-    direct_mapping_handle_cu_exhaustion(
+    let instr_err = match &result.processing_results[0] {
+        Ok(ProcessedTransaction::Executed(executed_tx)) => match &executed_tx
+            .execution_details
+            .status
+        {
+            Err(TransactionError::InstructionError(_, e)) => Some(e),
+            _ => None,
+        },
+        _ => None,
+    };
+    crate::utils::direct_mapping_handle_cu_exhaustion(
         virtual_address_space_adjustments_active,
-        &result.processing_results[0],
-        &mut txn_result,
+        instr_err,
+        txn_result.modified_accounts.iter_mut().map(|acc| &mut acc.data),
     );
 
     // Only keep accounts that were passed in as account_keys or as ALUT accounts
