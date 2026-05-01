@@ -988,7 +988,7 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         })
         .collect::<Vec<_>>();
 
-    let instr_err = result.as_ref().err().cloned();
+    let result_is_err = result.is_err();
 
     let mut effects = InstrEffects {
         custom_err: if let Err(InstructionError::Custom(code)) = result {
@@ -1103,7 +1103,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
 
     crate::utils::direct_mapping_handle_cu_exhaustion(
         runtime_features.virtual_address_space_adjustments,
-        instr_err.as_ref(),
+        cu_avail,
+        result_is_err,
         effects
             .modified_accounts
             .iter_mut()
