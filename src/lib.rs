@@ -994,9 +994,8 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
     // data region of the accounts with Agave.
     //
     // We only need to do this for the instruction harness.
-    let zero_acc_data = runtime_features.virtual_address_space_adjustments
-        && cu_avail == 0
-        && result.is_err();
+    let zero_acc_data =
+        runtime_features.virtual_address_space_adjustments && cu_avail == 0 && result.is_err();
 
     Some(InstrEffects {
         custom_err: if let Err(InstructionError::Custom(code)) = result {
