@@ -153,7 +153,7 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
         lamports: 25,
         data: header,
         executable: false,
-        owner: vec![0; 32],
+        owner: bpf_loader_upgradeable::id().to_bytes().to_vec(),
     };
 
     [
