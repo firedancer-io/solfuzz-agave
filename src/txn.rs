@@ -452,21 +452,18 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .unwrap_or_default();
 
     let mut txn_result = output_txn_result_from_result(&result, runtime_transaction_ref.message());
-    let (cu_avail, has_err) = match &result.processing_results[0] {
-        Ok(ProcessedTransaction::Executed(executed_tx)) => (
-            executed_tx
-                .loaded_transaction
-                .compute_budget
-                .compute_unit_limit
-                .saturating_sub(executed_tx.execution_details.executed_units),
-            executed_tx.execution_details.status.is_err(),
-        ),
-        _ => (0, true),
+    let cu_avail = match &result.processing_results[0] {
+        Ok(ProcessedTransaction::Executed(executed_tx)) => executed_tx
+            .loaded_transaction
+            .compute_budget
+            .compute_unit_limit
+            .saturating_sub(txn_result.executed_units),
+        _ => 0,
     };
     crate::utils::direct_mapping_handle_cu_exhaustion(
         virtual_address_space_adjustments_active,
         cu_avail,
-        has_err,
+        !txn_result.is_ok,
         txn_result
             .modified_accounts
             .iter_mut()
