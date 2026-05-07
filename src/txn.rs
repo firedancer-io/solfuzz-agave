@@ -2,6 +2,7 @@ use crate::utils::program::common::build_versioned_message;
 use crate::utils::{
     create_accounts_db, deserialize_accounts, feature_set_from_protos, restore_blockhash_queue,
 };
+use agave_feature_set::virtual_address_space_adjustments;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
@@ -102,7 +103,7 @@ fn transaction_error_to_err_nums(transaction_error: &TransactionError) -> (u32, 
 }
 
 fn output_txn_result_from_result(
-    value: LoadAndExecuteTransactionsOutput,
+    value: &LoadAndExecuteTransactionsOutput,
     sanitized_message: &SanitizedMessage,
 ) -> TxnResult {
     let execution_results = &value.processing_results[0];
@@ -287,6 +288,8 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Feature set */
     let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());
+    let virtual_address_space_adjustments_active =
+        feature_set.is_active(&virtual_address_space_adjustments::id());
 
     /* Epoch */
     let epoch = epoch_schedule.get_epoch(slot);
@@ -448,7 +451,24 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .map(|message| message.account_keys.clone())
         .unwrap_or_default();
 
-    let mut txn_result = output_txn_result_from_result(result, runtime_transaction_ref.message());
+    let mut txn_result = output_txn_result_from_result(&result, runtime_transaction_ref.message());
+    let cu_avail = match &result.processing_results[0] {
+        Ok(ProcessedTransaction::Executed(executed_tx)) => executed_tx
+            .loaded_transaction
+            .compute_budget
+            .compute_unit_limit
+            .saturating_sub(txn_result.executed_units),
+        _ => 0,
+    };
+    crate::utils::direct_mapping_handle_cu_exhaustion(
+        virtual_address_space_adjustments_active,
+        cu_avail,
+        !txn_result.is_ok,
+        txn_result
+            .modified_accounts
+            .iter_mut()
+            .map(|acc| &mut acc.data),
+    );
 
     // Only keep accounts that were passed in as account_keys or as ALUT accounts
     let mut loaded_account_keys = AHashSet::<Pubkey>::new();

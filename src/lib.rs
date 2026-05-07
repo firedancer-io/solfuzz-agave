@@ -988,7 +988,9 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
         })
         .collect::<Vec<_>>();
 
-    Some(InstrEffects {
+    let result_is_err = result.is_err();
+
+    let mut effects = InstrEffects {
         custom_err: if let Err(InstructionError::Custom(code)) = result {
             #[cfg(feature = "core-bpf-conformance")]
             // See comment below under `result` for special-casing of custom
@@ -1097,7 +1099,19 @@ fn execute_instr(mut input: InstrContext) -> Option<InstrEffects> {
             .collect(),
         cu_avail,
         return_data,
-    })
+    };
+
+    crate::utils::direct_mapping_handle_cu_exhaustion(
+        runtime_features.virtual_address_space_adjustments,
+        cu_avail,
+        result_is_err,
+        effects
+            .modified_accounts
+            .iter_mut()
+            .map(|(_, acc)| &mut acc.data),
+    );
+
+    Some(effects)
 }
 
 #[unsafe(no_mangle)]
