@@ -14,6 +14,7 @@ Supported APIs:
 - `sol_compat_instr_execute_v1`
 - `sol_compat_txn_cost_v1`
 - `sol_compat_txn_execute_v1`
+- `sol_compat_vm_serialize_execute_v1`
 - `sol_compat_vm_syscall_execute_v1`
 
 Lifecycle:

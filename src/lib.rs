@@ -7,6 +7,7 @@ pub mod gossip;
 pub mod instr;
 pub mod txn;
 pub mod utils;
+pub mod vm_serialization;
 pub mod vm_syscalls;
 
 use agave_feature_set::*;
