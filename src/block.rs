@@ -399,8 +399,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     /* Create feature gate accounts for all feature gates that are present in the protobuf
        feature set.
 
-       Explicit account states from the protobuf overrides the feature gate accounts,
-       so that it's obvious what the final account state is. */
+       These feature gate accounts will be overriden by any account states that are already
+       present in the protobuf, so that it's obvious what the final account state is. */
     let all_acct_state_pubkeys_from_proto: std::collections::HashSet<_> =
         acct_states_from_proto.iter().map(|(pk, _)| *pk).collect();
     let accounts_to_store: Vec<_> = feature_accounts_from_protos(&fd_features)

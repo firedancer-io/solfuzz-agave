@@ -55,6 +55,7 @@ pub fn feature_set_from_protos(input: &protos::FeatureSet) -> FeatureSet {
 pub fn feature_accounts_from_protos(
     input: &protos::FeatureSet,
 ) -> Vec<(Pubkey, AccountSharedData)> {
+    // Feature { activated_at: Some(0) }
     let mut data = vec![0u8; 9];
     data[0] = 1;
 
