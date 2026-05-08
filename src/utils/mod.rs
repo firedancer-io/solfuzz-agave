@@ -51,22 +51,24 @@ pub fn feature_set_from_protos(input: &protos::FeatureSet) -> FeatureSet {
     feature_set
 }
 
-/// Create account state for each feature in the given feature set
+/// Create account state for each feature in the given feature set.
 pub fn feature_accounts_from_protos(
     input: &protos::FeatureSet,
+    rent: &solana_rent::Rent,
 ) -> Vec<(Pubkey, AccountSharedData)> {
-    // Feature { activated_at: Some(0) }
-    let mut data = vec![0u8; 9];
-    data[0] = 1;
-
+    let feature = solana_feature_gate_interface::Feature {
+        activated_at: Some(0),
+    };
+    let lamports = rent.minimum_balance(solana_feature_gate_interface::Feature::size_of());
     input
         .features
         .iter()
         .filter_map(|id| INDEXED_FEATURES.get(id).copied())
         .map(|pubkey| {
-            let mut account = AccountSharedData::new(1, data.len(), &solana_sdk_ids::feature::id());
-            account.set_data_from_slice(&data);
-            (pubkey, account)
+            (
+                pubkey,
+                solana_feature_gate_interface::create_account(&feature, lamports),
+            )
         })
         .collect()
 }

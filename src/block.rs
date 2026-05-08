@@ -387,6 +387,10 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .map(|item| (item.address.as_slice(), item))
         .collect();
     let stake_history: StakeHistory = get_sysvar(&sysvar_accounts, stake_history::id().as_ref());
+    let rent: solana_rent::Rent = get_sysvar(
+        &sysvar_accounts,
+        solana_sdk_ids::sysvar::rent::id().as_ref(),
+    );
 
     let lamports_per_signature = bank_ctx.rbh_lamports_per_signature as u64;
 
@@ -397,13 +401,13 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let acct_states_from_proto = deserialize_accounts(&context.acct_states);
 
     /* Create feature gate accounts for all feature gates that are present in the protobuf
-       feature set.
+    feature set.
 
-       These feature gate accounts will be overriden by any account states that are already
-       present in the protobuf, so that it's obvious what the final account state is. */
+    These feature gate accounts will be overriden by any account states that are already
+    present in the protobuf, so that it's obvious what the final account state is. */
     let all_acct_state_pubkeys_from_proto: std::collections::HashSet<_> =
         acct_states_from_proto.iter().map(|(pk, _)| *pk).collect();
-    let accounts_to_store: Vec<_> = feature_accounts_from_protos(&fd_features)
+    let accounts_to_store: Vec<_> = feature_accounts_from_protos(&fd_features, &rent)
         .into_iter()
         .filter(|(pk, _)| !all_acct_state_pubkeys_from_proto.contains(pk))
         .chain(acct_states_from_proto)

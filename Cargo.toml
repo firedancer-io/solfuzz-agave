@@ -30,6 +30,7 @@ wincode = "=0.4.5"
 
 solana-account = "=3.4.0"
 solana-clock = "=3.0.1"
+solana-feature-gate-interface = { version = "=3.1.0", features = ["bincode"] }
 solana-epoch-schedule = "=3.0.0"
 solana-fee-calculator = "=3.1.0"
 solana-hard-forks = "=3.0.0"
