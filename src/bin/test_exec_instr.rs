@@ -21,7 +21,7 @@ fn exec(input: &PathBuf) -> bool {
         println!("No fixture found.");
         return false;
     };
-    let Some(effects) = solfuzz_agave::execute_instr_proto(context) else {
+    let Some(effects) = solfuzz_agave::instr::execute_instr(context) else {
         println!(
             "FAIL: No instruction effects returned for input: {:?}",
             input

@@ -1,6 +1,9 @@
 use crate::{
-    utils::err_map::unpack_stable_result, utils::vm::mem_regions, utils::vm::HEAP_MAX,
-    utils::vm::STACK_SIZE, InstrContext, SnapshotInvokeContext,
+    instr::{InstrContext, SnapshotInvokeContext},
+    utils::err_map::unpack_stable_result,
+    utils::vm::mem_regions,
+    utils::vm::HEAP_MAX,
+    utils::vm::STACK_SIZE,
 };
 use prost::Message;
 use protosol::protos::{SyscallContext, SyscallEffects};
@@ -82,7 +85,7 @@ fn cleanup_static_ptrs(
 }
 
 pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
-    let instr_ctx: InstrContext = input.instr_ctx?.try_into().ok()?;
+    let instr_ctx: InstrContext = input.instr_ctx?.into();
     let runtime_feature_set = instr_ctx.feature_set.runtime_features();
     let feature_set_snapshot = instr_ctx.feature_set.clone();
 
@@ -118,7 +121,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         lamports_per_signature,
         compute_budget,
         environments,
-    ) = crate::create_invoke_context_fields(instr_ctx, populate_program_cache)?;
+    ) = crate::instr::create_invoke_context_fields(instr_ctx, populate_program_cache)?;
 
     /* MemoryCowCallback requires moved objects to have the 'static lifetime
       so we promote them to 'static and drop at the end as we are sure they are not used anymore
@@ -144,7 +147,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let log_collector = LogCollector::new_ref();
     let instr_accounts =
-        crate::get_instr_accounts(transaction_context, &instruction_accounts_snapshot);
+        crate::instr::get_instr_accounts(transaction_context, &instruction_accounts_snapshot);
 
     let environments = Box::leak(Box::new(environments));
     let environments_ptr = environments as *mut _ as usize;

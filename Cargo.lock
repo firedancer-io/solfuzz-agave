@@ -8400,7 +8400,6 @@ dependencies = [
  "ahash 0.8.12",
  "bincode",
  "clap 4.6.1",
- "five8_core",
  "lazy_static",
  "prost",
  "protosol",
@@ -8460,8 +8459,6 @@ dependencies = [
  "solana-zk-elgamal-proof-program",
  "solana-zk-sdk 5.0.1",
  "solfuzz-agave-macro",
- "thiserror 2.0.18",
- "wincode 0.4.5",
 ]
 
 [[package]]
