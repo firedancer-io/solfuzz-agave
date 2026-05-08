@@ -58,6 +58,8 @@ pub fn feature_accounts_from_protos(
     let feature = solana_feature_gate_interface::Feature {
         activated_at: Some(0),
     };
+    // Ensure all feature accounts are rent-exempt
+    const FEATURE_ACCOUNT_LAMPORTS: u64 = 100_000_000;
     input
         .features
         .iter()
@@ -65,7 +67,7 @@ pub fn feature_accounts_from_protos(
         .map(|pubkey| {
             (
                 pubkey,
-                solana_feature_gate_interface::create_account(&feature, 100_000_000),
+                solana_feature_gate_interface::create_account(&feature, FEATURE_ACCOUNT_LAMPORTS),
             )
         })
         .collect()
