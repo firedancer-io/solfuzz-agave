@@ -51,6 +51,25 @@ pub fn feature_set_from_protos(input: &protos::FeatureSet) -> FeatureSet {
     feature_set
 }
 
+/// Create account state for each feature in the given feature set
+pub fn feature_accounts_from_protos(
+    input: &protos::FeatureSet,
+) -> Vec<(Pubkey, AccountSharedData)> {
+    let mut data = vec![0u8; 9];
+    data[0] = 1;
+
+    input
+        .features
+        .iter()
+        .filter_map(|id| INDEXED_FEATURES.get(id).copied())
+        .map(|pubkey| {
+            let mut account = AccountSharedData::new(1, data.len(), &solana_sdk_ids::feature::id());
+            account.set_data_from_slice(&data);
+            (pubkey, account)
+        })
+        .collect()
+}
+
 pub fn restore_blockhash_queue(entries: &[protos::BlockhashQueueEntry]) -> BlockhashQueue {
     let mut blockhash_queue = BlockhashQueue::default();
     entries.iter().for_each(|entry| {
