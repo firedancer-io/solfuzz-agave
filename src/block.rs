@@ -1,8 +1,8 @@
 use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{build_versioned_message, get_sysvar};
 use crate::utils::{
-    compute_accounts_data_size, create_accounts_db, deserialize_accounts, feature_set_from_protos,
-    restore_blockhash_queue,
+    compute_accounts_data_size, create_accounts_db, deserialize_accounts,
+    feature_accounts_from_protos, feature_set_from_protos, restore_blockhash_queue,
 };
 use agave_votor_messages::migration::MigrationStatus;
 use prost::Message;
@@ -394,7 +394,20 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     /* Accounts DB config and initialization */
     let accounts = create_accounts_db(vec![]);
-    let accounts_to_store = deserialize_accounts(&context.acct_states);
+    let acct_states_from_proto = deserialize_accounts(&context.acct_states);
+
+    /* Create feature gate accounts for all feature gates that are present in the protobuf
+    feature set.
+
+    These feature gate accounts will be overriden by any account states that are already
+    present in the protobuf, so that it's obvious what the final account state is. */
+    let all_acct_state_pubkeys_from_proto: std::collections::HashSet<_> =
+        acct_states_from_proto.iter().map(|(pk, _)| *pk).collect();
+    let accounts_to_store: Vec<_> = feature_accounts_from_protos(&fd_features)
+        .into_iter()
+        .filter(|(pk, _)| !all_acct_state_pubkeys_from_proto.contains(pk))
+        .chain(acct_states_from_proto)
+        .collect();
 
     accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
     accounts.store_accounts_seq((current_slot, &accounts_to_store[..]), None, None);

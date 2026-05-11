@@ -8415,6 +8415,7 @@ dependencies = [
  "solana-cost-model",
  "solana-entry",
  "solana-epoch-schedule",
+ "solana-feature-gate-interface",
  "solana-fee-calculator",
  "solana-gossip",
  "solana-hard-forks",
