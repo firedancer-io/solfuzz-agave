@@ -37,7 +37,6 @@ fn runtime_transaction_from_proto(
         solana_message::SimpleAddressLoader::Disabled,
         &std::collections::HashSet::new(),
         true,
-        true,
     )
     .ok()
 }
@@ -75,9 +74,9 @@ fn result_from_transaction_cost(
 pub fn execute_cost(context: &CostContext) -> Option<CostResult> {
     let tx = runtime_transaction_from_proto(context.tx.as_ref()?)?;
     let feature_set = feature_set_from_protos(context.features.as_ref()?);
-    let cost = match TxnCostMode::from_i32(context.mode)? {
-        TxnCostMode::Estimate => CostModel::calculate_cost(&tx, &feature_set),
-        TxnCostMode::Actual => CostModel::calculate_cost_for_executed_transaction(
+    let cost = match context.mode {
+        x if x == TxnCostMode::Estimate as i32 => CostModel::calculate_cost(&tx, &feature_set),
+        x if x == TxnCostMode::Actual as i32 => CostModel::calculate_cost_for_executed_transaction(
             &tx,
             context.actual_programs_execution_cost,
             context
@@ -86,6 +85,7 @@ pub fn execute_cost(context: &CostContext) -> Option<CostResult> {
                 .ok()?,
             &feature_set,
         ),
+        _ => panic!("unexpected TxnCostMode: {}", context.mode),
     };
     Some(result_from_transaction_cost(cost))
 }

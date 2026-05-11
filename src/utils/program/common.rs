@@ -63,7 +63,7 @@ pub fn build_versioned_message(value: &TransactionMessage) -> VersionedMessage {
     let instructions = value
         .instructions
         .iter()
-        .map(CompiledInstruction::from)
+        .map(|ci| CompiledInstruction::from(ci))
         .collect::<Vec<CompiledInstruction>>();
 
     if value.is_legacy {
@@ -78,7 +78,7 @@ pub fn build_versioned_message(value: &TransactionMessage) -> VersionedMessage {
         let address_table_lookups = value
             .address_table_lookups
             .iter()
-            .map(MessageAddressTableLookup::from)
+            .map(|atl| MessageAddressTableLookup::from(atl))
             .collect::<Vec<MessageAddressTableLookup>>();
 
         let message = v0::Message {

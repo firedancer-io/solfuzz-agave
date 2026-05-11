@@ -2,7 +2,6 @@ use crate::utils::program::common::build_versioned_message;
 use crate::utils::{
     create_accounts_db, deserialize_accounts, feature_set_from_protos, restore_blockhash_queue,
 };
-use agave_feature_set::virtual_address_space_adjustments;
 use agave_precompiles::get_precompile;
 use ahash::AHashSet;
 use prost::Message;
@@ -10,6 +9,7 @@ use protosol::protos;
 use protosol::protos::{TxnContext, TxnResult};
 use solana_account::ReadableAccount;
 use solana_accounts_db::accounts_hash::AccountsLtHash;
+use solana_accounts_db::ancestors::AncestorsForSerialization;
 use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
@@ -25,10 +25,11 @@ use solana_runtime::bank::{
 };
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
+use solana_runtime::rent_collector::RentCollector;
 use solana_runtime::stake_history::StakeHistory;
-use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
+use solana_runtime::stakes::{SerdeStakesToStakeFormat, Stakes};
 use solana_signature::Signature;
-use solana_stake_interface::state::Stake;
+use solana_stake_interface::state::{Delegation, Stake};
 use solana_svm::transaction_error_metrics::TransactionErrorMetrics;
 use solana_svm::transaction_processing_result::{
     ProcessedTransaction, TransactionProcessingResultExtensions,
@@ -288,15 +289,13 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Feature set */
     let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());
-    let virtual_address_space_adjustments_active =
-        feature_set.is_active(&virtual_address_space_adjustments::id());
 
     /* Epoch */
     let epoch = epoch_schedule.get_epoch(slot);
 
     /* Set up accounts DB and populate account states from input */
     let accounts = create_accounts_db(vec![]);
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
+    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None);
     accounts.accounts_db.add_root(parent_slot);
 
     /* Create the bank RC */
@@ -315,9 +314,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     }
 
     /* Create dummy stakes */
-    let stakes = DeserializableStakes {
+    let stakes = Stakes::<Delegation> {
         vote_accounts: VoteAccounts::default(),
-        stake_delegations: vec![],
+        stake_delegations: Default::default(),
         unused: 0,
         epoch,
         stake_history: StakeHistory::default(),
@@ -325,6 +324,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
+        ancestors: AncestorsForSerialization::default(), /* Unused */
         hash: Hash::default(),        /* Unused */
         parent_hash: Hash::default(), /* Unused */
         parent_slot,
@@ -340,13 +340,16 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         genesis_creation_time: 0,                /* Unused */
         slots_per_year: 0f64,                    /* Unused */
         slot,
-        block_height: slot,           /* Unused */
-        leader_id: Pubkey::default(), /* Unused */
+        epoch,
+        block_height: slot,               /* Unused */
+        collector_id: Pubkey::default(),   /* Unused */
+        collector_fees: 0,                 /* Unused */
         fee_rate_governor,
+        rent_collector: RentCollector::default(), /* Unused */
         epoch_schedule,
         inflation: Inflation::default(), /* Unused */
         stakes,                          /* Unused */
-        versioned_epoch_stakes: vec![],  /* Unused */
+        versioned_epoch_stakes: HashMap::new(), /* Unused */
         is_delta: false,                 /* Unused */
         accounts_data_len: 0,            /* Unused */
         accounts_lt_hash: AccountsLtHash(LtHash::identity()), /* Unused */
@@ -423,12 +426,10 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     let configs = TransactionProcessingConfig {
         account_overrides: None,
-        check_program_deployment_slot: false,
+        check_program_modification_slot: false,
         log_messages_bytes_limit: None,
         limit_to_load_programs: true,
         recording_config,
-        drop_on_failure: false,
-        all_or_nothing: false,
     };
 
     let mut metrics = TransactionErrorMetrics::default();
@@ -452,7 +453,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         .unwrap_or_default();
 
     let mut txn_result = output_txn_result_from_result(&result, runtime_transaction_ref.message());
-    let cu_avail = match &result.processing_results[0] {
+    let _cu_avail = match &result.processing_results[0] {
         Ok(ProcessedTransaction::Executed(executed_tx)) => executed_tx
             .loaded_transaction
             .compute_budget
@@ -460,16 +461,6 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             .saturating_sub(txn_result.executed_units),
         _ => 0,
     };
-    crate::utils::direct_mapping_handle_cu_exhaustion(
-        virtual_address_space_adjustments_active,
-        cu_avail,
-        !txn_result.is_ok,
-        txn_result
-            .modified_accounts
-            .iter_mut()
-            .map(|acc| &mut acc.data),
-    );
-
     // Only keep accounts that were passed in as account_keys or as ALUT accounts
     let mut loaded_account_keys = AHashSet::<Pubkey>::new();
     loaded_account_keys.extend(

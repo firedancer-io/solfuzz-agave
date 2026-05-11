@@ -11,7 +11,7 @@ use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
 use solana_accounts_db::accounts_file::StorageAccess;
-use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimit};
+use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimitMb};
 use solana_accounts_db::blockhash_queue::BlockhashQueue;
 use solana_hash::Hash;
 use solana_pubkey::Pubkey;
@@ -86,7 +86,7 @@ pub fn create_accounts_db(paths: Vec<PathBuf>) -> Accounts {
     let index = Some(AccountsIndexConfig {
         bins: Some(2),
         num_flush_threads: Some(NonZeroUsize::new(1).unwrap()),
-        index_limit: IndexLimit::InMemOnly,
+        index_limit_mb: IndexLimitMb::InMemOnly,
         ..AccountsIndexConfig::default()
     });
     let accounts_db_config = AccountsDbConfig {
@@ -96,7 +96,6 @@ pub fn create_accounts_db(paths: Vec<PathBuf>) -> Accounts {
         num_background_threads: Some(NonZeroUsize::new(1).unwrap()),
         num_foreground_threads: Some(NonZeroUsize::new(1).unwrap()),
         exhaustively_verify_refcounts: false,
-        read_cache_num_shards: Some(2),
         ..AccountsDbConfig::default()
     };
     let accounts_db = AccountsDb::new_with_config(

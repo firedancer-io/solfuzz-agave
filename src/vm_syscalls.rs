@@ -16,7 +16,6 @@ use solana_program_runtime::{
     invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
 };
 use solana_pubkey::Pubkey;
-use solana_sbpf::error::StableResult;
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
@@ -28,7 +27,7 @@ use solana_sbpf::{
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm_feature_set::SVMFeatureSet;
 use solana_svm_log_collector::LogCollector;
-use solana_transaction_context::transaction::TransactionContext;
+use solana_transaction_context::TransactionContext;
 use std::ffi::c_int;
 
 #[unsafe(no_mangle)]
@@ -183,15 +182,15 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         "invariant violation: program_idx must be <= 255"
     );
     let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
-    let virtual_address_space_adjustments = invoke_ctx
+    let stricter_abi_and_runtime_constraints = invoke_ctx
         .get_feature_set()
-        .virtual_address_space_adjustments;
-    let direct_account_pointers = invoke_ctx
+        .stricter_abi_and_runtime_constraints;
+    let mask_out_rent_epoch_in_vm_serialization = invoke_ctx
         .get_feature_set()
-        .direct_account_pointers_in_program_input;
+        .mask_out_rent_epoch_in_vm_serialization;
     invoke_ctx
         .transaction_context
-        .configure_top_level_instruction_for_tests(program_idx, instr_accounts, instruction_data)
+        .configure_next_instruction_for_tests(program_idx, instr_accounts, instruction_data)
         .unwrap();
 
     match invoke_ctx.push() {
@@ -228,9 +227,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let (_aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset) =
         serialize_parameters(
             &caller_instr_ctx,
-            virtual_address_space_adjustments,
+            stricter_abi_and_runtime_constraints,
             direct_mapping,
-            direct_account_pointers,
+            mask_out_rent_epoch_in_vm_serialization,
         )
         .expect("invariant violation: serialize_parameters failed");
 
@@ -278,7 +277,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         MemoryRegion::new_writable_gapped(
             stack.as_slice_mut(),
             ebpf::MM_STACK_START,
-            if sbpf_version.stack_frame_gaps() && config.enable_stack_frame_gaps {
+            if !sbpf_version.dynamic_stack_frames() && config.enable_stack_frame_gaps {
                 config.stack_frame_size as u64
             } else {
                 0
@@ -297,7 +296,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         sbpf_version,
         invoke_ctx
             .transaction_context
-            .access_violation_handler(virtual_address_space_adjustments, direct_mapping),
+            .access_violation_handler(stricter_abi_and_runtime_constraints, direct_mapping),
     ) else {
         cleanup_static_ptrs(
             transaction_context_ptr,
@@ -351,14 +350,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // Unwrap and return the effects of the syscall
     let program_result = vm.program_result;
 
-    // When virtual_address_space_adjustments is enabled, Agave calls
-    // update_caller_account_region only after a _successful_ CPI
-    // execution. This means that if the CPI fails, the input regions
-    // can contain stale data. So we return an empty list on failure.
-    let input_data_regions = match &program_result {
-        StableResult::Err(_) if virtual_address_space_adjustments => vec![],
-        _ => mem_regions::extract_input_data_regions(&vm.memory_mapping),
-    };
+    let input_data_regions = mem_regions::extract_input_data_regions(&vm.memory_mapping);
     let (error, error_kind, r0) =
         unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
 

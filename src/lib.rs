@@ -266,9 +266,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_extend_program_checked,
     require_static_nonce_account,
     enshrine_slashing_program,
-    syscall_parameter_address_restrictions,
-    virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
-    account_data_direct_mapping,       // depends on virtual_address_space_adjustments
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
     increase_cpi_account_info_limit,
@@ -281,18 +278,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
     relax_intrabatch_account_locks,
     // enable_loader_v4,
-    enable_bls12_381_syscall,
-    alt_bn128_little_endian,
-    enable_alt_bn128_g2_syscalls,
-    bls_pubkey_management_in_vote_account,
-    relax_programdata_account_check_migration,
-    remove_simple_vote_from_cost_model,
-    limit_instruction_accounts,
-    validator_admission_ticket,
-    create_account_allow_prefund,
-    delay_commission_updates,
-    validate_chained_block_id,
-    upgrade_bpf_stake_program_to_v5
+    relax_programdata_account_check_migration
 ];
 
 #[unsafe(no_mangle)]

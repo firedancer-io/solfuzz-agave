@@ -31,7 +31,7 @@ use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
 use solana_transaction_context::MAX_INSTRUCTION_DATA_LEN;
 use solana_transaction_context::{
-    instruction_accounts::InstructionAccount, transaction::TransactionContext,
+    InstructionAccount, TransactionContext,
     transaction_accounts::KeyedAccountSharedData, IndexOfAccount,
 };
 
@@ -451,7 +451,6 @@ pub(crate) fn create_invoke_context_fields(
         (*rent).clone(),
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
-        1,
     );
 
     // sigh ... What is this mess?
@@ -526,12 +525,13 @@ pub(crate) fn create_invoke_context_fields(
                     epoch_schedule: &EpochSchedule,
                     reload: bool,
                 ) -> Option<Arc<ProgramCacheEntry>> { */
-                if let Some((loaded_program, _)) = program_loader::load_program_with_pubkey(
+                if let Some(loaded_program) = program_loader::load_program_with_pubkey(
                     input,
                     &environments,
                     &acc.0,
                     clock.slot,
                     &mut ExecuteTimings::default(),
+                    false,
                 ) {
                     program_cache_for_tx_batch.replenish(acc.0, loaded_program);
                 }
@@ -613,7 +613,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
 
     invoke_context
         .transaction_context
-        .configure_top_level_instruction_for_tests(
+        .configure_next_instruction_for_tests(
             program_idx,
             instruction_accounts,
             instruction_data.clone(),
@@ -648,8 +648,6 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
                 .unwrap()
         })
         .collect::<Vec<_>>();
-
-    let result_is_err = result.is_err();
 
     let custom_err = if let Err(InstructionError::Custom(code)) = result {
         #[cfg(feature = "core-bpf-conformance")]
@@ -735,7 +733,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         err
     });
 
-    let mut modified_accounts: Vec<(Pubkey, Account)> = transaction_context
+    let modified_accounts: Vec<(Pubkey, Account)> = transaction_context
         .deconstruct_without_keys()
         .unwrap()
         .into_iter()
@@ -759,13 +757,6 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
             (key, account.into())
         })
         .collect();
-
-    crate::utils::direct_mapping_handle_cu_exhaustion(
-        runtime_features.virtual_address_space_adjustments,
-        cu_avail,
-        result_is_err,
-        modified_accounts.iter_mut().map(|(_, acc)| &mut acc.data),
-    );
 
     Some(protos::InstrEffects {
         result: instr_result

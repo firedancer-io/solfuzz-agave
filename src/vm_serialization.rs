@@ -89,17 +89,17 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         ),
     );
 
+    let stricter_abi_and_runtime_constraints = invoke_context
+        .get_feature_set()
+        .stricter_abi_and_runtime_constraints;
     let direct_mapping = invoke_context.get_feature_set().account_data_direct_mapping;
-    let virtual_address_space_adjustments = invoke_context
+    let mask_out_rent_epoch = invoke_context
         .get_feature_set()
-        .virtual_address_space_adjustments;
-    let direct_account_pointers = invoke_context
-        .get_feature_set()
-        .direct_account_pointers_in_program_input;
+        .mask_out_rent_epoch_in_vm_serialization;
 
     invoke_context
         .transaction_context
-        .configure_top_level_instruction_for_tests(
+        .configure_next_instruction_for_tests(
             program_idx,
             instruction_accounts,
             instruction_data,
@@ -115,9 +115,9 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
 
     match serialize_parameters(
         &caller_instr_ctx,
-        virtual_address_space_adjustments,
+        stricter_abi_and_runtime_constraints,
         direct_mapping,
-        direct_account_pointers,
+        mask_out_rent_epoch,
     ) {
         Ok((aligned_memory, input_memory_regions, acc_metadatas, _instruction_data_offset)) => {
             let serialized_memory_hash =

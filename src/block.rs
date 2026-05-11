@@ -1,10 +1,10 @@
 use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{build_versioned_message, get_sysvar};
 use crate::utils::{
-    compute_accounts_data_size, create_accounts_db, deserialize_accounts,
-    feature_accounts_from_protos, feature_set_from_protos, restore_blockhash_queue,
+    compute_accounts_data_size, create_accounts_db,
+    deserialize_accounts, feature_accounts_from_protos, feature_set_from_protos,
+    restore_blockhash_queue,
 };
-use agave_votor_messages::migration::MigrationStatus;
 use prost::Message;
 use protosol::protos::{self, AcctState};
 use protosol::protos::{BlockContext, BlockEffects};
@@ -12,16 +12,16 @@ use protosol::protos::{BlockContext, BlockEffects};
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
 use solana_clock::{Epoch, NUM_CONSECUTIVE_LEADER_SLOTS};
-use solana_entry::entry::Entry;
+use solana_entry::entry::{Entry, VerifyRecyclers};
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_lattice_hash::lt_hash::LtHash;
-use solana_leader_schedule::LeaderSchedule;
 use solana_ledger::blockstore_processor::{
     confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
 };
+use solana_ledger::leader_schedule::VoteKeyedLeaderSchedule;
 use solana_pubkey::Pubkey;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
@@ -31,9 +31,10 @@ use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::installed_scheduler_pool::BankWithScheduler;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+use solana_runtime::rent_collector::RentCollector;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
-use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
+use solana_runtime::stakes::{SerdeStakesToStakeFormat, Stakes};
 use solana_sdk_ids::sysvar::stake_history;
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
@@ -87,9 +88,9 @@ fn build_latest_stake_delegations(
     account_states: &[protos::AcctState],
     epoch: Epoch,
     stake_history: &StakeHistory,
-) -> DeserializableStakes<Delegation> {
+) -> Stakes<Delegation> {
     // let mut stakes = Stakes::<Delegation>::default();
-    let mut stakes = DeserializableStakes::<Delegation> {
+    let mut stakes = Stakes::<Delegation> {
         vote_accounts: VoteAccounts::default(),
         stake_delegations: account_states
             .iter()
@@ -189,7 +190,7 @@ we use the provided votes cache instead of the latest input account states. */
 fn build_prev_epoch_stakes(
     vote_accounts: &[protos::PrevVoteAccount],
 ) -> Stakes<stake_account::StakeAccount<Delegation>> {
-    let stakes = DeserializableStakes::<Delegation> {
+    let stakes_delegation = Stakes::<Delegation> {
         vote_accounts: vote_accounts
             .iter()
             .fold(VoteAccounts::default(), |mut acc, pva| {
@@ -197,14 +198,14 @@ fn build_prev_epoch_stakes(
                 acc.insert(pubkey, vote_account, || stake);
                 acc
             }),
-        stake_delegations: Vec::default(),
+        stake_delegations: Default::default(),
         unused: 0,
         epoch: Epoch::default(),
         stake_history: StakeHistory::default(),
     };
 
-    Stakes::load_from_deserialized_delegations(stakes.clone(), |pubkey| {
-        stakes
+    Stakes::new(&stakes_delegation, |pubkey| {
+        stakes_delegation
             .vote_accounts
             .get(pubkey)
             .map(|vote_account| vote_account.account().clone())
@@ -409,8 +410,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .chain(acct_states_from_proto)
         .collect();
 
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
-    accounts.store_accounts_seq((current_slot, &accounts_to_store[..]), None, None);
+    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None);
+    accounts.store_accounts_seq((current_slot, &accounts_to_store[..]), None);
     accounts.accounts_db.add_root(parent_slot);
     let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
 
@@ -424,7 +425,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     // Convert stakes_t (current epoch delegations + stake_history from sysvar) into
     // Stakes<StakeAccount> for the StakesCache. This mirrors new_from_snapshot which
     // loads the StakesCache from the deserialized snapshot stakes.
-    let stakes_for_cache = Stakes::load_from_deserialized_delegations(stakes_t.clone(), |pubkey| {
+    let stakes_for_cache = Stakes::new(&stakes_t, |pubkey| {
         accounts_to_store
             .iter()
             .find(|(pk, _)| pk == pubkey)
@@ -435,7 +436,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
     let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
 
-    let l_sched = LeaderSchedule::new(
+    let l_sched = VoteKeyedLeaderSchedule::new(
         stakes_t_1.vote_accounts().as_ref(),
         current_epoch,
         epoch_schedule.get_slots_in_epoch(current_epoch),
@@ -489,6 +490,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
     let bank_fields = BankFieldsToDeserialize {
         blockhash_queue,
+        ancestors: HashMap::default(),
         hash: Hash::default(),
         parent_hash: Hash::new_from_array(bank_ctx.parent_bank_hash.try_into().unwrap()),
         parent_slot,
@@ -504,13 +506,16 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         genesis_creation_time: 0,
         slots_per_year,
         slot: current_slot,
+        epoch: current_epoch,
         block_height: bank_ctx.block_height,
-        leader_id: leader.id,
+        collector_id: leader,
+        collector_fees: 0,
         fee_rate_governor,
+        rent_collector: RentCollector::default(),
         epoch_schedule,
         inflation: bank_ctx.inflation.unwrap().into(),
         stakes: stakes_t,
-        versioned_epoch_stakes: vec![],
+        versioned_epoch_stakes: epoch_stakes.clone(),
         is_delta: false,
         accounts_data_len: 0,
         accounts_lt_hash: AccountsLtHash(parent_lthash),
@@ -583,9 +588,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         None,
         None,
         None,
+        &VerifyRecyclers::default(),
         None,
-        Some(&PrioritizationFeeCache::new(0u64)),
-        &MigrationStatus::default(),
+        &PrioritizationFeeCache::new(0u64),
     );
 
     no_schedule_bank.freeze();
@@ -624,7 +629,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     // We use a fixed seed for reproducibility across implementations.
     let mut schedule_hash = [0u8; 16];
     let schedule_pubkeys: Vec<Pubkey> = (0..slots_in_epoch)
-        .map(|slot_offset| l_sched[slot_offset].id)
+        .map(|slot_offset| l_sched[slot_offset])
         .collect();
 
     let unique_cnt = hash_epoch_leaders(
