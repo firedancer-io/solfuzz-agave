@@ -435,18 +435,9 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
     let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
 
-    let l_sched = LeaderSchedule::new(
-        stakes_t_1.vote_accounts().as_ref(),
-        current_epoch,
-        epoch_schedule.get_slots_in_epoch(current_epoch),
-        NUM_CONSECUTIVE_LEADER_SLOTS,
-    );
-    let (_, slot_index) = epoch_schedule.get_epoch_and_slot_index(current_slot);
-    let leader = l_sched[slot_index];
-
-    // epoch_stakes keyed by absolute epoch number:
-    //   current_epoch     = T-1
-    //   current_epoch - 1 = T-2
+    // epoch_stakes keyed by absolute epoch:
+    // leader_schedule_epoch ← stakes_t_1,
+    // leader_schedule_epoch - 1 ← stakes_t_2.
     let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
     epoch_stakes.insert(
         leader_schedule_epoch.saturating_sub(1),
@@ -458,10 +449,26 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     epoch_stakes.insert(
         leader_schedule_epoch,
         VersionedEpochStakes::new(
-            SerdeStakesToStakeFormat::from(stakes_t_1.clone()),
+            SerdeStakesToStakeFormat::from(stakes_t_1),
             leader_schedule_epoch,
         ),
     );
+
+    // Source stakes from epoch_stakes[current_epoch] (= bank.epoch_vote_accounts(current_epoch))
+    // so the boundary-vs-mid-epoch routing lives only in the map setup above.
+    let l_sched = LeaderSchedule::new(
+        epoch_stakes
+            .get(&current_epoch)
+            .expect("epoch_stakes missing current_epoch entry")
+            .stakes()
+            .vote_accounts()
+            .as_ref(),
+        current_epoch,
+        epoch_schedule.get_slots_in_epoch(current_epoch),
+        NUM_CONSECUTIVE_LEADER_SLOTS,
+    );
+    let (_, slot_index) = epoch_schedule.get_epoch_and_slot_index(current_slot);
+    let leader = l_sched[slot_index];
 
     let input_fee_rate_governor = bank_ctx.fee_rate_governor.as_ref().unwrap();
     let fee_rate_governor = FeeRateGovernor::new_derived(
