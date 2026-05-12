@@ -4,11 +4,11 @@ on:
 
 
 jobs:
-  test:
-    name: cargo check + test
+  lint:
+    name: check lints and clippy
     runs-on: [self-hosted]
     concurrency:
-      group: on-pull-request_test_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: on-pull-request_lint_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
@@ -30,10 +30,50 @@ jobs:
           cargo fmt --all -- --check
           cargo clippy --all --locked -- -D warnings
 
+  test:
+    name: cargo check + test
+    runs-on: [self-hosted]
+    concurrency:
+      group: on-pull-request_test_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: change back to stable once rust releases the coverage fix
+      # - uses: dtolnay/rust-toolchain@1.86.0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2025-10-30
+          override: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
+
       - name: Run cargo check + test
         run: |
           cargo check --release --locked
           cargo test --release --locked
+
+  build-shared-objects:
+    name: build shared objects
+    runs-on: [self-hosted]
+    concurrency:
+      group: on-pull-request_build-shared-objects_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: change back to stable once rust releases the coverage fix
+      # - uses: dtolnay/rust-toolchain@1.86.0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2025-10-30
+          override: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
 
       - name: Build shared objects
         run: make shared_obj_hfuzz
@@ -53,7 +93,6 @@ jobs:
         with:
           toolchain: nightly-2025-10-30
           override: true
-          components: "clippy, rustfmt"
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -96,7 +135,6 @@ jobs:
         with:
           toolchain: nightly-2025-10-30
           override: true
-          components: "clippy, rustfmt"
 
       - uses: Swatinem/rust-cache@v2
         with:
