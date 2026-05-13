@@ -79,11 +79,8 @@ pub fn execute_cost(context: &CostContext) -> Option<CostResult> {
         TxnCostMode::Estimate => CostModel::calculate_cost(&tx, &feature_set),
         TxnCostMode::Actual => CostModel::calculate_cost_for_executed_transaction(
             &tx,
-            context.actual_programs_execution_cost,
-            context
-                .actual_loaded_accounts_data_size_bytes
-                .try_into()
-                .ok()?,
+            context.actual_programs_execution_cost as u64,
+            context.actual_loaded_accounts_data_size_bytes,
             &feature_set,
         ),
     };
