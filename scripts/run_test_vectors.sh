@@ -32,13 +32,13 @@ if [ ! -d dump/test-vectors ]; then
 fi
 
 # Checkout specific commit non-destructively
-(
-  cd dump/test-vectors
-  if ! git checkout -q $GIT_REF; then
-    git remote update
-    git checkout -q $GIT_REF
-  fi
-)
+# (
+#   cd dump/test-vectors
+#   if ! git checkout -q $GIT_REF; then
+#     git remote update
+#     git checkout -q $GIT_REF
+#   fi
+# )
 
 # Show the commit hashes being used
 test_vectors_commit=$(cd dump/test-vectors && git rev-parse HEAD)

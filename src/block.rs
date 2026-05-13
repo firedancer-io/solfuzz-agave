@@ -4,24 +4,20 @@ use crate::utils::{
     compute_accounts_data_size, create_accounts_db, deserialize_accounts,
     feature_accounts_from_protos, feature_set_from_protos, restore_blockhash_queue,
 };
-use agave_votor_messages::migration::MigrationStatus;
 use prost::Message;
 use protosol::protos::{self, AcctState};
 use protosol::protos::{BlockContext, BlockEffects};
 #[allow(deprecated)]
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_clock::{Epoch, NUM_CONSECUTIVE_LEADER_SLOTS};
-use solana_entry::entry::Entry;
+use solana_clock::{Epoch, MAX_PROCESSING_AGE, NUM_CONSECUTIVE_LEADER_SLOTS};
+use solana_cost_model::cost_model::CostModel;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_lattice_hash::lt_hash::LtHash;
 use solana_leader_schedule::LeaderSchedule;
-use solana_ledger::blockstore_processor::{
-    confirm_slot_entries, create_thread_pool, ConfirmationProgress, ConfirmationTiming,
-};
 use solana_pubkey::Pubkey;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
@@ -29,14 +25,14 @@ use solana_runtime::bank::bank_hash_details::{
 use solana_runtime::bank::{Bank, BankFieldsToDeserialize, BankHashStats, BankRc};
 use solana_runtime::bank_forks::BankForks;
 use solana_runtime::epoch_stakes::VersionedEpochStakes;
-use solana_runtime::installed_scheduler_pool::BankWithScheduler;
-use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
 use solana_sdk_ids::sysvar::stake_history;
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
+use solana_svm::transaction_processor::ExecutionRecordingConfig;
+use solana_svm_timings::ExecuteTimings;
 use solana_transaction::versioned::VersionedTransaction;
 use solana_vote::vote_account::{VoteAccount, VoteAccounts};
 use solana_vote_interface::state::{VoteState1_14_11, VoteStateV3, VoteStateV4, VoteStateVersions};
@@ -537,66 +533,67 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let bank_forks = BankForks::new_rw_arc(bank);
     let bank = bank_forks.write().unwrap().root_bank();
 
-    let tx_entries = context
-        .txns
-        .iter()
-        .map(|txn| {
-            let message = build_versioned_message(txn.message.as_ref()?);
-            let signatures = txn
-                .signatures
-                .iter()
-                .map(|item| {
-                    Signature::from(<Vec<u8> as TryInto<[u8; 64]>>::try_into(item.clone()).unwrap())
-                })
-                .collect::<Vec<Signature>>();
-
-            let transaction = VersionedTransaction {
-                message,
-                signatures,
-            };
-
-            Some(Entry {
-                num_hashes: 1u64,
-                hash: Hash::default(),
-                transactions: vec![transaction],
-            })
-        })
-        .collect::<Option<Vec<Entry>>>()?;
-
-    let mut entries = vec![
-        Entry {
-            num_hashes: 1,
-            hash: poh,
-            transactions: vec![],
+    // Sequentially load+execute+commit each txn against the bank.  Bypasses
+    // the block-replay scheduler so cross-txn lock conflicts can't gate one
+    // txn on another's outcome.
+    let mut has_err = false;
+    for proto_txn in context.txns.iter() {
+        let Some(msg) = proto_txn.message.as_ref() else {
+            has_err = true;
+            continue;
         };
-        63
-    ];
-    entries.extend(tx_entries);
-    entries.push(Entry {
-        num_hashes: 1,
-        hash: poh,
-        transactions: vec![],
-    });
+        let signatures = proto_txn
+            .signatures
+            .iter()
+            .map(|item| Signature::from(<[u8; 64]>::try_from(item.as_slice()).unwrap()))
+            .collect::<Vec<Signature>>();
+        let versioned_tx = VersionedTransaction {
+            message: build_versioned_message(msg),
+            signatures,
+        };
 
-    let replay_tx_thread_pool = create_thread_pool(1);
-    let no_schedule_bank = BankWithScheduler::new_without_scheduler(bank);
-    let result = confirm_slot_entries(
-        &no_schedule_bank,
-        &replay_tx_thread_pool,
-        (entries, 0u64, true),
-        &mut ConfirmationTiming::default(),
-        &mut ConfirmationProgress::default(),
-        true,
-        None,
-        None,
-        None,
-        None,
-        Some(&PrioritizationFeeCache::new(0u64)),
-        &MigrationStatus::default(),
-    );
+        let Ok(batch) = bank.prepare_entry_batch(vec![versioned_tx]) else {
+            has_err = true;
+            continue;
+        };
 
-    no_schedule_bank.freeze();
-    let cost_tracker = no_schedule_bank.read_cost_tracker().unwrap();
+        let (commit_results, _) = bank.load_execute_and_commit_transactions(
+            &batch,
+            MAX_PROCESSING_AGE,
+            ExecutionRecordingConfig::new_single_setting(false),
+            &mut ExecuteTimings::default(),
+            None,
+        );
+
+        for (commit_result, sanitized) in commit_results.iter().zip(batch.sanitized_transactions())
+        {
+            let Ok(committed) = commit_result else {
+                has_err = true;
+                continue;
+            };
+            let tx_cost = CostModel::calculate_cost_for_executed_transaction(
+                sanitized,
+                committed.executed_units,
+                committed.loaded_account_stats.loaded_accounts_data_size,
+                &bank.feature_set,
+            );
+            if bank
+                .write_cost_tracker()
+                .unwrap()
+                .try_add(&tx_cost)
+                .is_err()
+            {
+                has_err = true;
+            }
+        }
+    }
+
+    // Mirror register_recent_blockhash: queue the slot blockhash and refresh the RecentBlockhashes sysvar.
+    bank.register_recent_blockhash_for_test(&poh, None);
+    bank.update_recent_blockhashes();
+
+    bank.freeze();
+    let cost_tracker = bank.read_cost_tracker().unwrap();
 
     if std::env::var("AGAVE_SOLCAP_DIR").is_ok() {
         let details = create_changed_accounts_bank_hash_details(
@@ -650,21 +647,17 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         leader_schedule_hash: schedule_hash.to_vec(), // 128-bit fingerprint of the schedule
     };
 
-    let bank_hash = if result.is_err() {
+    let bank_hash = if has_err {
         Hash::default()
     } else {
-        no_schedule_bank.hash()
+        bank.hash()
     };
 
-    let capitalization = if result.is_err() {
-        0
-    } else {
-        no_schedule_bank.capitalization()
-    };
+    let capitalization = if has_err { 0 } else { bank.capitalization() };
 
     // Then include in the output
     Some(BlockEffects {
-        has_error: result.is_err(),
+        has_error: has_err,
         slot_capitalization: capitalization,
         bank_hash: bank_hash.to_bytes().to_vec(),
         cost_tracker: Some(protos::CostTracker {
