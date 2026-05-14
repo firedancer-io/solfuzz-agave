@@ -16,7 +16,7 @@ use solana_program_runtime::{
     invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
 };
 use solana_pubkey::Pubkey;
-use solana_sbpf::error::StableResult;
+use solana_sbpf::error::{EbpfError, StableResult};
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
@@ -349,7 +349,17 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     vm.invoke_function(syscall_func);
 
     // Unwrap and return the effects of the syscall
-    let program_result = vm.program_result;
+    let mut program_result = vm.program_result;
+
+    // Pop the instruction stack after execution, to line up with the
+    // push we did at the start.
+    let ic: &mut InvokeContext = vm.context_object_pointer;
+    let pop_res = ic.pop();
+    if matches!(program_result, StableResult::Ok(_)) {
+        if let Err(pop_err) = pop_res {
+            program_result = StableResult::Err(EbpfError::SyscallError(Box::new(pop_err)));
+        }
+    }
 
     // When virtual_address_space_adjustments is enabled, Agave calls
     // update_caller_account_region only after a _successful_ CPI
