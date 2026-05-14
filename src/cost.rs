@@ -12,15 +12,6 @@ fn runtime_transaction_from_proto(
     tx: &protos::SanitizedTransaction,
 ) -> Option<RuntimeTransaction<solana_transaction::sanitized::SanitizedTransaction>> {
     let message = build_versioned_message(tx.message.as_ref()?);
-    // Enforce the wire-format static-account cap that try_create/sanitize
-    // skip. Agave's SignatureDetailsFilter indexes a fixed-size array by
-    // program_id_index and will OOB-panic above this cap. 1232 is
-    // solana_packet::PACKET_DATA_SIZE.
-    const MAX_STATIC_ACCOUNTS_PER_PACKET: usize =
-        1232 / core::mem::size_of::<solana_pubkey::Pubkey>();
-    if message.static_account_keys().len() > MAX_STATIC_ACCOUNTS_PER_PACKET {
-        return None;
-    }
     let signatures: Vec<Signature> = tx
         .signatures
         .iter()
@@ -30,6 +21,12 @@ fn runtime_transaction_from_proto(
         signatures,
         message,
     };
+    // Match FD's FD_TXN_MTU=1232 cap; try_create doesn't enforce this (network
+    // ingress does). 1232 is solana_packet::PACKET_DATA_SIZE.
+    const PACKET_DATA_SIZE: u64 = 1232;
+    if bincode::serialized_size(&versioned_tx).ok()? > PACKET_DATA_SIZE {
+        return None;
+    }
     RuntimeTransaction::try_create(
         versioned_tx,
         MessageHash::Compute,
