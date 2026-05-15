@@ -152,20 +152,20 @@ fn synthesize_vote_account(pva: &protos::PrevVoteAccount) -> (Pubkey, u64, VoteA
         protos::VoteAccountVersion::V11411 => {
             VoteStateVersions::V1_14_11(Box::new(VoteState1_14_11 {
                 node_pubkey: node_pk,
-                commission: pva.commission as u8,
+                commission: (pva.commission_bps / 100) as u8,
                 epoch_credits,
                 ..VoteState1_14_11::default()
             }))
         }
         protos::VoteAccountVersion::V3 => VoteStateVersions::new_v3(VoteStateV3 {
             node_pubkey: node_pk,
-            commission: pva.commission as u8,
+            commission: (pva.commission_bps / 100) as u8,
             epoch_credits,
             ..VoteStateV3::default()
         }),
         protos::VoteAccountVersion::V4 => VoteStateVersions::new_v4(VoteStateV4 {
             node_pubkey: node_pk,
-            inflation_rewards_commission_bps: (pva.commission as u16) * 100,
+            inflation_rewards_commission_bps: pva.commission_bps as u16,
             epoch_credits,
             ..VoteStateV4::default()
         }),
