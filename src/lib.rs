@@ -292,7 +292,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     create_account_allow_prefund,
     delay_commission_updates,
     validate_chained_block_id,
-    upgrade_bpf_stake_program_to_v5
+    upgrade_bpf_stake_program_to_v5,
+    commission_rate_in_basis_points
 ];
 
 #[unsafe(no_mangle)]
