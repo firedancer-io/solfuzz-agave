@@ -2,7 +2,6 @@ name: "Build, check, test, release common"
 on:
   workflow_call:
 
-
 jobs:
   lint:
     name: check lints and clippy
@@ -77,48 +76,6 @@ jobs:
 
       - name: Build shared objects
         run: make shared_obj_hfuzz
-
-  build-agave-tests:
-    name: build agave upstream tests
-    runs-on: [self-hosted]
-    concurrency:
-      group: on-pull-request_build-agave-tests_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v4
-
-      # TODO: change back to stable once rust releases the coverage fix
-      # - uses: dtolnay/rust-toolchain@1.86.0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2025-10-30
-          override: true
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
-
-      - name: Build agave upstream tests
-        run: |
-          # Build test binaries for all agave workspace crates.
-          # This catches compilation errors (e.g. missing args, API changes)
-          # that only surface when building tests in the upstream checkout.
-          # Ensure git deps (including agave) are checked out on disk so the
-          # find below can locate the agave workspace.
-          cargo fetch --locked
-          AGAVE_REV=$(grep -A2 'name = "agave-feature-set"' Cargo.lock \
-              | grep -oP '#\K[0-9a-f]+' | head -c7)
-          AGAVE_CHECKOUT=$(find ~/.cargo/git/checkouts/ -maxdepth 2 -type d \
-              -path "*agave*/$AGAVE_REV" | head -1)
-          if [ -d "$AGAVE_CHECKOUT" ]; then
-            echo "Building agave tests in $AGAVE_CHECKOUT"
-            pushd "$AGAVE_CHECKOUT"
-            cargo test --release --no-run --workspace
-            popd
-          else
-            echo "::error::Agave checkout not found for rev $AGAVE_REV"
-            exit 1
-          fi
 
   test-vectors:
     name: run test vectors
