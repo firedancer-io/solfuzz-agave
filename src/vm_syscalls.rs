@@ -248,16 +248,13 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
 
     let runtime_env = environments.get_env_for_execution();
     let config = runtime_env.get_config().clone();
-    let Some((_, syscall_func)) = runtime_env
-        .get_function_registry()
-        .lookup_by_name(
-            &input
-                .syscall_invocation
-                .clone()
-                .unwrap_or_default()
-                .function_name,
-        )
-    else {
+    let Some((_, syscall_func)) = runtime_env.get_function_registry().lookup_by_name(
+        &input
+            .syscall_invocation
+            .clone()
+            .unwrap_or_default()
+            .function_name,
+    ) else {
         cleanup_static_ptrs(
             transaction_context_ptr,
             sysvar_cache_ptr,
@@ -351,19 +348,17 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     // so on failure the input regions may be stale — return an empty list.
     // Extract this BEFORE moving anything off `vm` and BEFORE pop (memory_mapping
     // lives in the top memory_context, which pop discards).
-    let input_data_regions = if matches!(vm.program_result, StableResult::Err(_))
-        && virtual_address_space_adjustments
-    {
-        vec![]
-    } else {
-        mem_regions::extract_input_data_regions(
-            vm.context().memory_contexts.memory_mapping().unwrap(),
-        )
-    };
+    let input_data_regions =
+        if matches!(vm.program_result, StableResult::Err(_)) && virtual_address_space_adjustments {
+            vec![]
+        } else {
+            mem_regions::extract_input_data_regions(
+                vm.context().memory_contexts.memory_mapping().unwrap(),
+            )
+        };
 
     let call_depth = vm.call_depth;
-    let mut program_result =
-        std::mem::replace(&mut vm.program_result, StableResult::Ok(0));
+    let mut program_result = std::mem::replace(&mut vm.program_result, StableResult::Ok(0));
 
     // Pop the instruction stack after execution, to line up with the
     // push we did at the start.
@@ -375,8 +370,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         }
     }
 
-    let (error, error_kind, r0) =
-        unpack_stable_result(program_result, vm.context(), &program_id);
+    let (error, error_kind, r0) = unpack_stable_result(program_result, vm.context(), &program_id);
 
     cleanup_static_ptrs(
         transaction_context_ptr,

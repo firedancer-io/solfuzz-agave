@@ -406,8 +406,16 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .chain(acct_states_from_proto)
         .collect();
 
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, &Ancestors::default());
-    accounts.store_accounts_seq((current_slot, &accounts_to_store[..]), None, &Ancestors::default());
+    accounts.store_accounts_seq(
+        (parent_slot, &accounts_to_store[..]),
+        None,
+        &Ancestors::default(),
+    );
+    accounts.store_accounts_seq(
+        (current_slot, &accounts_to_store[..]),
+        None,
+        &Ancestors::default(),
+    );
     accounts.accounts_db.add_root(parent_slot);
     let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
 

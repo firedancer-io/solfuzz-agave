@@ -297,7 +297,11 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Set up accounts DB and populate account states from input */
     let accounts = create_accounts_db(vec![]);
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, &Ancestors::default());
+    accounts.store_accounts_seq(
+        (parent_slot, &accounts_to_store[..]),
+        None,
+        &Ancestors::default(),
+    );
     accounts.accounts_db.add_root(parent_slot);
 
     /* Create the bank RC */
@@ -352,7 +356,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         accounts_data_len: 0,            /* Unused */
         accounts_lt_hash: AccountsLtHash(LtHash::identity()), /* Unused */
         bank_hash_stats: BankHashStats::default(), /* Unused */
-        block_id: None,                            /* Unused */
+        block_id: None,                  /* Unused */
     };
 
     /* Finally create the bank and wrap in BankForks to set up the fork graph
