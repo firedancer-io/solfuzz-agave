@@ -89,9 +89,10 @@ fn get_slot_hashes_sysvar_account() -> AcctState {
 }
 
 fn get_rent_sysvar_account() -> AcctState {
+    #[allow(deprecated)]
     let rent = solana_rent::Rent {
-        lamports_per_byte_year: 3480,
-        exemption_threshold: 2.0,
+        lamports_per_byte: 3480,
+        exemption_threshold: [0u8; 8],
         burn_percent: 50,
     };
     AcctState {

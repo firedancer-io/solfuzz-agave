@@ -10,6 +10,7 @@ use protosol::protos;
 use protosol::protos::{TxnContext, TxnResult};
 use solana_account::ReadableAccount;
 use solana_accounts_db::accounts_hash::AccountsLtHash;
+use solana_accounts_db::ancestors::Ancestors;
 use solana_clock::{Clock, Epoch, MAX_PROCESSING_AGE};
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
@@ -296,7 +297,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
 
     /* Set up accounts DB and populate account states from input */
     let accounts = create_accounts_db(vec![]);
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
+    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, &Ancestors::default());
     accounts.accounts_db.add_root(parent_slot);
 
     /* Create the bank RC */
@@ -351,6 +352,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         accounts_data_len: 0,            /* Unused */
         accounts_lt_hash: AccountsLtHash(LtHash::identity()), /* Unused */
         bank_hash_stats: BankHashStats::default(), /* Unused */
+        block_id: None,                            /* Unused */
     };
 
     /* Finally create the bank and wrap in BankForks to set up the fork graph
@@ -483,6 +485,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
             loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
         }
+        SanitizedMessage::V1(_) => {}
     }
     txn_result.modified_accounts.retain(|account| {
         loaded_account_keys.contains(&Pubkey::new_from_array(

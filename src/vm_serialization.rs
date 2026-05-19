@@ -67,9 +67,9 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
     let environment_config = EnvironmentConfig::new(
         blockhash,
         lamports_per_signature,
+        false, /* alpenglow_migration_succeeded */
         &callback_context,
         &runtime_features,
-        &environments,
         &environments,
         &sysvar_cache,
     );
@@ -84,9 +84,7 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         environment_config,
         Some(LogCollector::new_ref()),
         compute_budget.to_budget(),
-        SVMTransactionExecutionCost::new_with_defaults(
-            runtime_features.increase_cpi_account_info_limit,
-        ),
+        SVMTransactionExecutionCost::default(),
     );
 
     let direct_mapping = invoke_context.get_feature_set().account_data_direct_mapping;

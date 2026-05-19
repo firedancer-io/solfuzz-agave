@@ -2,7 +2,7 @@ use crate::utils::err_map::elf_err_to_num;
 use crate::utils::fd_hash::fd_hash_u64_without_seed;
 use crate::utils::fd_hash::fd_hash_without_seed;
 use crate::utils::feature_set_from_protos;
-use agave_syscalls::create_program_runtime_environment_v1;
+use solana_syscalls::create_program_runtime_environment;
 use prost::Message;
 use protosol::protos::{ElfLoaderCtx, ElfLoaderEffects};
 use solana_compute_budget::compute_budget::SVMTransactionExecutionBudget;
@@ -48,7 +48,7 @@ pub fn execute_elf_loader(input: &ElfLoaderCtx) -> ElfLoaderEffects {
         .map(feature_set_from_protos)
         .unwrap_or_default();
 
-    let program_runtime_environment_v1 = create_program_runtime_environment_v1(
+    let program_runtime_environment_v1 = create_program_runtime_environment(
         &feature_set.runtime_features(),
         &SVMTransactionExecutionBudget::default(),
         input.deploy_checks,
@@ -59,7 +59,7 @@ pub fn execute_elf_loader(input: &ElfLoaderCtx) -> ElfLoaderEffects {
     // load the elf
     let elf_exec = match Executable::load(
         &input.elf_data,
-        std::sync::Arc::new(program_runtime_environment_v1),
+        std::sync::Arc::clone(&*program_runtime_environment_v1),
     ) {
         Ok(exec) => exec,
         Err(err) => {

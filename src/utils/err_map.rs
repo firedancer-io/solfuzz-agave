@@ -1,4 +1,4 @@
-use agave_syscalls::SyscallError;
+use solana_syscalls::SyscallError;
 use protosol::protos::ErrKind;
 use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{

@@ -10,10 +10,12 @@ use protosol::protos::{SyscallContext, SyscallEffects};
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
 use solana_instruction::AccountMeta;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
+use solana_program_runtime::memory_context::MemoryContext;
 use solana_program_runtime::serialization::serialize_parameters;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::{
-    invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
+    invoke_context::{BpfAllocator, InvokeContext},
+    loaded_programs::ProgramCacheForTxBatch,
 };
 use solana_pubkey::Pubkey;
 use solana_sbpf::error::{EbpfError, StableResult};
@@ -161,17 +163,15 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         EnvironmentConfig::new(
             blockhash,
             lamports_per_signature,
+            false, /* alpenglow_migration_succeeded */
             callback_context,
             runtime_features,
-            environments,
             environments,
             sysvar_cache,
         ),
         Some(log_collector.clone()),
         compute_budget.to_budget(),
-        SVMTransactionExecutionCost::new_with_defaults(
-            runtime_features.increase_cpi_account_info_limit,
-        ),
+        SVMTransactionExecutionCost::default(),
     );
 
     let program_idx = invoke_ctx
@@ -246,9 +246,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         "invariant violation: heap_max must be <= HEAP_MAX"
     );
 
-    let config = environments.program_runtime_v1.get_config().clone();
-    let Some((_, syscall_func)) = environments
-        .program_runtime_v1
+    let runtime_env = environments.get_env_for_execution();
+    let config = runtime_env.get_config().clone();
+    let Some((_, syscall_func)) = runtime_env
         .get_function_registry()
         .lookup_by_name(
             &input
@@ -274,9 +274,9 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let mut stack = AlignedMemory::<HOST_ALIGN>::from(&vec![0; STACK_SIZE]);
     let mut heap = AlignedMemory::<HOST_ALIGN>::from(&vec![0; vm_ctx.heap_max as usize]);
     let rodata_stack_heap = vec![
-        MemoryRegion::new_readonly(rodata.as_slice(), ebpf::MM_BYTECODE_START),
-        MemoryRegion::new_writable_gapped(
-            stack.as_slice_mut(),
+        MemoryRegion::new(rodata.as_slice() as *const [u8], ebpf::MM_BYTECODE_START),
+        MemoryRegion::new_gapped(
+            stack.as_slice_mut() as *mut [u8],
             ebpf::MM_STACK_START,
             if sbpf_version.stack_frame_gaps() && config.enable_stack_frame_gaps {
                 config.stack_frame_size as u64
@@ -284,21 +284,23 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 0
             },
         ),
-        MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
+        MemoryRegion::new(heap.as_slice_mut() as *mut [u8], ebpf::MM_HEAP_START),
     ];
     let regions = rodata_stack_heap
         .into_iter()
         .chain(input_memory_regions)
         .collect();
 
-    let Ok(memory_mapping) = MemoryMapping::new_with_access_violation_handler(
-        regions,
-        &config,
-        sbpf_version,
-        invoke_ctx
-            .transaction_context
-            .access_violation_handler(virtual_address_space_adjustments, direct_mapping),
-    ) else {
+    let Ok(memory_mapping) = (unsafe {
+        MemoryMapping::new_with_access_violation_handler(
+            regions,
+            &config,
+            sbpf_version,
+            invoke_ctx
+                .transaction_context
+                .access_violation_handler(virtual_address_space_adjustments, direct_mapping),
+        )
+    }) else {
         cleanup_static_ptrs(
             transaction_context_ptr,
             sysvar_cache_ptr,
@@ -312,21 +314,17 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     };
 
     invoke_ctx
-        .set_syscall_context(solana_program_runtime::invoke_context::SyscallContext {
-            allocator: solana_program_runtime::invoke_context::BpfAllocator::new(vm_ctx.heap_max),
-            accounts_metadata: acc_metadatas,
-        })
+        .memory_contexts
+        .set_memory_context_abi_v1(MemoryContext::new(
+            BpfAllocator::new(vm_ctx.heap_max),
+            acc_metadatas,
+            memory_mapping,
+        ))
         .unwrap();
 
     // Set up the vm instance
     let loader = std::sync::Arc::new(BuiltinProgram::new_loader(config.clone()));
-    let mut vm = EbpfVm::new(
-        loader,
-        sbpf_version,
-        &mut invoke_ctx,
-        memory_mapping,
-        STACK_SIZE,
-    );
+    let mut vm = EbpfVm::new(loader, sbpf_version, &mut invoke_ctx, STACK_SIZE);
     vm.registers[0] = vm_ctx.r0;
     vm.registers[1] = vm_ctx.r1;
     vm.registers[2] = vm_ctx.r2;
@@ -345,15 +343,31 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         mem_regions::copy_memory_prefix(stack.as_slice_mut(), &syscall_invocation.stack_prefix);
     }
 
-    // Invoke the syscall
-    vm.invoke_function(syscall_func);
+    // Invoke the syscall (sbpf 0.20 registry stores (BuiltinFunction, BuiltinCodegen))
+    vm.invoke_function(syscall_func.0);
 
-    // Unwrap and return the effects of the syscall
-    let mut program_result = vm.program_result;
+    // When virtual_address_space_adjustments is enabled, Agave calls
+    // update_caller_account_region only after a _successful_ CPI execution,
+    // so on failure the input regions may be stale — return an empty list.
+    // Extract this BEFORE moving anything off `vm` and BEFORE pop (memory_mapping
+    // lives in the top memory_context, which pop discards).
+    let input_data_regions = if matches!(vm.program_result, StableResult::Err(_))
+        && virtual_address_space_adjustments
+    {
+        vec![]
+    } else {
+        mem_regions::extract_input_data_regions(
+            vm.context().memory_contexts.memory_mapping().unwrap(),
+        )
+    };
+
+    let call_depth = vm.call_depth;
+    let mut program_result =
+        std::mem::replace(&mut vm.program_result, StableResult::Ok(0));
 
     // Pop the instruction stack after execution, to line up with the
     // push we did at the start.
-    let ic: &mut InvokeContext = vm.context_object_pointer;
+    let ic: &mut InvokeContext = vm.context();
     let pop_res = ic.pop();
     if matches!(program_result, StableResult::Ok(_)) {
         if let Err(pop_err) = pop_res {
@@ -361,16 +375,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         }
     }
 
-    // When virtual_address_space_adjustments is enabled, Agave calls
-    // update_caller_account_region only after a _successful_ CPI
-    // execution. This means that if the CPI fails, the input regions
-    // can contain stale data. So we return an empty list on failure.
-    let input_data_regions = match &program_result {
-        StableResult::Err(_) if virtual_address_space_adjustments => vec![],
-        _ => mem_regions::extract_input_data_regions(&vm.memory_mapping),
-    };
     let (error, error_kind, r0) =
-        unpack_stable_result(program_result, vm.context_object_pointer, &program_id);
+        unpack_stable_result(program_result, vm.context(), &program_id);
 
     cleanup_static_ptrs(
         transaction_context_ptr,
@@ -397,12 +403,12 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         r8: 0,
         r9: 0,
         r10: 0,
-        cu_avail: vm.context_object_pointer.get_remaining(),
+        cu_avail: vm.context().get_remaining(),
         heap: heap.as_slice().into(),
         stack: stack.as_slice().into(),
         input_data_regions,
         rodata: rodata.as_slice().into(),
-        frame_count: vm.call_depth,
+        frame_count: call_depth,
         error,
         error_kind: error_kind as i32,
         log: invoke_ctx
