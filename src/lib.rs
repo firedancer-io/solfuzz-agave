@@ -241,13 +241,16 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     static_instruction_limit,
     switch_to_chacha8_turbine,
     enforce_fixed_fec_set,
+    enable_secp256r1_precompile,
+    raise_account_cu_limit,
+    relax_intrabatch_account_locks,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     blake3_syscall_enabled,
     // zk_token_sdk_enabled, // NOT supported in fd
     stake_raise_minimum_delegation_to_1_sol,
-    // stake_minimum_delegation_for_rewards, // reverted in fd (firedancer-io/firedancer#9325)
+    // stake_minimum_delegation_for_rewards, // reverted in agave
     increase_tx_account_lock_limit,
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
@@ -255,7 +258,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     chained_merkle_conflict_duplicate_proofs,
     deprecate_legacy_vote_ixs,
-    enable_secp256r1_precompile,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
     enable_sbpf_v3_deployment_and_execution,
@@ -277,9 +279,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     replace_spl_token_with_p_token,
     raise_block_limits_to_100m, // to be activated in v3.1
     // alpenglow, // TBD
-    raise_account_cu_limit,
     // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
-    relax_intrabatch_account_locks,
     // enable_loader_v4,
     enable_bls12_381_syscall,
     alt_bn128_little_endian,
