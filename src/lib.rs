@@ -263,7 +263,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     verify_retransmitter_signature,
     vote_only_retransmitter_signed_fec_sets,
     reenable_zk_elgamal_proof_program,
-    enable_extend_program_checked,
+    // enable_extend_program_checked,  // was un-keyed https://github.com/anza-xyz/agave/pull/11686
     require_static_nonce_account,
     enshrine_slashing_program,
     syscall_parameter_address_restrictions,
