@@ -263,7 +263,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_sbpf_v3_deployment_and_execution,
     enable_get_epoch_stake_syscall,
     verify_retransmitter_signature,
-    vote_only_retransmitter_signed_fec_sets,
+    // vote_only_retransmitter_signed_fec_sets, // reverted in agave
     reenable_zk_elgamal_proof_program,
     // enable_extend_program_checked,  // was un-keyed https://github.com/anza-xyz/agave/pull/11686
     require_static_nonce_account,
