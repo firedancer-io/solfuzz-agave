@@ -489,7 +489,9 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
             loaded_account_keys.extend(message.loaded_addresses.writable.clone().iter());
             loaded_account_keys.extend(message.loaded_addresses.readonly.clone().iter());
         }
-        SanitizedMessage::V1(_) => {}
+        SanitizedMessage::V1(_) => {
+            panic!("invariant violation: V1 transactions not supported in fuzzing")
+        }
     }
     txn_result.modified_accounts.retain(|account| {
         loaded_account_keys.contains(&Pubkey::new_from_array(
