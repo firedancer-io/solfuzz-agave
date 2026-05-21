@@ -59,7 +59,7 @@ pub fn execute_elf_loader(input: &ElfLoaderCtx) -> ElfLoaderEffects {
     // load the elf
     let elf_exec = match Executable::load(
         &input.elf_data,
-        std::sync::Arc::clone(&*program_runtime_environment_v1),
+        std::sync::Arc::clone(&program_runtime_environment_v1),
     ) {
         Ok(exec) => exec,
         Err(err) => {
