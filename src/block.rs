@@ -10,7 +10,8 @@ use protosol::protos::{BlockContext, BlockEffects};
 #[allow(deprecated)]
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
-use solana_clock::{Epoch, MAX_PROCESSING_AGE, NUM_CONSECUTIVE_LEADER_SLOTS};
+use solana_accounts_db::ancestors::Ancestors;
+use solana_clock::{Epoch, NUM_CONSECUTIVE_LEADER_SLOTS};
 use solana_cost_model::cost_model::CostModel;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
@@ -405,8 +406,16 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         .chain(acct_states_from_proto)
         .collect();
 
-    accounts.store_accounts_seq((parent_slot, &accounts_to_store[..]), None, None);
-    accounts.store_accounts_seq((current_slot, &accounts_to_store[..]), None, None);
+    accounts.store_accounts_seq(
+        (parent_slot, &accounts_to_store[..]),
+        None,
+        &Ancestors::default(),
+    );
+    accounts.store_accounts_seq(
+        (current_slot, &accounts_to_store[..]),
+        None,
+        &Ancestors::default(),
+    );
     accounts.accounts_db.add_root(parent_slot);
     let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
 
@@ -460,8 +469,8 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             .vote_accounts()
             .as_ref(),
         current_epoch,
-        epoch_schedule.get_slots_in_epoch(current_epoch),
-        NUM_CONSECUTIVE_LEADER_SLOTS,
+        epoch_schedule.get_slots_in_epoch(current_epoch) as usize,
+        std::num::NonZeroUsize::new(NUM_CONSECUTIVE_LEADER_SLOTS as usize).unwrap(),
     );
     let (_, slot_index) = epoch_schedule.get_epoch_and_slot_index(current_slot);
     let leader = l_sched[slot_index];
@@ -518,6 +527,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         accounts_data_len: 0,
         accounts_lt_hash: AccountsLtHash(parent_lthash),
         bank_hash_stats: BankHashStats::default(),
+        block_id: None,
     };
 
     let bank_rc = BankRc::new(accounts);
@@ -559,7 +569,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
 
         let (commit_results, _) = bank.load_execute_and_commit_transactions(
             &batch,
-            MAX_PROCESSING_AGE,
             ExecutionRecordingConfig::new_single_setting(false),
             &mut ExecuteTimings::default(),
             None,

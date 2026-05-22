@@ -9,31 +9,16 @@ use protosol::protos::InputDataRegion;
 them into InputDataRegions. The regions themselves are not copied,
 so be mindful of lifetimes. */
 pub fn extract_input_data_regions(mapping: &MemoryMapping) -> Vec<InputDataRegion> {
-    match mapping {
-        MemoryMapping::Aligned(_mapping) => {
-            // regions in AlignedMemoryMapping are sorted by vm_addr
-            mapping
-                .get_regions()
-                .iter()
-                .skip_while(|region| region.vm_addr < ebpf::MM_INPUT_START)
-                .map(mem_region_to_input_data_region)
-                .collect()
-        }
-        MemoryMapping::Unaligned(_mapping) => {
-            // regions are in eytzinger order, so we need to collect and sort them
-            let mut input_regions: Vec<InputDataRegion> = mapping
-                .get_regions()
-                .iter()
-                .filter(|region| region.vm_addr >= ebpf::MM_INPUT_START)
-                .map(mem_region_to_input_data_region)
-                .collect();
-
-            // Sort the vector by `vm_addr`
-            input_regions.sort_by_key(|region| region.offset);
-            input_regions
-        }
-        _ => vec![],
-    }
+    // MemoryMapping internally can be Aligned (regions sorted by vm_addr) or
+    // Unaligned (eytzinger order). Collect-then-sort handles both layouts.
+    let mut input_regions: Vec<InputDataRegion> = mapping
+        .get_regions()
+        .iter()
+        .filter(|region| region.vm_addr >= ebpf::MM_INPUT_START)
+        .map(mem_region_to_input_data_region)
+        .collect();
+    input_regions.sort_by_key(|region| region.offset);
+    input_regions
 }
 
 pub fn copy_memory_prefix(dst: &mut [u8], src: &[u8]) {

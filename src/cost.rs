@@ -34,7 +34,6 @@ fn runtime_transaction_from_proto(
         solana_message::SimpleAddressLoader::Disabled,
         &std::collections::HashSet::new(),
         true,
-        true,
     )
     .ok()
 }

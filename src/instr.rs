@@ -13,9 +13,10 @@ use solana_instruction::AccountMeta;
 use solana_precompile_error::PrecompileError;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
-use solana_program_runtime::loaded_programs::ProgramCacheEntry;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
 use solana_program_runtime::loaded_programs::ProgramRuntimeEnvironments;
+use solana_program_runtime::program_cache_entry::ProgramCacheEntry;
+use solana_program_runtime::solana_sbpf::program::BuiltinFunctionDefinition;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_pubkey::Pubkey;
 use solana_runtime::rent_collector::RentCollector;
@@ -251,7 +252,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
-            solana_bpf_loader_program::Entrypoint::vm,
+            solana_bpf_loader_program::Entrypoint::register,
         )),
     );
     cache.replenish(
@@ -259,7 +260,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
-            solana_bpf_loader_program::Entrypoint::vm,
+            solana_bpf_loader_program::Entrypoint::register,
         )),
     );
     cache.replenish(
@@ -267,25 +268,15 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
-            solana_bpf_loader_program::Entrypoint::vm,
+            solana_bpf_loader_program::Entrypoint::register,
         )),
     );
-    if feature_set.is_active(&enable_loader_v4::id()) {
-        cache.replenish(
-            loader_v4::id(),
-            Arc::new(ProgramCacheEntry::new_builtin(
-                0u64,
-                0usize,
-                solana_loader_v4_program::Entrypoint::vm,
-            )),
-        );
-    }
     cache.replenish(
         compute_budget::id(),
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
-            solana_compute_budget_program::Entrypoint::vm,
+            solana_compute_budget_program::Entrypoint::register,
         )),
     );
     cache.replenish(
@@ -293,7 +284,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
-            solana_system_program::system_processor::Entrypoint::vm,
+            solana_system_program::system_processor::Entrypoint::register,
         )),
     );
     cache.replenish(
@@ -301,7 +292,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
         Arc::new(ProgramCacheEntry::new_builtin(
             0u64,
             0usize,
-            solana_vote_program::vote_processor::Entrypoint::vm,
+            solana_vote_program::vote_processor::Entrypoint::register,
         )),
     );
     if feature_set.is_active(&zk_elgamal_proof_program_enabled::id()) {
@@ -310,7 +301,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
             Arc::new(ProgramCacheEntry::new_builtin(
                 0u64,
                 0usize,
-                solana_zk_elgamal_proof_program::Entrypoint::vm,
+                solana_zk_elgamal_proof_program::Entrypoint::register,
             )),
         );
     }
@@ -359,9 +350,6 @@ pub(crate) fn create_invoke_context_fields(
     let simd_0268_active = input
         .feature_set
         .is_active(&raise_cpi_nesting_limit_to_8::id());
-    let simd_0339_active = input
-        .feature_set
-        .is_active(&increase_cpi_account_info_limit::id());
 
     #[cfg(feature = "core-bpf-conformance")]
     // If the fixture declares `cu_avail` to be less than the builtin version's
@@ -373,7 +361,7 @@ pub(crate) fn create_invoke_context_fields(
     // mismatches from the BPF program exhuasting the meter when the builtin
     // did not.
     let compute_budget = {
-        let mut budget = ComputeBudget::new_with_defaults(simd_0268_active, simd_0339_active);
+        let mut budget = ComputeBudget::new_with_defaults(simd_0268_active);
         if input.cu_avail <= CORE_BPF_DEFAULT_COMPUTE_UNITS {
             budget.compute_unit_limit = 0; // Ensures CU meter exhaustion.
         }
@@ -381,7 +369,7 @@ pub(crate) fn create_invoke_context_fields(
     };
     #[cfg(not(feature = "core-bpf-conformance"))]
     let compute_budget = {
-        let mut budget = ComputeBudget::new_with_defaults(simd_0268_active, simd_0339_active);
+        let mut budget = ComputeBudget::new_with_defaults(simd_0268_active);
         budget.compute_unit_limit = input.cu_avail;
         budget
     };
@@ -458,17 +446,17 @@ pub(crate) fn create_invoke_context_fields(
     let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
     program_cache_for_tx_batch.set_slot_for_tests(clock.slot);
 
-    let program_runtime_environment_v1 = agave_syscalls::create_program_runtime_environment_v1(
+    let program_runtime_environment_v1 = solana_syscalls::create_program_runtime_environment(
         &input.feature_set.runtime_features(),
         &compute_budget.to_budget(),
         false,                                      /* deployment */
         std::env::var("ENABLE_VM_TRACING").is_ok(), /* debugging_features */
     )
     .unwrap();
-    let environments = ProgramRuntimeEnvironments {
-        program_runtime_v1: Arc::new(program_runtime_environment_v1),
-        ..ProgramRuntimeEnvironments::default()
-    };
+    let environments = ProgramRuntimeEnvironments::new(
+        program_runtime_environment_v1.clone(),
+        program_runtime_environment_v1,
+    );
 
     initialize_program_cache(&mut program_cache_for_tx_batch, &input.feature_set);
 
@@ -528,7 +516,7 @@ pub(crate) fn create_invoke_context_fields(
                 ) -> Option<Arc<ProgramCacheEntry>> { */
                 if let Some((loaded_program, _)) = program_loader::load_program_with_pubkey(
                     input,
-                    &environments,
+                    environments.get_env_for_execution(),
                     &acc.0,
                     clock.slot,
                     &mut ExecuteTimings::default(),
@@ -589,9 +577,9 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
     let environment_config = EnvironmentConfig::new(
         blockhash,
         lamports_per_signature,
+        false, /* alpenglow_migration_succeeded */
         &callback_context,
         &runtime_features,
-        &environments,
         &environments,
         &sysvar_cache,
     );
@@ -606,9 +594,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         environment_config,
         Some(log_collector.clone()),
         compute_budget.to_budget(),
-        SVMTransactionExecutionCost::new_with_defaults(
-            runtime_features.increase_cpi_account_info_limit,
-        ),
+        SVMTransactionExecutionCost::default(),
     );
 
     invoke_context

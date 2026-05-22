@@ -1,4 +1,3 @@
-use agave_syscalls::SyscallError;
 use protosol::protos::ErrKind;
 use solana_poseidon::PoseidonSyscallError;
 use solana_program_runtime::{
@@ -8,6 +7,7 @@ use solana_sbpf::{
     elf::ElfError,
     error::{EbpfError, StableResult},
 };
+use solana_syscalls::SyscallError;
 
 use solana_instruction::error::InstructionError;
 use solana_pubkey::Pubkey;
