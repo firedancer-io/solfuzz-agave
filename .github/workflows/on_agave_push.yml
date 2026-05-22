@@ -6,7 +6,7 @@ on:
     types:
       - completed
     branches:
-      - agave-v4.0.0-beta.6
+      - agave-v4.1-da33332
 jobs:
   kick_solfuzz_ci:
     runs-on: ubuntu-latest
