@@ -2,5 +2,5 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-docker build --platform=linux/amd64 -t agave-v4.1-da33332-patches .
-docker run -it -v $DIR:/app -w /app agave-v4.1-da33332-patches
+docker build --platform=linux/amd64 -t agave-v4.1.0-beta.1-patches .
+docker run -it -v $DIR:/app -w /app agave-v4.1.0-beta.1-patches
