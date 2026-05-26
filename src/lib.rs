@@ -244,6 +244,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     enable_secp256r1_precompile,
     raise_account_cu_limit,
     relax_intrabatch_account_locks,
+    increase_cpi_account_info_limit,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -273,7 +274,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     account_data_direct_mapping,       // depends on virtual_address_space_adjustments
     deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
-    increase_cpi_account_info_limit,
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
     replace_spl_token_with_p_token,
