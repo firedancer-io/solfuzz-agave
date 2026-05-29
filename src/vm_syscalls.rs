@@ -29,7 +29,6 @@ use solana_sbpf::{
 };
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm_feature_set::SVMFeatureSet;
-use solana_svm_log_collector::LogCollector;
 use solana_transaction_context::transaction::TransactionContext;
 use std::ffi::c_int;
 
@@ -147,7 +146,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         }
     }
 
-    let log_collector = LogCollector::new_ref();
     let instr_accounts =
         crate::instr::get_instr_accounts(transaction_context, &instruction_accounts_snapshot);
 
@@ -169,7 +167,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             environments,
             sysvar_cache,
         ),
-        Some(log_collector.clone()),
+        None,
         compute_budget.to_budget(),
         SVMTransactionExecutionCost::default(),
     );
@@ -370,7 +368,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         }
     }
 
-    let (error, error_kind, r0) = unpack_stable_result(program_result, vm.context(), &program_id);
+    let (error, error_kind, r0) = unpack_stable_result(program_result);
 
     cleanup_static_ptrs(
         transaction_context_ptr,
@@ -405,12 +403,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         frame_count: call_depth,
         error,
         error_kind: error_kind as i32,
-        log: invoke_ctx
-            .get_log_collector()?
-            .borrow()
-            .get_recorded_content()
-            .join("\n")
-            .into_bytes(),
         pc: 0,
     })
 }

@@ -28,7 +28,6 @@ use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solana_svm_callback::InvokeContextCallback;
-use solana_svm_log_collector::LogCollector;
 use solana_svm_timings::ExecuteTimings;
 use solana_transaction_context::MAX_INSTRUCTION_DATA_LEN;
 use solana_transaction_context::{
@@ -541,8 +540,6 @@ pub(crate) fn create_invoke_context_fields(
 pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects> {
     let mut input = InstrContext::from(input);
 
-    let log_collector = LogCollector::new_ref();
-
     // Extract all needed values before mutable borrow
     let program_id = input.instruction.program_id;
     let instruction_data = input.instruction.data.to_vec();
@@ -592,7 +589,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
         environment_config,
-        Some(log_collector.clone()),
+        None,
         compute_budget.to_budget(),
         SVMTransactionExecutionCost::default(),
     );

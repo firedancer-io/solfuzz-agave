@@ -7,7 +7,6 @@ use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::serialization::serialize_parameters;
 use solana_stable_layout::stable_vec::StableVec;
-use solana_svm_log_collector::LogCollector;
 use std::ffi::c_int;
 
 #[unsafe(no_mangle)]
@@ -82,7 +81,7 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         &mut transaction_context,
         &mut program_cache_for_tx_batch,
         environment_config,
-        Some(LogCollector::new_ref()),
+        None,
         compute_budget.to_budget(),
         SVMTransactionExecutionCost::default(),
     );
