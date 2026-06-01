@@ -3,7 +3,7 @@ pub mod fd_hash;
 pub mod program;
 pub mod vm;
 use agave_feature_set::{FeatureSet, FEATURE_NAMES};
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use lazy_static::lazy_static;
 use protosol::protos;
 use protosol::protos::AcctState;
@@ -33,22 +33,35 @@ pub const fn feature_u64(feature: &Pubkey) -> u64 {
 }
 
 lazy_static! {
+    // Index only features the harness supports/hardcodes; unsupported features stay unknown to the bank.
     static ref INDEXED_FEATURES: AHashMap<u64, Pubkey> = {
+        let known: AHashSet<u64> = crate::HARDCODED_FEATURES
+            .iter()
+            .chain(crate::SUPPORTED_FEATURES)
+            .copied()
+            .collect();
         FEATURE_NAMES
             .keys()
+            .filter(|pubkey| known.contains(&feature_u64(pubkey)))
             .map(|pubkey| (feature_u64(pubkey), *pubkey))
             .collect()
     };
 }
 
 pub fn feature_set_from_protos(input: &protos::FeatureSet) -> FeatureSet {
-    let mut feature_set = FeatureSet::default();
+    let mut active: AHashMap<Pubkey, u64> = AHashMap::new();
     for id in &input.features {
         if let Some(pubkey) = INDEXED_FEATURES.get(id) {
-            feature_set.activate(pubkey, 0);
+            active.insert(*pubkey, 0);
         }
     }
-    feature_set
+    // inactive = known-but-not-activated; a stray account for an unindexed feature can't activate it.
+    let inactive: AHashSet<Pubkey> = INDEXED_FEATURES
+        .values()
+        .filter(|pk| !active.contains_key(*pk))
+        .copied()
+        .collect();
+    FeatureSet::new(active, inactive)
 }
 
 /// Create account state for each feature in the given feature set.
