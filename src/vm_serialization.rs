@@ -2,11 +2,9 @@ use crate::instr::{InstrContext, SnapshotInvokeContext};
 use prost::Message;
 use protosol::protos;
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
-use solana_instruction::AccountMeta;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::serialization::serialize_parameters;
-use solana_stable_layout::stable_vec::StableVec;
 use std::ffi::c_int;
 
 #[unsafe(no_mangle)]
@@ -36,19 +34,11 @@ pub unsafe extern "C" fn sol_compat_vm_serialize_execute_v1(
 pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializationEffects {
     let mut instr_ctx: InstrContext = input.into();
 
-    let program_id = instr_ctx.instruction.program_id;
-    let instruction_data = instr_ctx.instruction.data.to_vec();
     let runtime_features = instr_ctx.feature_set.runtime_features();
     let feature_set_snapshot = instr_ctx.feature_set.clone();
-    let instruction_accounts_snapshot: StableVec<AccountMeta> = instr_ctx
-        .instruction
-        .accounts
-        .iter()
-        .cloned()
-        .collect::<Vec<_>>()
-        .into();
 
     let (
+        sanitized_message,
         mut transaction_context,
         sysvar_cache,
         mut program_cache_for_tx_batch,
@@ -57,9 +47,6 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         compute_budget,
         environments,
     ) = crate::instr::create_invoke_context_fields(&mut instr_ctx, false).unwrap();
-
-    let instruction_accounts =
-        crate::instr::get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
 
     let callback_context = SnapshotInvokeContext::new(feature_set_snapshot);
 
@@ -72,10 +59,6 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         &environments,
         &sysvar_cache,
     );
-
-    let program_idx = transaction_context
-        .find_index_of_account(&program_id)
-        .unwrap();
 
     let mut invoke_context = InvokeContext::new(
         &mut transaction_context,
@@ -95,12 +78,7 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         .direct_account_pointers_in_program_input;
 
     invoke_context
-        .transaction_context
-        .configure_top_level_instruction_for_tests(
-            program_idx,
-            instruction_accounts,
-            instruction_data,
-        )
+        .prepare_top_level_instructions(&sanitized_message)
         .unwrap();
 
     invoke_context.push().unwrap();

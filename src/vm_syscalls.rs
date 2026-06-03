@@ -8,7 +8,7 @@ use crate::{
 use prost::Message;
 use protosol::protos::{SyscallContext, SyscallEffects};
 use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
-use solana_instruction::AccountMeta;
+use solana_message::SanitizedMessage;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::memory_context::MemoryContext;
 use solana_program_runtime::serialization::serialize_parameters;
@@ -27,7 +27,6 @@ use solana_sbpf::{
     program::{BuiltinProgram, SBPFVersion},
     vm::{ContextObject, EbpfVm},
 };
-use solana_stable_layout::stable_vec::StableVec;
 use solana_svm_feature_set::SVMFeatureSet;
 use solana_transaction_context::transaction::TransactionContext;
 use std::ffi::c_int;
@@ -67,8 +66,11 @@ fn cleanup_static_ptrs(
     instr_ctx_ptr: usize,
     callback_context_ptr: usize,
     environments_ptr: usize,
+    sanitized_message_ptr: usize,
 ) {
     unsafe {
+        let _sanitized_message_droppable =
+            Box::from_raw(sanitized_message_ptr as *mut SanitizedMessage);
         let _transaction_context_droppable =
             Box::from_raw(transaction_context_ptr as *mut TransactionContext);
         let _sysvar_cache_droppable = Box::from_raw(sysvar_cache_ptr as *mut SysvarCache);
@@ -90,17 +92,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let runtime_feature_set = instr_ctx.feature_set.runtime_features();
     let feature_set_snapshot = instr_ctx.feature_set.clone();
 
-    // Extract values before moving/leaking
-    let program_id = instr_ctx.instruction.program_id;
-    let instruction_data = instr_ctx.instruction.data.to_vec();
-    let instruction_accounts_snapshot: StableVec<AccountMeta> = instr_ctx
-        .instruction
-        .accounts
-        .iter()
-        .cloned()
-        .collect::<Vec<_>>()
-        .into();
-
     /* Optimization: only populate program cache for CPI syscalls */
     let populate_program_cache = input
         .syscall_invocation
@@ -115,6 +106,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
     let instr_ctx_ptr = instr_ctx as *mut InstrContext as usize;
 
     let (
+        sanitized_message,
         transaction_context,
         sysvar_cache,
         program_cache_for_tx_batch,
@@ -123,6 +115,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         compute_budget,
         environments,
     ) = crate::instr::create_invoke_context_fields(instr_ctx, populate_program_cache)?;
+    let sanitized_message = Box::leak(Box::new(sanitized_message));
+    let sanitized_message_ptr = sanitized_message as *mut SanitizedMessage as usize;
 
     /* MemoryCowCallback requires moved objects to have the 'static lifetime
       so we promote them to 'static and drop at the end as we are sure they are not used anymore
@@ -145,9 +139,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 .unwrap();
         }
     }
-
-    let instr_accounts =
-        crate::instr::get_instr_accounts(transaction_context, &instruction_accounts_snapshot);
 
     let environments = Box::leak(Box::new(environments));
     let environments_ptr = environments as *mut _ as usize;
@@ -172,14 +163,6 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         SVMTransactionExecutionCost::default(),
     );
 
-    let program_idx = invoke_ctx
-        .transaction_context
-        .find_index_of_account(&program_id)
-        .expect("invariant violation: program_id must be found in accounts");
-    assert!(
-        program_idx <= 255,
-        "invariant violation: program_idx must be <= 255"
-    );
     let direct_mapping = invoke_ctx.get_feature_set().account_data_direct_mapping;
     let virtual_address_space_adjustments = invoke_ctx
         .get_feature_set()
@@ -188,9 +171,8 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .get_feature_set()
         .direct_account_pointers_in_program_input;
     invoke_ctx
-        .transaction_context
-        .configure_top_level_instruction_for_tests(program_idx, instr_accounts, instruction_data)
-        .unwrap();
+        .prepare_top_level_instructions(sanitized_message)
+        .ok()?;
 
     match invoke_ctx.push() {
         Ok(_) => (),
@@ -203,6 +185,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
                 instr_ctx_ptr,
                 callback_context_ptr,
                 environments_ptr,
+                sanitized_message_ptr,
             );
             return None;
         }
@@ -261,6 +244,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             instr_ctx_ptr,
             callback_context_ptr,
             environments_ptr,
+            sanitized_message_ptr,
         );
         return None;
     };
@@ -304,6 +288,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
             instr_ctx_ptr,
             callback_context_ptr,
             environments_ptr,
+            sanitized_message_ptr,
         );
         return None;
     };
@@ -378,6 +363,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         instr_ctx_ptr,
         callback_context_ptr,
         environments_ptr,
+        sanitized_message_ptr,
     );
 
     Some(SyscallEffects {

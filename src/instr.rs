@@ -11,7 +11,9 @@ use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
 use solana_instruction::AccountMeta;
 use solana_instruction::Instruction;
+use solana_message::SanitizedMessage;
 use solana_precompile_error::PrecompileError;
+use solana_program_runtime::invoke_context::mock_compile_message;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
 use solana_program_runtime::loaded_programs::ProgramCacheForTxBatch;
@@ -24,16 +26,12 @@ use solana_runtime::rent_collector::RentCollector;
 use solana_sdk_ids::{
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
 };
-use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
 use solana_svm_callback::InvokeContextCallback;
 use solana_svm_timings::ExecuteTimings;
 use solana_transaction_context::MAX_INSTRUCTION_DATA_LEN;
-use solana_transaction_context::{
-    instruction_accounts::InstructionAccount, transaction::TransactionContext,
-    transaction_accounts::KeyedAccountSharedData, IndexOfAccount,
-};
+use solana_transaction_context::transaction::TransactionContext;
 
 use crate::utils::err_map::instr_err_to_num;
 use crate::utils::feature_set_from_protos;
@@ -224,26 +222,6 @@ impl From<protos::InstrContext> for InstrContext {
     }
 }
 
-pub fn get_instr_accounts(
-    txn_context: &TransactionContext,
-    acct_metas: &StableVec<AccountMeta>,
-) -> Vec<InstructionAccount> {
-    let mut instruction_accounts: Vec<InstructionAccount> =
-        Vec::with_capacity(acct_metas.len().try_into().unwrap());
-    for account_meta in acct_metas.iter() {
-        let index_in_transaction = txn_context
-            .find_index_of_account(&account_meta.pubkey)
-            .expect("invariant violation: account not found in transaction context")
-            as IndexOfAccount;
-        instruction_accounts.push(InstructionAccount::new(
-            index_in_transaction,
-            account_meta.is_signer,
-            account_meta.is_writable,
-        ));
-    }
-    instruction_accounts
-}
-
 fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &FeatureSet) {
     // Load builtin programs into the cache.
     cache.replenish(
@@ -321,6 +299,7 @@ pub(crate) fn create_invoke_context_fields(
     input: &mut InstrContext,
     populate_program_cache: bool,
 ) -> Option<(
+    SanitizedMessage,
     TransactionContext<'_>,
     SysvarCache,
     ProgramCacheForTxBatch,
@@ -402,39 +381,37 @@ pub(crate) fn create_invoke_context_fields(
         ));
     }
 
-    let mut transaction_accounts =
-        Vec::<KeyedAccountSharedData>::with_capacity(input.accounts.len());
-    #[allow(deprecated)]
-    input
+    let (_, program_account) = input
         .accounts
-        .iter()
-        .map(|(pubkey, account)| {
-            #[cfg(any(
-                feature = "bpf-program-conformance",
-                feature = "core-bpf",
-                feature = "core-bpf-conformance",
-            ))]
-            // Fixtures provide the program account as a builtin (owned by
-            // native loader), but the program-runtime will expect the account
-            // owner to match the cache entry.
-            //
-            // Since we loaded the provided ELF into the cache under loader v3,
-            // stub out the program account here.
-            //
-            // Note: Agave does this during transaction account loading.
-            // https://github.com/anza-xyz/agave/blob/6d74d13749829d463fabccebd8203edf0cf4c500/svm/src/account_loader.rs#L246-L249
-            if *pubkey == input.instruction.program_id {
-                let mut stubbed_out_program_account: AccountSharedData = account.clone().into();
-                stubbed_out_program_account.set_owner(bpf_loader_upgradeable::id());
-                stubbed_out_program_account.set_executable(true);
-                return (*pubkey, stubbed_out_program_account);
-            }
-            (*pubkey, AccountSharedData::from(account.clone()))
-        })
-        .for_each(|x| transaction_accounts.push(x));
+        .iter_mut()
+        .find(|(pubkey, _)| *pubkey == input.instruction.program_id)
+        .expect("program account present in accounts");
+
+    // Fixtures provide the program account as a builtin (owned by native loader),
+    // but the program-runtime expects the owner to match the cache entry. Since the
+    // ELF was loaded into the cache under loader v3, stub the program account here.
+    #[cfg(any(
+        feature = "bpf-program-conformance",
+        feature = "core-bpf",
+        feature = "core-bpf-conformance",
+    ))]
+    {
+        program_account.owner = bpf_loader_upgradeable::id();
+        program_account.executable = true;
+    }
+
+    let loader_key = program_account.owner;
+    let Some((sanitized_message, transaction_accounts)) = mock_compile_message(
+        &input.instruction,
+        &input.accounts,
+        &input.instruction.program_id,
+        &loader_key,
+    ) else {
+        return None;
+    };
 
     let transaction_context = TransactionContext::new(
-        transaction_accounts.clone(),
+        transaction_accounts,
         (*rent).clone(),
         compute_budget.max_instruction_stack_depth,
         compute_budget.max_instruction_trace_length,
@@ -527,6 +504,7 @@ pub(crate) fn create_invoke_context_fields(
     }
 
     Some((
+        sanitized_message,
         transaction_context,
         sysvar_cache,
         program_cache_for_tx_batch,
@@ -545,16 +523,10 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
     let instruction_data = input.instruction.data.to_vec();
     let runtime_features = input.feature_set.runtime_features();
     let feature_set_snapshot = input.feature_set.clone();
-    let instruction_accounts_snapshot: StableVec<AccountMeta> = input
-        .instruction
-        .accounts
-        .iter()
-        .cloned()
-        .collect::<Vec<_>>()
-        .into();
     let initial_cu_avail = input.cu_avail;
 
     let (
+        sanitized_message,
         mut transaction_context,
         sysvar_cache,
         mut program_cache_for_tx_batch,
@@ -563,10 +535,6 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         compute_budget,
         environments,
     ) = create_invoke_context_fields(&mut input, true)?;
-
-    // Get accounts immediately after mutable borrow is released, before creating EnvironmentConfig
-    let instruction_accounts =
-        get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
 
     let callback_context = SnapshotInvokeContext::new(feature_set_snapshot);
 
@@ -581,8 +549,6 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         &sysvar_cache,
     );
 
-    let program_idx = transaction_context.find_index_of_account(&program_id)?;
-
     let mut compute_units_consumed = 0u64;
 
     let mut invoke_context = InvokeContext::new(
@@ -595,13 +561,8 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
     );
 
     invoke_context
-        .transaction_context
-        .configure_top_level_instruction_for_tests(
-            program_idx,
-            instruction_accounts,
-            instruction_data.clone(),
-        )
-        .unwrap();
+        .prepare_top_level_instructions(&sanitized_message)
+        .ok()?;
 
     let result = if invoke_context.is_precompile(&program_id) {
         invoke_context.process_precompile(
