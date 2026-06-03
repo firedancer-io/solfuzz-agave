@@ -560,7 +560,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
 
     invoke_context
         .prepare_top_level_instructions(&sanitized_message)
-        .ok()?;
+        .unwrap();
 
     let result = if invoke_context.is_precompile(&program_id) {
         invoke_context.process_precompile(

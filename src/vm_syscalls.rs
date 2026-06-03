@@ -172,7 +172,7 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         .direct_account_pointers_in_program_input;
     invoke_ctx
         .prepare_top_level_instructions(sanitized_message)
-        .ok()?;
+        .unwrap();
 
     match invoke_ctx.push() {
         Ok(_) => (),
