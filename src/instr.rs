@@ -370,22 +370,20 @@ pub(crate) fn create_invoke_context_fields(
     #[allow(deprecated)]
     let recent_blockhashes = sysvar_cache.get_recent_blockhashes().unwrap();
 
-    if !input
+    // Locate the program account, appending a default one if the fixture didn't
+    // supply it. Either way the index is valid, so no fallible lookup is needed.
+    let program_index = input
         .accounts
         .iter()
-        .any(|(pubkey, _)| pubkey == &input.instruction.program_id)
-    {
-        input.accounts.push((
-            input.instruction.program_id,
-            AccountSharedData::default().into(),
-        ));
-    }
-
-    let (_, program_account) = input
-        .accounts
-        .iter_mut()
-        .find(|(pubkey, _)| *pubkey == input.instruction.program_id)
-        .expect("program account present in accounts");
+        .position(|(pubkey, _)| *pubkey == input.instruction.program_id)
+        .unwrap_or_else(|| {
+            input.accounts.push((
+                input.instruction.program_id,
+                AccountSharedData::default().into(),
+            ));
+            input.accounts.len() - 1
+        });
+    let program_account = &mut input.accounts[program_index].1;
 
     // Fixtures provide the program account as a builtin (owned by native loader),
     // but the program-runtime expects the owner to match the cache entry. Since the
