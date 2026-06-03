@@ -10,6 +10,7 @@ use solana_compute_budget::compute_budget::SVMTransactionExecutionCost;
 use solana_hash::Hash;
 use solana_instruction::error::InstructionError;
 use solana_instruction::AccountMeta;
+use solana_instruction::Instruction;
 use solana_precompile_error::PrecompileError;
 use solana_program_runtime::invoke_context::EnvironmentConfig;
 use solana_program_runtime::invoke_context::InvokeContext;
@@ -23,7 +24,6 @@ use solana_runtime::rent_collector::RentCollector;
 use solana_sdk_ids::{
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, compute_budget, loader_v4,
 };
-use solana_stable_layout::stable_instruction::StableInstruction;
 use solana_stable_layout::stable_vec::StableVec;
 use solana_svm::program_loader;
 use solana_svm::transaction_processing_callback::TransactionProcessingCallback;
@@ -81,7 +81,7 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
 pub struct InstrContext {
     pub feature_set: FeatureSet,
     pub accounts: Vec<(Pubkey, Account)>,
-    pub instruction: StableInstruction,
+    pub instruction: Instruction,
     pub cu_avail: u64,
     pub rent_collector: RentCollector,
     pub last_blockhash: Hash,
@@ -206,10 +206,10 @@ impl From<protos::InstrContext> for InstrContext {
             );
         }
 
-        let instruction = StableInstruction {
-            accounts: instruction_accounts.into(),
-            data: input.data.into(),
+        let instruction = Instruction {
             program_id,
+            accounts: instruction_accounts,
+            data: input.data,
         };
 
         Self {
