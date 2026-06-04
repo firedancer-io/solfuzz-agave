@@ -5,6 +5,7 @@ pub mod cost;
 pub mod elf_loader;
 pub mod gossip;
 pub mod instr;
+pub mod shred;
 pub mod txn;
 pub mod utils;
 pub mod vm_serialization;
