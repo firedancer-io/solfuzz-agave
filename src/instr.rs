@@ -39,6 +39,7 @@ use protosol::protos;
 use solfuzz_agave_macro::{
     declare_core_bpf_default_compute_units, load_bpf_program, load_core_bpf_program,
 };
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -677,12 +678,17 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         err
     });
 
-    let mut modified_accounts: Vec<(Pubkey, Account)> = transaction_context
+    let mut executed: HashMap<Pubkey, AccountSharedData> = transaction_context
         .deconstruct_without_keys()
         .unwrap()
         .into_iter()
         .zip(account_keys)
-        .map(|(account, key)| {
+        .map(|(account, key)| (key, account))
+        .collect();
+
+    let mut modified_accounts: Vec<(Pubkey, Account)> = std::mem::take(&mut input.accounts)
+        .into_iter()
+        .map(|(pubkey, input_account)| {
             #[cfg(any(feature = "core-bpf", feature = "core-bpf-conformance"))]
             // Fixtures provide the program account as a builtin account
             // (owned by native loader).
@@ -692,13 +698,11 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
             //
             // We need to swap back in the original here to avoid a
             // mismatch.
-            if let Some(program_account) = accounts_snapshot
-                .iter()
-                .find(|(pubkey, _)| *pubkey == program_id)
-            {
-                return (program_account.0, program_account.1.clone());
+            if pubkey == program_id {
+                return (pubkey, input_account);
             }
-            (key, account.into())
+            let account = executed.remove(&pubkey).map(Account::from).unwrap_or(input_account);
+            (pubkey, account)
         })
         .collect();
 
