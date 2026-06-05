@@ -6,7 +6,8 @@
 
 use crate::utils::create_accounts_db;
 use agave_feature_set::{
-    discard_unexpected_data_complete_shreds, validate_chained_block_id, FeatureSet,
+    discard_unexpected_data_complete_shreds, validate_chained_block_id,
+    validate_chained_block_id_2, FeatureSet,
 };
 use agave_votor_messages::migration::MigrationStatus;
 use crossbeam_channel::unbounded;
@@ -113,8 +114,9 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
     // FD: resolver + sched config (shred_version, advance_slot_old(root_slot), discard feature).
     let mut feature_set = FeatureSet::default();
 
-    // FD assumes this feature to always be active
+    // FD assumes these features to always be active
     feature_set.activate(&validate_chained_block_id::id(), 0);
+    feature_set.activate(&validate_chained_block_id_2::id(), 0);
 
     if discard {
         feature_set.activate(&discard_unexpected_data_complete_shreds::id(), 0);
