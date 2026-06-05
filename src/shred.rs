@@ -165,7 +165,14 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
     );
     let mut metrics = BlockstoreInsertionMetrics::default();
     let handle_duplicate = |dup: PossibleDuplicateShred| {
-        let _ = check_duplicate_shred(&cluster_info, &blockstore, &dup_slots_sender, &bank, dup);
+        let _ = check_duplicate_shred(
+            &cluster_info,
+            &blockstore,
+            &dup_slots_sender,
+            dup,
+            true, // hardcoded-on to match Firedancer assumptions
+            true, // hardcoded-on to match Firedancer assumptions
+        );
     };
     let shreds_iter = parsed
         .iter()
