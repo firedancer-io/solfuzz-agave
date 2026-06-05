@@ -307,7 +307,7 @@ pub fn hash_epoch_leaders(
     }
 
     // Sort by pubkey bytes deterministically
-    entries.sort_unstable_by(|a, b| a.pk.to_bytes().cmp(&b.pk.to_bytes()));
+    entries.sort_unstable_by_key(|a| a.pk.to_bytes());
 
     // Dedup + write mapping in a single pass
     let rotations = entries.len();

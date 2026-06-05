@@ -12,13 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TODO: change back to stable once rust releases the coverage fix
-      # - uses: dtolnay/rust-toolchain@1.86.0
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@1.95.0
         with:
-          toolchain: nightly-2025-10-30
-          override: true
-          components: "clippy, rustfmt"
+          components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -38,12 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TODO: change back to stable once rust releases the coverage fix
-      # - uses: dtolnay/rust-toolchain@1.86.0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2025-10-30
-          override: true
+      - uses: dtolnay/rust-toolchain@1.95.0
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -63,12 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TODO: change back to stable once rust releases the coverage fix
-      # - uses: dtolnay/rust-toolchain@1.86.0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2025-10-30
-          override: true
+      - uses: dtolnay/rust-toolchain@1.95.0
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -86,12 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TODO: change back to stable once rust releases the coverage fix
-      # - uses: dtolnay/rust-toolchain@1.86.0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2025-10-30
-          override: true
+      - uses: dtolnay/rust-toolchain@1.95.0
 
       - uses: Swatinem/rust-cache@v2
         with:
