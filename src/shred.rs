@@ -215,24 +215,39 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         for s in data_shreds {
             by_fec.entry(s.fec_set_index()).or_default().push(s);
         }
+
+        // Mirror FD reasm: deliver the contiguous chain-validated prefix from index 0, rejecting at the first set that doesn't chain to its predecessor.
+        // FD rejects a slot that has a complete FEC set but no complete index-0 set, since the slot's first set must chain to the parent.
+        let has_complete_set0 = by_fec.get(&0).is_some_and(|g| g.len() == FEC_DATA_SHREDS);
+        if !has_complete_set0 && by_fec.values().any(|g| g.len() == FEC_DATA_SHREDS) {
+            effects.block_parse_result = BlockParseResult::RejectedInvalidHeader as i32;
+            continue;
+        }
+
+        let mut expected_index = 0u32;
+        let mut prev_merkle_root: Option<Vec<u8>> = None;
         for (fec_set_index, mut group) in by_fec {
-            // Emit only complete data sets (32 shreds), matching FD's
-            // completion-gated emission; partial/inconsistent sets are skipped.
-            if group.len() != FEC_DATA_SHREDS {
-                continue;
+            if group.len() != FEC_DATA_SHREDS || fec_set_index != expected_index {
+                break;
             }
             group.sort_unstable_by_key(|s| s.index());
             let first = &group[0];
             let parent = first.parent().unwrap_or(slot);
             // FD: fd_shred_merkle_root(base_data), derived from the proof bytes.
-            let merkle_root = first
-                .merkle_root()
-                .map(|h| h.to_bytes().to_vec())
-                .unwrap_or_default();
-            let chained_merkle_root = first
-                .chained_merkle_root()
-                .map(|h| h.to_bytes().to_vec())
-                .unwrap_or_default();
+            let (Ok(merkle_root), Ok(chained_merkle_root)) =
+                (first.merkle_root(), first.chained_merkle_root())
+            else {
+                effects.block_parse_result = BlockParseResult::RejectedInvalidHeader as i32;
+                break;
+            };
+            let merkle_root = merkle_root.to_bytes().to_vec();
+            let chained_merkle_root = chained_merkle_root.to_bytes().to_vec();
+            if let Some(prev) = &prev_merkle_root {
+                if chained_merkle_root != *prev {
+                    effects.block_parse_result = BlockParseResult::RejectedInvalidHeader as i32;
+                    break;
+                }
+            }
             // Concatenate each data shred's data region (matches FD; not deshred,
             // which requires the set to end on a DATA_COMPLETE boundary).
             let mut payload = Vec::new();
@@ -241,6 +256,10 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
                     payload.extend_from_slice(data);
                 }
             }
+
+            prev_merkle_root = Some(merkle_root.clone());
+            expected_index += FEC_DATA_SHREDS as u32;
+
             effects.fec_set_results.push(FecSetParseResult {
                 completed: true,
                 merkle_root,
