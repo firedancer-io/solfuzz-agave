@@ -88,6 +88,7 @@ pub unsafe extern "C" fn sol_compat_shred_parse_v1(
 
 /// Bank ticks-per-slot, so verify_ticks' tick-count check matches mainnet.
 const TICKS_PER_SLOT: u64 = 64;
+const HASHES_PER_TICK: u64 = 62500;
 
 /// Fixed FEC shape: 32 data + 32 coding (matches FD's reconstructed counts).
 const FEC_DATA_SHREDS: usize = 32;
@@ -363,7 +364,7 @@ fn build_root_bank(root_slot: Slot, feature_set: FeatureSet) -> Arc<Bank> {
         signature_count: 0,
         capitalization: 0,
         max_tick_height: TICKS_PER_SLOT.saturating_mul(root_slot.saturating_add(1)),
-        hashes_per_tick: None,
+        hashes_per_tick: Some(HASHES_PER_TICK),
         ticks_per_slot: TICKS_PER_SLOT,
         ns_per_slot: 0,
         genesis_creation_time: 0,
