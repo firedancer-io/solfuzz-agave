@@ -28,9 +28,10 @@ use solana_inflation::Inflation;
 use solana_keypair::{Keypair, Signer};
 use solana_lattice_hash::lt_hash::LtHash;
 use solana_ledger::{
-    blockstore::{Blockstore, BlockstoreInsertionMetrics, PossibleDuplicateShred},
+    blockstore::{
+        blockstore_purge::PurgeType, Blockstore, BlockstoreInsertionMetrics, PossibleDuplicateShred,
+    },
     blockstore_processor::verify_ticks,
-    get_tmp_ledger_path_auto_delete,
     shred::{
         filter::{ShredFilterContext, ShredRecoveryContext},
         layout, Payload, ReedSolomonCache, Shred,
@@ -50,8 +51,10 @@ use solana_sdk_ids::sysvar;
 use solana_stake_interface::state::Stake;
 use solana_streamer::evicting_sender::EvictingSender;
 use solana_vote::vote_account::VoteAccounts;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::os::raw::c_int;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::{borrow::Cow, collections::BTreeMap};
 
@@ -93,6 +96,47 @@ const TICKS_PER_SLOT: u64 = 64;
 /// Fixed FEC shape: 32 data + 32 coding (matches FD's reconstructed counts).
 const FEC_DATA_SHREDS: usize = 32;
 const FEC_CODING_SHREDS: u32 = 32;
+
+thread_local! {
+    // Reused across inputs; opening RocksDB per input was ~20% of harness runtime.
+    static SHRED_BLOCKSTORE: RefCell<Option<(LedgerGuard, Blockstore)>> = const { RefCell::new(None) };
+}
+
+// Removes the ledger dir on clean exit; dirs leaked by an aborted process are swept by open_ledger.
+struct LedgerGuard(PathBuf);
+impl Drop for LedgerGuard {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+// Open a reused blockstore in a PID-named dir, first sweeping dirs left by dead (aborted) processes.
+fn open_ledger() -> (LedgerGuard, Blockstore) {
+    let root = std::env::temp_dir().join("solfuzz_shred_bs");
+    let _ = std::fs::create_dir_all(&root);
+    if let Ok(entries) = std::fs::read_dir(&root) {
+        for e in entries.flatten() {
+            if let Some(pid) = e
+                .file_name()
+                .to_str()
+                .and_then(|n| n.split('-').next()?.parse::<u32>().ok())
+            {
+                if !std::path::Path::new(&format!("/proc/{pid}")).exists() {
+                    let _ = std::fs::remove_dir_all(e.path());
+                }
+            }
+        }
+    }
+    let dir = root.join(format!(
+        "{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("create ledger dir");
+    let bs = Blockstore::open(&dir).expect("blockstore open");
+    (LedgerGuard(dir), bs)
+}
 
 pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
     let shred_version = ctx.shred_version as u16;
@@ -154,8 +198,13 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
 
     // FEC accumulate / recover / dedup in an ephemeral blockstore.
     // FD: fd_fec_resolver_add_shred.
-    let ledger_path = get_tmp_ledger_path_auto_delete!();
-    let blockstore = Blockstore::open(ledger_path.path()).expect("blockstore open");
+    // Reuse a thread-local blockstore (reset per input) or init one via open_ledger().
+    let (ledger, blockstore) = SHRED_BLOCKSTORE
+        .with(|c| c.borrow_mut().take())
+        .unwrap_or_else(open_ledger);
+    blockstore
+        .purge_slots(0, u64::MAX, PurgeType::Exact)
+        .expect("blockstore reset");
     let (retransmit_sender, _retransmit_rx) = EvictingSender::<Vec<Payload>>::new_bounded(0);
     let mut recovery = ShredRecoveryContext::new(
         ReedSolomonCache::default(),
@@ -275,6 +324,9 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
             });
         }
     }
+
+    // Return the blockstore to the thread-local for reuse on the next input.
+    SHRED_BLOCKSTORE.with(|c| *c.borrow_mut() = Some((ledger, blockstore)));
 
     effects
 }
