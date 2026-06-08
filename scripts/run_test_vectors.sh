@@ -117,6 +117,7 @@ declare -A JOBS=(
   [test_exec_block]="dump/test-vectors/block/fixtures"
   [test_exec_vm_syscall]="dump/test-vectors/syscall/fixtures"
   [test_exec_elf_loader]="dump/test-vectors/elf_loader/fixtures"
+  [test_exec_shred]="dump/test-vectors/shred/fixtures"
 )
 
 any_job_failed=0
