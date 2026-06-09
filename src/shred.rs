@@ -14,7 +14,8 @@ use prost::Message;
 use protosol::protos::{BlockParseResult, FecSetParseResult, ShredParseContext, ShredParseEffects};
 use solana_account::AccountSharedData;
 use solana_accounts_db::{
-    accounts_hash::AccountsLtHash, ancestors::Ancestors, blockhash_queue::BlockhashQueue,
+    account_locks::validate_account_locks, accounts_hash::AccountsLtHash, ancestors::Ancestors,
+    blockhash_queue::BlockhashQueue,
 };
 use solana_clock::{Epoch, Slot};
 use solana_core::window_service::check_duplicate_shred;
@@ -34,6 +35,8 @@ use solana_ledger::{
         layout, Payload, ReedSolomonCache, Shred,
     },
 };
+use solana_message::AccountKeys;
+use solana_packet::PACKET_DATA_SIZE;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_runtime::{
@@ -46,6 +49,7 @@ use solana_runtime::{
 use solana_sdk_ids::sysvar;
 use solana_stake_interface::state::Stake;
 use solana_streamer::evicting_sender::EvictingSender;
+use solana_transaction::sanitized::MAX_TX_ACCOUNT_LOCKS;
 use solana_vote::vote_account::VoteAccounts;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -232,6 +236,19 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
             .unwrap_or((Vec::new(), 0, false));
         if entries.is_empty() {
             continue;
+        }
+        // Mirror FD's fd_sched_parse_txn: reject non-sanitizable, duplicate-account, or over-MTU txns.
+        for tx in entries.iter().flat_map(|e| &e.transactions) {
+            let oversized =
+                bincode::serialized_size(tx).map_or(true, |n| n > PACKET_DATA_SIZE as u64);
+            let bad_locks = validate_account_locks(
+                AccountKeys::new(tx.message.static_account_keys(), None),
+                MAX_TX_ACCOUNT_LOCKS,
+            )
+            .is_err();
+            if tx.sanitize().is_err() || bad_locks || oversized {
+                effects.block_parse_result = BlockParseResult::RejectedInvalidHeader as i32;
+            }
         }
         let mut tick_hash_count = 0u64;
         if verify_ticks(&bank, &entries, is_full, &mut tick_hash_count, &migration).is_err() {

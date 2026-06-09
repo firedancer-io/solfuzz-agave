@@ -36,6 +36,7 @@ solana-hash = "=4.3.0"
 solana-inflation = "=3.1.0"
 solana-instruction = "=3.4.0"
 solana-message = "=4.1.1"
+solana-packet = "=4.1.0"
 solana-poseidon = "=4.0.0"
 solana-precompile-error = "=3.0.0"
 solana-pubkey = { workspace = true }
