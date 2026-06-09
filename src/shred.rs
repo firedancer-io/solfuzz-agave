@@ -10,7 +10,6 @@ use agave_feature_set::{
     validate_chained_block_id_2, FeatureSet,
 };
 use agave_votor_messages::migration::MigrationStatus;
-use crossbeam_channel::unbounded;
 use prost::Message;
 use protosol::protos::{BlockParseResult, FecSetParseResult, ShredParseContext, ShredParseEffects};
 use solana_account::AccountSharedData;
@@ -21,11 +20,9 @@ use solana_clock::{Epoch, Slot};
 use solana_core::window_service::check_duplicate_shred;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
-use solana_gossip::{cluster_info::ClusterInfo, contact_info::ContactInfo};
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_inflation::Inflation;
-use solana_keypair::{Keypair, Signer};
 use solana_lattice_hash::lt_hash::LtHash;
 use solana_ledger::{
     blockstore::{
@@ -37,7 +34,6 @@ use solana_ledger::{
         layout, Payload, ReedSolomonCache, Shred,
     },
 };
-use solana_net_utils::SocketAddrSpace;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_runtime::{
@@ -186,16 +182,6 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         }
     }
 
-    // Throwaway gossip/consensus sinks for the shared duplicate handler.
-    // FD: dedup is internal to fd_fec_resolver (no separate sink).
-    let keypair = Keypair::new();
-    let cluster_info = ClusterInfo::new(
-        ContactInfo::new_localhost(&keypair.pubkey(), 0),
-        Arc::new(keypair),
-        SocketAddrSpace::Unspecified,
-    );
-    let (dup_slots_sender, _dup_slots_rx) = unbounded::<Slot>();
-
     // FEC accumulate / recover / dedup in an ephemeral blockstore.
     // FD: fd_fec_resolver_add_shred.
     // Reuse a thread-local blockstore (reset per input) or init one via open_ledger().
@@ -215,12 +201,10 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
     let mut metrics = BlockstoreInsertionMetrics::default();
     let handle_duplicate = |dup: PossibleDuplicateShred| {
         let _ = check_duplicate_shred(
-            &cluster_info,
             &blockstore,
-            &dup_slots_sender,
             dup,
-            true, // hardcoded-on to match Firedancer assumptions
-            true, // hardcoded-on to match Firedancer assumptions
+            true, // validate_chained_block_id: match Firedancer assumptions
+            true, // validate_chained_block_id_2: match Firedancer assumptions
         );
     };
     let shreds_iter = parsed
