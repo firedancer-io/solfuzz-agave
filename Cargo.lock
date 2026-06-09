@@ -9283,6 +9283,7 @@ dependencies = [
  "solana-ledger",
  "solana-loader-v3-interface",
  "solana-message",
+ "solana-packet 4.1.0",
  "solana-poseidon",
  "solana-precompile-error",
  "solana-program-runtime",
