@@ -252,9 +252,14 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
     // Deshred + tick verify per slot (PoH intentionally not run).
     // FD: fd_sched_fec_ingest (PoH verify bypassed).
     for &slot in &slots {
-        let (entries, _num_shreds, is_full) = blockstore
-            .get_slot_entries_with_shred_info(slot, 0, false)
-            .unwrap_or((Vec::new(), 0, false));
+        let (entries, _num_shreds, is_full) =
+            match blockstore.get_slot_entries_with_shred_info(slot, 0, false) {
+                Ok(slot_entries) => slot_entries,
+                Err(_) => {
+                    effects.block_parse_result = BlockParseResult::RejectedInvalidHeader as i32;
+                    continue;
+                }
+            };
         if entries.is_empty() {
             continue;
         }
