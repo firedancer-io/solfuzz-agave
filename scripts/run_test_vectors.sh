@@ -15,34 +15,44 @@ else
 fi
 echo "LOG_PATH: $LOG_PATH"
 
-mkdir -p dump
-
 # Show the commit hashes being used
 repo_commit=$(git rev-parse HEAD)
 echo "Using repo commit: $repo_commit"
 
-# Get commit SHA from file or env
-GIT_REF=${GIT_REF:-$(cat ./scripts/test-vectors-commit-sha.txt)}
-echo "Using test-vectors commit: $GIT_REF"
+# If WORK_DIR is provided, use it directly and skip the whole
+# git clone/checkout/cache of test-vectors. The provided directory is
+# expected to already contain the fixtures laid out as
+# <WORK_DIR>/{instr,txn,block,syscall,elf_loader,shred}/fixtures
+if [ -n "${WORK_DIR:-}" ]; then
+  echo "Using provided WORK_DIR: $WORK_DIR"
+else
+  mkdir -p dump
 
-# Fetch/update test-vectors repo
-if [ ! -d dump/test-vectors ]; then
-  echo "Cloning test-vectors repository..."
-  (cd dump && git clone --depth=1 -q --no-tags https://github.com/firedancer-io/test-vectors.git)
-fi
+  # Get commit SHA from file or env
+  GIT_REF=${GIT_REF:-$(cat ./scripts/test-vectors-commit-sha.txt)}
+  echo "Using test-vectors commit: $GIT_REF"
 
-# Checkout specific commit non-destructively
-(
-  cd dump/test-vectors
-  if ! git checkout -q $GIT_REF; then
-    git remote update
-    git checkout -q $GIT_REF
+  # Fetch/update test-vectors repo
+  if [ ! -d dump/test-vectors ]; then
+    echo "Cloning test-vectors repository..."
+    (cd dump && git clone --depth=1 -q --no-tags https://github.com/firedancer-io/test-vectors.git)
   fi
-)
 
-# Show the commit hashes being used
-test_vectors_commit=$(cd dump/test-vectors && git rev-parse HEAD)
-echo "Using test-vectors commit: $test_vectors_commit"
+  # Checkout specific commit non-destructively
+  (
+    cd dump/test-vectors
+    if ! git checkout -q $GIT_REF; then
+      git remote update
+      git checkout -q $GIT_REF
+    fi
+  )
+
+  # Show the commit hashes being used
+  test_vectors_commit=$(cd dump/test-vectors && git rev-parse HEAD)
+  echo "Using test-vectors commit: $test_vectors_commit"
+
+  WORK_DIR="dump/test-vectors"
+fi
 
 # Run one fixture per process, capture per-fixture output, and collect failures/successes.
 run_fixtures_per_file() {
@@ -112,12 +122,12 @@ run_fixtures_per_file() {
 
 # Define jobs: name -> fixtures dir(s)
 declare -A JOBS=(
-  [test_exec_instr]="dump/test-vectors/instr/fixtures"
-  [test_exec_txn]="dump/test-vectors/txn/fixtures/"
-  [test_exec_block]="dump/test-vectors/block/fixtures"
-  [test_exec_vm_syscall]="dump/test-vectors/syscall/fixtures"
-  [test_exec_elf_loader]="dump/test-vectors/elf_loader/fixtures"
-  [test_exec_shred]="dump/test-vectors/shred/fixtures"
+  [test_exec_instr]="$WORK_DIR/instr/fixtures"
+  [test_exec_txn]="$WORK_DIR/txn/fixtures/"
+  [test_exec_block]="$WORK_DIR/block/fixtures"
+  [test_exec_vm_syscall]="$WORK_DIR/syscall/fixtures"
+  [test_exec_elf_loader]="$WORK_DIR/elf_loader/fixtures"
+  [test_exec_shred]="$WORK_DIR/shred/fixtures"
 )
 
 any_job_failed=0
