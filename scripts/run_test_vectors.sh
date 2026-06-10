@@ -128,6 +128,8 @@ declare -A JOBS=(
   [test_exec_vm_syscall]="$WORK_DIR/syscall/fixtures"
   [test_exec_elf_loader]="$WORK_DIR/elf_loader/fixtures"
   [test_exec_shred]="$WORK_DIR/shred/fixtures"
+  [test_exec_cost]="$WORK_DIR/cost/fixtures"
+  [test_exec_vm_serialization]="$WORK_DIR/vm_serialization/fixtures"
 )
 
 any_job_failed=0
