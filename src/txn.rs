@@ -285,7 +285,13 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let total_epoch_stake = txn_bank.total_epoch_stake;
 
     /* Epoch schedule */
-    let epoch_schedule: EpochSchedule = txn_bank.epoch_schedule.as_ref().unwrap().into();
+    let epoch_schedule: EpochSchedule = accounts_to_store
+        .iter()
+        .find(|(address, account)| {
+            address == &solana_sysvar::epoch_schedule::id() && account.lamports() > 0
+        })
+        .and_then(|(_, account)| bincode::deserialize(account.data()).ok())
+        .unwrap();
 
     /* Feature set */
     let feature_set = feature_set_from_protos(txn_bank.features.as_ref().unwrap());

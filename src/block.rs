@@ -29,7 +29,7 @@ use solana_runtime::epoch_stakes::VersionedEpochStakes;
 use solana_runtime::stake_account;
 use solana_runtime::stake_history::StakeHistory;
 use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes};
-use solana_sdk_ids::sysvar::stake_history;
+use solana_sdk_ids::sysvar::{epoch_schedule as epoch_schedule_sysvar, stake_history};
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
 use solana_svm::transaction_processor::ExecutionRecordingConfig;
@@ -375,14 +375,16 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let parent_slot = bank_ctx.parent_slot;
     let poh = Hash::new_from_array(bank_ctx.poh.clone().try_into().unwrap());
 
-    let epoch_schedule: EpochSchedule = bank_ctx.epoch_schedule.as_ref().unwrap().into();
-
     let sysvar_accounts: HashMap<&[u8], &AcctState> = context
         .acct_states
         .iter()
         .filter(|item| item.lamports > 0)
         .map(|item| (item.address.as_slice(), item))
         .collect();
+
+    /* Epoch schedule */
+    let epoch_schedule: EpochSchedule =
+        get_sysvar(&sysvar_accounts, epoch_schedule_sysvar::id().as_ref());
     let stake_history: StakeHistory = get_sysvar(&sysvar_accounts, stake_history::id().as_ref());
 
     let lamports_per_signature = bank_ctx.rbh_lamports_per_signature as u64;
