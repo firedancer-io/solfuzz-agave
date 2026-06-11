@@ -27,11 +27,34 @@ fn runtime_transaction_from_proto(
     if bincode::serialized_size(&versioned_tx).ok()? > PACKET_DATA_SIZE {
         return None;
     }
+    // Dummy loaded addresses, one per ALUT index. Cost tracking only
+    // tracks counts, so dummy pubkeys are fine.
+    let lookups = match &versioned_tx.message {
+        solana_message::VersionedMessage::V0(message) => message.address_table_lookups.as_slice(),
+        _ => &[],
+    };
+    let num_writable_lookups: usize = lookups.iter().map(|l| l.writable_indexes.len()).sum();
+    let num_readonly_lookups: usize = lookups.iter().map(|l| l.readonly_indexes.len()).sum();
+    let dummy_key = |tag: u8, index: usize| {
+        let mut bytes = [0u8; 32];
+        bytes[0] = tag;
+        bytes[1] = index as u8;
+        bytes[2] = (index >> 8) as u8;
+        solana_pubkey::Pubkey::new_from_array(bytes)
+    };
+    let loaded_addresses = solana_message::v0::LoadedAddresses {
+        writable: (0..num_writable_lookups)
+            .map(|index| dummy_key(0xAA, index))
+            .collect(),
+        readonly: (0..num_readonly_lookups)
+            .map(|index| dummy_key(0xBB, index))
+            .collect(),
+    };
     RuntimeTransaction::try_create(
         versioned_tx,
         MessageHash::Compute,
         None,
-        solana_message::SimpleAddressLoader::Disabled,
+        solana_message::SimpleAddressLoader::Enabled(loaded_addresses),
         &std::collections::HashSet::new(),
         true,
     )
