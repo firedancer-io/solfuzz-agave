@@ -253,7 +253,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // zk_token_sdk_enabled, // NOT supported in fd
     stake_raise_minimum_delegation_to_1_sol,
     // stake_minimum_delegation_for_rewards, // reverted in agave
-    increase_tx_account_lock_limit,
+    // increase_tx_account_lock_limit, // abandoned
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
