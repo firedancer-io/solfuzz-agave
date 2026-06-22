@@ -564,6 +564,13 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             signatures,
         };
 
+        if bincode::serialized_size(&versioned_tx)
+            .ok()
+            .map_or(true, |val| val > solana_packet::PACKET_DATA_SIZE as u64)
+        {
+            return None;
+        };
+
         let Ok(batch) = bank.prepare_entry_batch(vec![versioned_tx]) else {
             has_err = true;
             continue;
