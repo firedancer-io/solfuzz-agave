@@ -109,9 +109,7 @@ fn output_txn_result_from_result(
 ) -> TxnResult {
     let execution_results = &value.processing_results[0];
     let (
-        is_ok,
-        sanitization_error,
-        status,
+        txn_error,
         instruction_error,
         instruction_error_index,
         custom_error,
@@ -123,10 +121,10 @@ fn output_txn_result_from_result(
         rollback_accounts,
     ) = match execution_results {
         Ok(txn) => {
-            let (status, instr_err, custom_err, instr_err_idx) =
+            let (txn_error, instr_err, custom_err, instr_err_idx) =
                 match txn.status().as_ref().map_err(transaction_error_to_err_nums) {
                     Ok(_) => (0, 0, 0, 0),
-                    Err((status, instr_err, custom_err, instr_err_idx)) => {
+                    Err((txn_error, instr_err, custom_err, instr_err_idx)) => {
                         // Set custom err to 0 if the failing instruction is a precompile
                         let custom_err_ret = sanitized_message
                             .instructions()
@@ -144,7 +142,7 @@ fn output_txn_result_from_result(
                                     })
                             })
                             .unwrap_or(custom_err);
-                        (status, instr_err, custom_err_ret, instr_err_idx)
+                        (txn_error, instr_err, custom_err_ret, instr_err_idx)
                     }
                 };
 
@@ -189,9 +187,7 @@ fn output_txn_result_from_result(
                 ProcessedTransaction::FeesOnly(_) => vec![],
             };
             (
-                execution_results.was_processed_with_successful_result(),
-                false,
-                status,
+                txn_error,
                 instr_err,
                 instr_err_idx,
                 custom_err,
@@ -204,12 +200,10 @@ fn output_txn_result_from_result(
             )
         }
         Err(transaction_error) => {
-            let (status, instr_err, custom_err, instr_err_idx) =
+            let (txn_error, instr_err, custom_err, instr_err_idx) =
                 transaction_error_to_err_nums(transaction_error);
             (
-                false,
-                true,
-                status,
+                txn_error,
                 instr_err,
                 instr_err_idx,
                 custom_err,
@@ -225,9 +219,7 @@ fn output_txn_result_from_result(
 
     TxnResult {
         executed: execution_results.was_processed(),
-        sanitization_error,
-        is_ok,
-        status,
+        txn_error,
         instruction_error,
         instruction_error_index,
         custom_error,
@@ -399,13 +391,11 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     ) {
         Ok(v) => v,
         Err(e) => {
-            let (status, instruction_error, _custom_error, instruction_error_index) =
+            let (txn_error, instruction_error, _custom_error, instruction_error_index) =
                 transaction_error_to_err_nums(&e);
             return Some(TxnResult {
                 executed: false,
-                sanitization_error: true,
-                is_ok: false,
-                status,
+                txn_error,
                 instruction_error,
                 instruction_error_index,
                 custom_error: 0, // TODO: precompile error codes are not conformant, so we're ignoring custom error codes for now. This should be revisited in the future.
@@ -475,7 +465,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     crate::utils::direct_mapping_handle_cu_exhaustion(
         virtual_address_space_adjustments_active,
         cu_avail,
-        !txn_result.is_ok,
+        txn_result.txn_error != 0,
         txn_result
             .modified_accounts
             .iter_mut()

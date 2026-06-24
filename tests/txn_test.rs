@@ -261,8 +261,8 @@ fn test_txn_execute_clock() {
     assert_eq!(res, 1);
     let result = TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap();
     assert!(result.executed);
-    assert!(result.is_ok);
     assert_eq!(result.return_data.len(), 8);
+    assert_eq!(result.txn_error, 0);
 }
 
 #[test]
@@ -401,7 +401,7 @@ fn test_simple_transfer() {
     assert_eq!(res, 1);
     let result = TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap();
     assert!(result.executed);
-    assert!(result.is_ok);
+    assert_eq!(result.txn_error, 0);
     for item in &result.modified_accounts {
         if item.address.eq(&sender.to_bytes()) {
             assert_eq!(item.lamports, 899990);
@@ -577,7 +577,7 @@ fn test_lookup_table() {
     assert_eq!(res, 1);
     let result = TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap();
     assert!(result.executed);
-    assert!(result.is_ok);
+    assert_eq!(result.txn_error, 0);
     for item in &result.modified_accounts {
         if item.address.eq(&sender.to_bytes()) {
             assert_eq!(item.lamports, 899985);
