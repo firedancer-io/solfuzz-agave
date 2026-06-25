@@ -299,7 +299,14 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     direct_account_pointers_in_program_input,
     enable_sha512_syscall,
     disable_sbpf_v0_v1_v2_deployment,
-    define_ltds_fee_only_semantics
+    define_ltds_fee_only_semantics,
+    validate_chained_block_id_2,
+    set_lamports_per_byte_to_6333,
+    set_lamports_per_byte_to_5080,
+    set_lamports_per_byte_to_2575,
+    set_lamports_per_byte_to_1322,
+    set_lamports_per_byte_to_696,
+    // set_lamports_per_byte_to_6960, // 4.2 feature, not supported yet
 ];
 
 #[unsafe(no_mangle)]
