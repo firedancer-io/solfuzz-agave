@@ -87,28 +87,15 @@ pub fn syscall_err_to_num(error: &SyscallError) -> i32 {
 }
 
 pub fn ebpf_err_to_num(error: &EbpfError) -> i32 {
-    let err: i32 = match error {
-        EbpfError::ElfError(_) => 0,
-        EbpfError::FunctionAlreadyRegistered(_) => 1,
-        EbpfError::CallDepthExceeded => 2,
-        EbpfError::ExitRootCallFrame => 3,
-        EbpfError::DivideByZero => 4,
-        EbpfError::DivideOverflow => 5,
-        EbpfError::ExecutionOverrun => 6,
-        EbpfError::CallOutsideTextSegment => 7,
-        EbpfError::ExceededMaxInstructions => 8,
-        EbpfError::JitNotCompiled => 9,
-        EbpfError::InvalidMemoryRegion(_) => 11,
-        EbpfError::AccessViolation(_, _, _, _) => 12,
-        EbpfError::StackAccessViolation(_, _, _, _) => 13,
-        EbpfError::InvalidInstruction => 14,
-        EbpfError::UnsupportedInstruction => 15,
-        EbpfError::ExhaustedTextSegment(_) => 16,
-        EbpfError::LibcInvocationFailed(_, _, _) => 17,
-        EbpfError::VerifierError(_) => 18,
-        EbpfError::SyscallError(_) => -10, // this should never be used as dyn errors are explicitly downcasted
-    };
-    err.saturating_add(1)
+    // This should never be used as dyn errors are explicitly downcasted.
+    assert!(
+        !matches!(error, EbpfError::SyscallError(_)),
+        "EbpfError::SyscallError should be downcasted before mapping"
+    );
+
+    // TODO: use .discriminant() once cut into a release
+    let err = unsafe { *std::ptr::addr_of!(*error).cast::<u64>() };
+    (err as i32).saturating_add(1)
 }
 
 pub fn unpack_stable_result(program_result: StableResult<u64, EbpfError>) -> (i64, ErrKind, u64) {
