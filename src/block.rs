@@ -18,7 +18,7 @@ use solana_fee_calculator::FeeRateGovernor;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_lattice_hash::lt_hash::LtHash;
-use solana_leader_schedule::LeaderSchedule;
+use solana_leader_schedule::{LeaderSchedule, SlotLeader};
 use solana_pubkey::Pubkey;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
@@ -40,6 +40,7 @@ use solana_vote_interface::state::{VoteState1_14_11, VoteStateV3, VoteStateV4, V
 use std::collections::HashMap;
 use std::ffi::c_int;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 
 // Firedancer-compatible seed for leader schedule hashing
 const LEADER_SCHEDULE_HASH_SEED: u64 = 0xDEADFACE;
@@ -684,4 +685,427 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         }),
         leader_schedule: Some(leader_schedule_effects),
     })
+}
+
+// ============================================================================
+// Fork residue harness
+//
+// Goal: prove that an invalid block which is executed and then abandoned (a
+// dead fork) leaves NO residue that perturbs a sibling valid block. The shared,
+// mutable state under test is the program cache, which is `Arc`-shared from a
+// parent bank to all of its children (see TransactionBatchProcessor::new_from)
+// and gated on the fork graph during `extract`. A dead sibling must therefore
+// be invisible to the valid block by ancestry.
+//
+// Because `execute_block` fabricates the parent (parent_hash comes straight
+// from the proto) while this harness builds a *real* frozen parent and forks
+// the valid block off it, the two construction paths cannot be bank-hash equal.
+// So the oracle is fork-vs-fork: run the valid block twice off an identical
+// freshly-built parent — once with a dead invalid sibling first (world A) and
+// once alone (world B, the control) — and assert the effects match.
+// ============================================================================
+
+/// Everything needed to fork child blocks off a freshly-built, frozen parent
+/// bank and to later compute `BlockEffects`. Construction is a pure function of
+/// the source `BlockContext`, so two `ForkWorld`s built from the same context
+/// are bit-identical — that is what makes the A-vs-B comparison meaningful.
+struct ForkWorld {
+    bank_forks: Arc<RwLock<BankForks>>,
+    parent: Arc<Bank>,
+    l_sched: LeaderSchedule,
+    epoch_schedule: EpochSchedule,
+    current_epoch: Epoch,
+    poh: Hash,
+}
+
+impl ForkWorld {
+    /// The per-slot leader for any child slot, used so children get the same
+    /// fee collector they would on a real fork.
+    fn leader_at(&self, slot: u64) -> SlotLeader {
+        let (_, slot_index) = self.epoch_schedule.get_epoch_and_slot_index(slot);
+        self.l_sched[slot_index]
+    }
+}
+
+/// Build a frozen parent bank at `parent_slot` from `context`, wired into its
+/// own `BankForks` (which installs the fork graph on the shared program cache).
+/// Children are then forked off `parent` at `current_slot` and beyond; they
+/// share the parent's program cache and accounts, which is exactly the residue
+/// channel under test.
+///
+/// This mirrors `execute_block`'s setup but (a) targets `parent_slot` instead of
+/// `current_slot`, (b) stores accounts only at `parent_slot` (children write
+/// their own slot), and (c) freezes the parent so it can be forked from.
+fn build_fork_parent(context: &BlockContext) -> Option<ForkWorld> {
+    let bank_ctx = context.bank.as_ref()?;
+    let fd_features = bank_ctx.features.clone().unwrap_or_default();
+    let feature_set = feature_set_from_protos(&fd_features);
+
+    let current_slot = bank_ctx.slot;
+    let parent_slot = bank_ctx.parent_slot;
+    let poh = Hash::new_from_array(bank_ctx.poh.clone().try_into().ok()?);
+
+    let sysvar_accounts: HashMap<&[u8], &AcctState> = context
+        .acct_states
+        .iter()
+        .filter(|item| item.lamports > 0)
+        .map(|item| (item.address.as_slice(), item))
+        .collect();
+
+    let epoch_schedule: EpochSchedule =
+        get_sysvar(&sysvar_accounts, epoch_schedule_sysvar::id().as_ref());
+    let stake_history: StakeHistory = get_sysvar(&sysvar_accounts, stake_history::id().as_ref());
+
+    let lamports_per_signature = bank_ctx.rbh_lamports_per_signature as u64;
+    let blockhash_queue = restore_blockhash_queue(&bank_ctx.blockhash_queue);
+
+    /* Accounts DB: store only at parent_slot and root it; children write their
+    own slots and read the parent through ancestry. */
+    let accounts = create_accounts_db(vec![]);
+    let acct_states_from_proto = deserialize_accounts(&context.acct_states);
+    let all_acct_state_pubkeys_from_proto: std::collections::HashSet<_> =
+        acct_states_from_proto.iter().map(|(pk, _)| *pk).collect();
+    let accounts_to_store: Vec<_> = feature_accounts_from_protos(&fd_features)
+        .into_iter()
+        .filter(|(pk, _)| !all_acct_state_pubkeys_from_proto.contains(pk))
+        .chain(acct_states_from_proto)
+        .collect();
+    accounts.store_accounts_seq(
+        (parent_slot, &accounts_to_store[..]),
+        None,
+        &Ancestors::default(),
+    );
+    accounts.accounts_db.add_root(parent_slot);
+    let accounts_data_size_initial = compute_accounts_data_size(&accounts_to_store);
+
+    let current_epoch = epoch_schedule.get_epoch(current_slot);
+    let parent_epoch = epoch_schedule.get_epoch(parent_slot);
+    let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
+
+    let stakes_t =
+        build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history);
+    let stakes_for_cache = Stakes::load_from_deserialized_delegations(stakes_t.clone(), |pubkey| {
+        accounts_to_store
+            .iter()
+            .find(|(pk, _)| pk == pubkey)
+            .map(|(_, acct)| acct.clone())
+    })
+    .ok()?;
+
+    let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
+    let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
+
+    let mut epoch_stakes: HashMap<Epoch, VersionedEpochStakes> = HashMap::new();
+    epoch_stakes.insert(
+        leader_schedule_epoch.saturating_sub(1),
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stakes_t_2),
+            leader_schedule_epoch.saturating_sub(1),
+        ),
+    );
+    epoch_stakes.insert(
+        leader_schedule_epoch,
+        VersionedEpochStakes::new(
+            SerdeStakesToStakeFormat::from(stakes_t_1),
+            leader_schedule_epoch,
+        ),
+    );
+
+    let l_sched = LeaderSchedule::new(
+        epoch_stakes
+            .get(&current_epoch)?
+            .stakes()
+            .vote_accounts()
+            .as_ref(),
+        current_epoch,
+        epoch_schedule.get_slots_in_epoch(current_epoch) as usize,
+        std::num::NonZeroUsize::new(NUM_CONSECUTIVE_LEADER_SLOTS as usize).unwrap(),
+    );
+    let (_, parent_slot_index) = epoch_schedule.get_epoch_and_slot_index(parent_slot);
+    let parent_leader = l_sched[parent_slot_index];
+
+    let input_fee_rate_governor = bank_ctx.fee_rate_governor.as_ref()?;
+    let fee_rate_governor = FeeRateGovernor::new_derived(
+        &FeeRateGovernor {
+            lamports_per_signature,
+            target_lamports_per_signature: input_fee_rate_governor.target_lamports_per_signature,
+            target_signatures_per_slot: input_fee_rate_governor.target_signatures_per_slot,
+            min_lamports_per_signature: input_fee_rate_governor.min_lamports_per_signature,
+            max_lamports_per_signature: input_fee_rate_governor.max_lamports_per_signature,
+            burn_percent: input_fee_rate_governor.burn_percent as u8,
+        },
+        bank_ctx.parent_signature_count,
+    );
+
+    let mut parent_lthash = LtHash::identity();
+    for (i, chunk) in bank_ctx.parent_lt_hash.chunks_exact(2).enumerate() {
+        parent_lthash.0[i] = u16::from_le_bytes(chunk.try_into().ok()?);
+    }
+
+    if bank_ctx.ns_per_slot.len() != 16 {
+        return None;
+    }
+    let ns_per_slot = u128::from_le_bytes(bank_ctx.ns_per_slot[..16].try_into().ok()?);
+    let slots_per_year = SECONDS_PER_YEAR * 1e9 / ns_per_slot as f64;
+    let epoch_schedule_for_effects = epoch_schedule.clone();
+
+    // Parent block fields: built one slot below `current_slot`. Its exact hash
+    // is irrelevant (we never compare it externally), only that it is identical
+    // across the A and B worlds — which it is, since this is deterministic.
+    let bank_fields = BankFieldsToDeserialize {
+        blockhash_queue,
+        hash: Hash::default(),
+        parent_hash: Hash::new_from_array(bank_ctx.parent_bank_hash.clone().try_into().ok()?),
+        parent_slot: parent_slot.saturating_sub(1),
+        hard_forks: HardForks::default(),
+        transaction_count: 0,
+        hashes_per_tick: None,
+        capitalization: bank_ctx.capitalization,
+        signature_count: 0,
+        tick_height: TICKS_PER_SLOT.saturating_mul(parent_slot),
+        max_tick_height: TICKS_PER_SLOT.saturating_mul(parent_slot.saturating_add(1)),
+        ticks_per_slot: TICKS_PER_SLOT,
+        ns_per_slot,
+        genesis_creation_time: 0,
+        slots_per_year,
+        slot: parent_slot,
+        block_height: bank_ctx.block_height.saturating_sub(1),
+        leader_id: parent_leader.id,
+        fee_rate_governor,
+        epoch_schedule,
+        inflation: bank_ctx.inflation.clone()?.into(),
+        stakes: stakes_t,
+        versioned_epoch_stakes: vec![],
+        is_delta: false,
+        accounts_data_len: 0,
+        accounts_lt_hash: AccountsLtHash(parent_lthash),
+        bank_hash_stats: BankHashStats::default(),
+        block_id: None,
+    };
+
+    let bank_rc = BankRc::new(accounts);
+    let parent = Bank::new_for_block_tests(
+        bank_rc,
+        bank_fields,
+        feature_set,
+        epoch_stakes,
+        stakes_for_cache,
+        accounts_data_size_initial,
+    );
+
+    // new_rw_arc installs the fork graph on the (shared) program cache.
+    let bank_forks = BankForks::new_rw_arc(parent);
+    let parent = bank_forks.read().unwrap().root_bank();
+    // Freeze the parent so children can be forked from a finalized hash.
+    parent.freeze();
+
+    Some(ForkWorld {
+        bank_forks,
+        parent,
+        l_sched,
+        epoch_schedule: epoch_schedule_for_effects,
+        current_epoch,
+        poh,
+    })
+}
+
+/// Sequentially load+execute+commit each proto txn against `bank`, mirroring
+/// `execute_block`'s non-scheduler path, then register the slot blockhash.
+/// Returns `Some(has_err)`; `None` signals an oversized transaction (the caller
+/// should abort the whole run, as `execute_block` does).
+fn run_block_txns(bank: &Bank, txns: &[protos::SanitizedTransaction], poh: &Hash) -> Option<bool> {
+    let mut has_err = false;
+    for proto_txn in txns.iter() {
+        let Some(msg) = proto_txn.message.as_ref() else {
+            has_err = true;
+            continue;
+        };
+        let signatures = proto_txn
+            .signatures
+            .iter()
+            .map(|item| Signature::from(<[u8; 64]>::try_from(item.as_slice()).unwrap()))
+            .collect::<Vec<Signature>>();
+        let versioned_tx = VersionedTransaction {
+            message: build_versioned_message(msg),
+            signatures,
+        };
+
+        if bincode::serialized_size(&versioned_tx)
+            .ok()
+            .map_or(true, |val| val > solana_packet::PACKET_DATA_SIZE as u64)
+        {
+            return None;
+        };
+
+        let Ok(batch) = bank.prepare_entry_batch(vec![versioned_tx]) else {
+            has_err = true;
+            continue;
+        };
+
+        let (commit_results, _) = bank.load_execute_and_commit_transactions(
+            &batch,
+            ExecutionRecordingConfig::new_single_setting(false),
+            &mut ExecuteTimings::default(),
+            None,
+        );
+
+        for (commit_result, sanitized) in commit_results.iter().zip(batch.sanitized_transactions()) {
+            let Ok(committed) = commit_result else {
+                has_err = true;
+                continue;
+            };
+            let tx_cost = CostModel::calculate_cost_for_executed_transaction(
+                sanitized,
+                committed.executed_units,
+                committed.loaded_account_stats.loaded_accounts_data_size,
+                &bank.feature_set,
+            );
+            if bank.write_cost_tracker().unwrap().try_add(&tx_cost).is_err() {
+                has_err = true;
+            }
+        }
+    }
+
+    bank.register_recent_blockhash_for_test(poh, None);
+    bank.update_recent_blockhashes();
+    Some(has_err)
+}
+
+/// Build `BlockEffects` from a frozen `bank`, mirroring `execute_block`'s tail
+/// (leader-schedule fingerprint + bank hash / capitalization / cost tracker).
+fn build_block_effects(
+    bank: &Bank,
+    has_err: bool,
+    l_sched: &LeaderSchedule,
+    current_epoch: Epoch,
+    epoch_schedule: &EpochSchedule,
+) -> BlockEffects {
+    let first_slot = epoch_schedule.get_first_slot_in_epoch(current_epoch);
+    let slots_in_epoch = epoch_schedule.get_slots_in_epoch(current_epoch);
+
+    let mut schedule_hash = [0u8; 16];
+    let schedule_pubkeys: Vec<Pubkey> = (0..slots_in_epoch)
+        .map(|slot_offset| l_sched[slot_offset].id)
+        .collect();
+    let unique_cnt = hash_epoch_leaders(
+        &schedule_pubkeys,
+        LEADER_SCHEDULE_HASH_SEED,
+        &mut schedule_hash,
+    );
+
+    let leader_schedule_effects = protos::LeaderScheduleEffects {
+        leaders_epoch: current_epoch,
+        leaders_slot0: first_slot,
+        leaders_slot_cnt: slots_in_epoch,
+        leader_pub_cnt: unique_cnt as u64,
+        leaders_sched_cnt: slots_in_epoch,
+        leader_schedule_hash: schedule_hash.to_vec(),
+    };
+
+    let bank_hash = if has_err {
+        Hash::default()
+    } else {
+        bank.hash()
+    };
+    let capitalization = if has_err { 0 } else { bank.capitalization() };
+    let cost_tracker = bank.read_cost_tracker().unwrap();
+
+    BlockEffects {
+        has_error: has_err,
+        slot_capitalization: capitalization,
+        bank_hash: bank_hash.to_bytes().to_vec(),
+        cost_tracker: Some(protos::CostTracker {
+            block_cost: cost_tracker.block_cost(),
+            vote_cost: cost_tracker.vote_cost(),
+        }),
+        leader_schedule: Some(leader_schedule_effects),
+    }
+}
+
+/// Run `valid` once with a dead `invalid` sibling executed first (world A) and
+/// once alone (world B), off identical freshly-built parents, and assert the
+/// effects match. A mismatch means the abandoned invalid block leaked residue
+/// (program cache / accounts) into the valid block. Returns world A's effects.
+pub fn execute_block_fork(valid: BlockContext, invalid: BlockContext) -> Option<BlockEffects> {
+    let current_slot = valid.bank.as_ref()?.slot;
+    // The invalid block is a *sibling* of the valid block: a distinct direct
+    // child of the same parent, so it is never an ancestor of the valid block.
+    // A distinct deployment slot also avoids program-cache key collisions, so
+    // what we exercise is purely the fork-graph ancestry exclusion in `extract`.
+    let invalid_slot = current_slot.saturating_add(1);
+
+    // ---- World A: dead invalid sibling, then the valid block ----
+    let world_a = build_fork_parent(&valid)?;
+
+    let invalid_child = Bank::new_from_parent_with_bank_forks(
+        &world_a.bank_forks,
+        world_a.parent.clone(),
+        world_a.leader_at(invalid_slot),
+        invalid_slot,
+    );
+    let inv_has_err = run_block_txns(&invalid_child, &invalid.txns, &world_a.poh)?;
+    // Precondition: this must actually be an invalid/dead block. (We cannot also
+    // assert it touched the program cache from here — `transaction_processor` is
+    // private to the runtime crate; add a dev-only accessor in agave if a
+    // stricter "non-vacuous" gate is wanted.)
+    if !inv_has_err {
+        return None;
+    }
+    // "Fails to finalize": never freeze or root the invalid block. Detach it
+    // from the fork graph and drop it so it becomes a dead fork. Its program
+    // cache entries remain in the shared cache (keyed at `invalid_slot`) until
+    // pruned — exactly the residue the valid block must ignore by ancestry.
+    let inv_slot = invalid_child.slot();
+    drop(invalid_child);
+    world_a.bank_forks.write().unwrap().remove(inv_slot);
+
+    let valid_child_a = Bank::new_from_parent_with_bank_forks(
+        &world_a.bank_forks,
+        world_a.parent.clone(),
+        world_a.leader_at(current_slot),
+        current_slot,
+    );
+    let has_err_a = run_block_txns(&valid_child_a, &valid.txns, &world_a.poh)?;
+    valid_child_a.freeze();
+    let effects_a = build_block_effects(
+        &valid_child_a,
+        has_err_a,
+        &world_a.l_sched,
+        world_a.current_epoch,
+        &world_a.epoch_schedule,
+    );
+
+    // ---- World B: control — the valid block alone, identical fresh parent ----
+    let world_b = build_fork_parent(&valid)?;
+    let valid_child_b = Bank::new_from_parent_with_bank_forks(
+        &world_b.bank_forks,
+        world_b.parent.clone(),
+        world_b.leader_at(current_slot),
+        current_slot,
+    );
+    let has_err_b = run_block_txns(&valid_child_b, &valid.txns, &world_b.poh)?;
+    valid_child_b.freeze();
+    let effects_b = build_block_effects(
+        &valid_child_b,
+        has_err_b,
+        &world_b.l_sched,
+        world_b.current_epoch,
+        &world_b.epoch_schedule,
+    );
+
+    // ---- Oracle: the dead block must leave no trace ----
+    assert_eq!(
+        effects_a.has_error, effects_b.has_error,
+        "dead invalid block changed the valid block's error outcome"
+    );
+    assert_eq!(
+        effects_a.bank_hash, effects_b.bank_hash,
+        "dead invalid block left bank-hash residue in the valid block"
+    );
+    assert_eq!(
+        effects_a.slot_capitalization, effects_b.slot_capitalization,
+        "dead invalid block left capitalization residue in the valid block"
+    );
+
+    Some(effects_a)
 }
