@@ -122,11 +122,10 @@ pub fn execute_vm_syscall(input: SyscallContext) -> Option<SyscallEffects> {
         lamports_per_signature,
         compute_budget,
         environments,
-    ) = crate::instr::create_invoke_context_fields(instr_ctx, populate_program_cache)?;
+    ) = crate::instr::create_invoke_context_fields(instr_ctx, populate_program_cache);
 
     /* MemoryCowCallback requires moved objects to have the 'static lifetime
-      so we promote them to 'static and drop at the end as we are sure they are not used anymore
-    */
+    so we promote them to 'static and drop at the end as we are sure they are not used anymore */
     let transaction_context = Box::leak(Box::new(transaction_context));
     let transaction_context_ptr = transaction_context as *mut TransactionContext as usize;
     let sysvar_cache = Box::leak(Box::new(sysvar_cache));

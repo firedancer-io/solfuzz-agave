@@ -93,7 +93,7 @@ fn test_system_program_exec() {
     let output = execute_instr(input);
     assert_eq!(
         output,
-        Some(protos::InstrEffects {
+        protos::InstrEffects {
             result: 0,
             custom_err: 0,
             modified_accounts: with_sysvars(vec![
@@ -121,6 +121,67 @@ fn test_system_program_exec() {
             ]),
             cu_avail: 9850u64,
             return_data: vec![],
-        })
+        }
     );
+}
+
+#[test]
+#[should_panic(expected = "invariant violation: duplicate account load")]
+fn test_duplicate_accounts_panic_with_invariant_violation() {
+    let native_loader_id = native_loader::id().to_bytes().to_vec();
+
+    let input = protos::InstrContext {
+        program_id: vec![0u8; 32],
+        accounts: with_sysvars(vec![
+            protos::AcctState {
+                address: vec![1u8; 32],
+                owner: vec![0u8; 32],
+                lamports: 1000,
+                data: vec![],
+                executable: false,
+            },
+            protos::AcctState {
+                address: vec![1u8; 32],
+                owner: vec![0u8; 32],
+                lamports: 1000,
+                data: vec![],
+                executable: false,
+            },
+            protos::AcctState {
+                address: vec![2u8; 32],
+                owner: vec![0u8; 32],
+                lamports: 0,
+                data: vec![],
+                executable: false,
+            },
+            protos::AcctState {
+                address: vec![0u8; 32],
+                owner: native_loader_id,
+                lamports: 10000000,
+                data: b"Solana Program".to_vec(),
+                executable: true,
+            },
+        ]),
+        instr_accounts: vec![
+            protos::InstrAcct {
+                index: 0,
+                is_signer: true,
+                is_writable: true,
+            },
+            protos::InstrAcct {
+                index: 2,
+                is_signer: false,
+                is_writable: true,
+            },
+        ],
+        data: vec![
+            // Transfer
+            0x02, 0x00, 0x00, 0x00, // Lamports
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ],
+        cu_avail: 10000u64,
+        features: None,
+    };
+
+    execute_instr(input);
 }

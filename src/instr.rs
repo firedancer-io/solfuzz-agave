@@ -64,9 +64,7 @@ pub unsafe extern "C" fn sol_compat_instr_execute_v1(
     let Ok(instr_context) = protos::InstrContext::decode(in_slice) else {
         return 0;
     };
-    let Some(instr_effects) = execute_instr(instr_context) else {
-        return 0;
-    };
+    let instr_effects = execute_instr(instr_context);
     let out_slice = unsafe { std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize) };
     let out_vec = instr_effects.encode_to_vec();
     if out_vec.len() > out_slice.len() {
@@ -320,7 +318,7 @@ fn initialize_program_cache(cache: &mut ProgramCacheForTxBatch, feature_set: &Fe
 pub(crate) fn create_invoke_context_fields(
     input: &mut InstrContext,
     populate_program_cache: bool,
-) -> Option<(
+) -> (
     TransactionContext<'_>,
     SysvarCache,
     ProgramCacheForTxBatch,
@@ -328,7 +326,7 @@ pub(crate) fn create_invoke_context_fields(
     u64,
     ComputeBudget,
     ProgramRuntimeEnvironments,
-)> {
+) {
     #[cfg(feature = "core-bpf-conformance")]
     // The BPF version of some builtin programs are built with the assumption
     // that certain features will be active at the time of their deployment.
@@ -489,10 +487,11 @@ pub(crate) fn create_invoke_context_fields(
                 continue;
             }
 
-            // FD rejects duplicate account loads
-            if !newly_loaded_programs.insert(acc.0) {
-                return None;
-            }
+            // Reject duplicate account loads
+            assert!(
+                newly_loaded_programs.insert(acc.0),
+                "invariant violation: duplicate account load"
+            );
 
             if program_cache_for_tx_batch.find(&acc.0).is_none() {
                 // load_program_with_pubkey expects the owner to be one of the bpf loader
@@ -526,7 +525,7 @@ pub(crate) fn create_invoke_context_fields(
         }
     }
 
-    Some((
+    (
         transaction_context,
         sysvar_cache,
         program_cache_for_tx_batch,
@@ -534,10 +533,10 @@ pub(crate) fn create_invoke_context_fields(
         lamports_per_signature,
         compute_budget,
         environments,
-    ))
+    )
 }
 
-pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects> {
+pub fn execute_instr(input: protos::InstrContext) -> protos::InstrEffects {
     let mut input = InstrContext::from(input);
 
     // Extract all needed values before mutable borrow
@@ -562,7 +561,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         lamports_per_signature,
         compute_budget,
         environments,
-    ) = create_invoke_context_fields(&mut input, true)?;
+    ) = create_invoke_context_fields(&mut input, true);
 
     // Get accounts immediately after mutable borrow is released, before creating EnvironmentConfig
     let instruction_accounts =
@@ -581,7 +580,9 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         &sysvar_cache,
     );
 
-    let program_idx = transaction_context.find_index_of_account(&program_id)?;
+    let program_idx = transaction_context
+        .find_index_of_account(&program_id)
+        .expect("invariant violation: program account not found in transaction context");
 
     let mut compute_units_consumed = 0u64;
 
@@ -750,7 +751,7 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
         modified_accounts.iter_mut().map(|(_, acc)| &mut acc.data),
     );
 
-    Some(protos::InstrEffects {
+    protos::InstrEffects {
         result: instr_result
             .as_ref()
             .map(instr_err_to_num)
@@ -768,5 +769,5 @@ pub fn execute_instr(input: protos::InstrContext) -> Option<protos::InstrEffects
             .collect(),
         cu_avail,
         return_data,
-    })
+    }
 }
