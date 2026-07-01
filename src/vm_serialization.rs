@@ -56,7 +56,7 @@ pub fn execute_vm_serialize(input: protos::InstrContext) -> protos::VmSerializat
         lamports_per_signature,
         compute_budget,
         environments,
-    ) = crate::instr::create_invoke_context_fields(&mut instr_ctx, false).unwrap();
+    ) = crate::instr::create_invoke_context_fields(&mut instr_ctx, false);
 
     let instruction_accounts =
         crate::instr::get_instr_accounts(&transaction_context, &instruction_accounts_snapshot);
