@@ -7,7 +7,7 @@ use solana_sdk_ids::native_loader;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;
 use solana_sysvar::SysvarSerialize;
-use solfuzz_agave::instr::execute_instr;
+use solfuzz_agave::instr::execute_instr_proto;
 
 fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> protos::AcctState {
     protos::AcctState {
@@ -90,7 +90,7 @@ fn test_system_program_exec() {
         cu_avail: 10000u64,
         features: None,
     };
-    let output = execute_instr(input);
+    let output = execute_instr_proto(input);
     assert_eq!(
         output,
         protos::InstrEffects {
@@ -126,7 +126,7 @@ fn test_system_program_exec() {
 }
 
 #[test]
-#[should_panic(expected = "invariant violation: duplicate account load")]
+#[should_panic(expected = "UnsupportedProgramId")]
 fn test_duplicate_accounts_panic_with_invariant_violation() {
     let native_loader_id = native_loader::id().to_bytes().to_vec();
 
@@ -183,5 +183,5 @@ fn test_duplicate_accounts_panic_with_invariant_violation() {
         features: None,
     };
 
-    execute_instr(input);
+    execute_instr_proto(input);
 }

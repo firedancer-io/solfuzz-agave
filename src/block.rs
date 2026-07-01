@@ -11,14 +11,14 @@ use protosol::protos::{BlockContext, BlockEffects};
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts_hash::AccountsLtHash;
 use solana_accounts_db::ancestors::Ancestors;
-use solana_clock::{Epoch, NUM_CONSECUTIVE_LEADER_SLOTS};
+use solana_clock::Epoch;
 use solana_cost_model::cost_model::CostModel;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
 use solana_hard_forks::HardForks;
 use solana_hash::Hash;
 use solana_lattice_hash::lt_hash::LtHash;
-use solana_leader_schedule::LeaderSchedule;
+use solana_leader_schedule::{LeaderSchedule, NUM_CONSECUTIVE_LEADER_SLOTS};
 use solana_pubkey::Pubkey;
 use solana_runtime::bank::bank_hash_details::{
     AccountsDetails, BankHashComponents, BankHashDetails, SlotDetails,
@@ -126,7 +126,7 @@ fn build_latest_stake_delegations(
                         .iter()
                         .filter_map(|(_, delegation)| {
                             if delegation.voter_pubkey == pubkey {
-                                Some(delegation.stake(epoch, stake_history, Some(0)))
+                                Some(delegation.stake_v2(epoch, stake_history, Some(0)))
                             } else {
                                 None
                             }
@@ -472,7 +472,7 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
             .as_ref(),
         current_epoch,
         epoch_schedule.get_slots_in_epoch(current_epoch) as usize,
-        std::num::NonZeroUsize::new(NUM_CONSECUTIVE_LEADER_SLOTS as usize).unwrap(),
+        NUM_CONSECUTIVE_LEADER_SLOTS,
     );
     let (_, slot_index) = epoch_schedule.get_epoch_and_slot_index(current_slot);
     let leader = l_sched[slot_index];
@@ -673,7 +673,6 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
         bank_hash: bank_hash.to_bytes().to_vec(),
         cost_tracker: Some(protos::CostTracker {
             block_cost: cost_tracker.block_cost(),
-            vote_cost: cost_tracker.vote_cost(),
         }),
         leader_schedule: Some(leader_schedule_effects),
     })

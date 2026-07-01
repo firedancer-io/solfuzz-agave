@@ -10,7 +10,6 @@ use protosol::protos::AcctState;
 use solana_account::{AccountSharedData, ReadableAccount};
 use solana_accounts_db::accounts::Accounts;
 use solana_accounts_db::accounts_db::{AccountsDb, AccountsDbConfig};
-use solana_accounts_db::accounts_file::StorageAccess;
 use solana_accounts_db::accounts_index::{AccountsIndexConfig, IndexLimit};
 use solana_accounts_db::blockhash_queue::BlockhashQueue;
 use solana_hash::Hash;
@@ -104,7 +103,6 @@ pub fn create_accounts_db(paths: Vec<PathBuf>) -> Accounts {
     });
     let accounts_db_config = AccountsDbConfig {
         index,
-        storage_access: StorageAccess::File,
         skip_initial_hash_calc: true,
         num_background_threads: Some(NonZeroUsize::new(1).unwrap()),
         num_foreground_threads: Some(NonZeroUsize::new(1).unwrap()),

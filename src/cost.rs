@@ -67,27 +67,15 @@ fn result_from_transaction_cost(
         RuntimeTransaction<solana_transaction::sanitized::SanitizedTransaction>,
     >,
 ) -> CostResult {
-    match cost {
-        TransactionCost::SimpleVote { .. } => CostResult {
-            has_cost: true,
-            signature_cost: cost.signature_cost(),
-            write_lock_cost: cost.write_lock_cost(),
-            data_bytes_cost: cost.data_bytes_cost() as u64,
-            programs_execution_cost: cost.programs_execution_cost(),
-            loaded_accounts_data_size_cost: cost.loaded_accounts_data_size_cost(),
-            allocated_accounts_data_size: cost.allocated_accounts_data_size(),
-            total_cost: cost.sum(),
-        },
-        TransactionCost::Transaction(details) => CostResult {
-            has_cost: true,
-            signature_cost: details.signature_cost,
-            write_lock_cost: details.write_lock_cost,
-            data_bytes_cost: details.data_bytes_cost as u64,
-            programs_execution_cost: details.programs_execution_cost,
-            loaded_accounts_data_size_cost: details.loaded_accounts_data_size_cost,
-            allocated_accounts_data_size: details.allocated_accounts_data_size,
-            total_cost: details.sum(),
-        },
+    CostResult {
+        has_cost: true,
+        signature_cost: cost.signature_cost(),
+        write_lock_cost: cost.write_lock_cost(),
+        data_bytes_cost: cost.data_bytes_cost() as u64,
+        programs_execution_cost: cost.programs_execution_cost(),
+        loaded_accounts_data_size_cost: cost.loaded_accounts_data_size_cost(),
+        allocated_accounts_data_size: cost.allocated_accounts_data_size(),
+        total_cost: cost.sum(),
     }
 }
 
