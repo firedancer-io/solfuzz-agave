@@ -21,14 +21,8 @@ fn exec(input: &PathBuf) -> bool {
         println!("No fixture found.");
         return false;
     };
-    let Some(effects) = solfuzz_agave::txn::execute_transaction(&context) else {
-        println!(
-            "FAIL: No transaction effects returned for input: {:?}",
-            input
-        );
-        return false;
-    };
 
+    let effects = solfuzz_agave::txn::execute_transaction(&context);
     let ok = effects == expected;
     if ok {
         println!("OK: {:?}", input);

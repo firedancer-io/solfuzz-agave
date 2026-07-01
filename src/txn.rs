@@ -59,9 +59,7 @@ pub unsafe extern "C" fn sol_compat_txn_execute_v1(
         return 0;
     };
 
-    let Some(txn_result) = execute_transaction(&txn_context) else {
-        return 0;
-    };
+    let txn_result = execute_transaction(&txn_context);
 
     let out_slice = unsafe { std::slice::from_raw_parts_mut(out_ptr, (*out_psz) as usize) };
     let out_vec = txn_result.encode_to_vec();
@@ -242,7 +240,7 @@ fn output_txn_result_from_result(
 }
 
 #[allow(deprecated)]
-pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
+pub fn execute_transaction(context: &TxnContext) -> TxnResult {
     let txn_bank = context.bank.as_ref().unwrap();
 
     let accounts_to_store = deserialize_accounts(&context.account_shared_data);
@@ -364,11 +362,12 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
     let bank = bank_forks.read().unwrap().root_bank();
 
     /* Build the transaction from input */
-    let message = build_versioned_message(context.tx.as_ref()?.message.as_ref()?);
+    let message = build_versioned_message(context.tx.as_ref().unwrap().message.as_ref().unwrap());
 
     let mut signatures = context
         .tx
-        .as_ref()?
+        .as_ref()
+        .unwrap()
         .signatures
         .iter()
         .map(|item| {
@@ -393,7 +392,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         Err(e) => {
             let (txn_error, instruction_error, _custom_error, instruction_error_index) =
                 transaction_error_to_err_nums(&e);
-            return Some(TxnResult {
+            return TxnResult {
                 executed: false,
                 txn_error,
                 instruction_error,
@@ -405,7 +404,7 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
                 loaded_accounts_data_size: 0,
                 modified_accounts: vec![],
                 rollback_accounts: vec![],
-            });
+            };
         }
     };
 
@@ -495,5 +494,5 @@ pub fn execute_transaction(context: &TxnContext) -> Option<TxnResult> {
         ))
     });
 
-    Some(txn_result)
+    txn_result
 }
