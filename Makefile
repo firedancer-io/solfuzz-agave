@@ -73,6 +73,13 @@ shared_obj_cov:
 	# to avoid conflicts when uploading as GH artifact
 	cp target/cov/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release/libsolfuzz_agave+cov.so
 
+# Uninstrumented shared object for Inferno hardware coverage (no sancov).
+INFERNO_RUSTFLAGS:=-g -Clink-dead-code -Cforce-frame-pointers=yes -Ctarget-feature=-crt-static
+shared_obj_inferno:
+	RUSTFLAGS="$(INFERNO_RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/inferno
+	mkdir -p target/x86_64-unknown-linux-gnu/release-inferno
+	cp target/inferno/x86_64-unknown-linux-gnu/release/libsolfuzz_agave.so target/x86_64-unknown-linux-gnu/release-inferno/libsolfuzz_agave.so
+
 shared_obj_core_bpf:
 	./scripts/fetch_program.sh $(PROGRAM)
 	CARGO=$(CARGO) ./scripts/build_core_bpf.sh $(PROGRAM)
