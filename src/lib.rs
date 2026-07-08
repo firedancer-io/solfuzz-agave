@@ -269,7 +269,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reenable_zk_elgamal_proof_program,
     // enable_extend_program_checked,  // was un-keyed https://github.com/anza-xyz/agave/pull/11686
     require_static_nonce_account,
-    enshrine_slashing_program,
+    // enshrine_slashing_program, // removed in Agave 4.2
     syscall_parameter_address_restrictions,
     virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
     account_data_direct_mapping,       // depends on virtual_address_space_adjustments
@@ -306,7 +306,12 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     set_lamports_per_byte_to_2575,
     set_lamports_per_byte_to_1322,
     set_lamports_per_byte_to_696,
-    // set_lamports_per_byte_to_6960, // 4.2 feature, not supported yet
+    set_lamports_per_byte_to_6960,
+    relax_post_exec_min_balance_check,
+    reduce_slot_time_to_350ms,
+    reduce_slot_time_to_300ms,
+    reduce_slot_time_to_250ms,
+    reduce_slot_time_to_200ms,
 ];
 
 #[unsafe(no_mangle)]

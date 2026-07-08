@@ -1,9 +1,9 @@
 // Benchmark transaction execution using test vectors in dump/test-vectors/txn/fixtures/programs/
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use prost::Message;
-use solfuzz_agave::proto::TxnContext;
-use solfuzz_agave::proto::TxnFixture;
+use protosol::protos::{TxnContext, TxnFixture};
 use std::fs;
+use std::hint::black_box;
 
 fn bench_txn_exec(c: &mut Criterion) {
     unsafe {
@@ -82,20 +82,20 @@ fn bench_txn_exec(c: &mut Criterion) {
             let sample = &contexts_vec[..std::cmp::min(100, contexts_vec.len())];
 
             for context in sample {
-                black_box(solfuzz_agave::txn_fuzzer::execute_transaction(context));
+                black_box(solfuzz_agave::txn::execute_transaction(context));
             }
         });
     });
     group.bench_function("single-transaction", |b| {
         let context = &contexts_vec[0];
-        b.iter(|| black_box(solfuzz_agave::txn_fuzzer::execute_transaction(context)));
+        b.iter(|| black_box(solfuzz_agave::txn::execute_transaction(context)));
     });
 
     group.bench_function("small-batch-10", |b| {
         let sample = &contexts_vec[..std::cmp::min(10, contexts_vec.len())];
         b.iter(|| {
             for context in sample {
-                black_box(solfuzz_agave::txn_fuzzer::execute_transaction(context));
+                black_box(solfuzz_agave::txn::execute_transaction(context));
             }
         });
     });

@@ -430,6 +430,7 @@ pub fn execute_transaction(context: &TxnContext) -> TxnResult {
         recording_config,
         drop_on_failure: false,
         all_or_nothing: false,
+        strict_nonce_size_check: false, /* TODO: do we need to fuzz this? */
     };
 
     let mut metrics = TransactionErrorMetrics::default();

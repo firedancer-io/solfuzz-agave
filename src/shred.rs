@@ -229,8 +229,9 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         let _ = check_duplicate_shred(
             &blockstore,
             dup,
-            true, // validate_chained_block_id: match Firedancer assumptions
-            true, // validate_chained_block_id_2: match Firedancer assumptions
+            true,  // validate_chained_block_id: match Firedancer assumptions
+            true,  // validate_chained_block_id_2: match Firedancer assumptions
+            false, // no_verify_chained_merkle_root: keep pre-Alpenglow validation
         );
     };
     let shreds_iter = parsed
