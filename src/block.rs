@@ -1,4 +1,3 @@
-use crate::utils::fd_hash::fd_hash;
 use crate::utils::program::common::{build_versioned_message, get_sysvar};
 use crate::utils::{
     compute_accounts_data_size, create_accounts_db, deserialize_accounts,
@@ -32,6 +31,7 @@ use solana_runtime::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Sta
 use solana_sdk_ids::sysvar::{epoch_schedule as epoch_schedule_sysvar, stake_history};
 use solana_signature::Signature;
 use solana_stake_interface::state::Delegation;
+use solana_svm::conformance::fd_hash::fd_hash;
 use solana_svm::transaction_processor::ExecutionRecordingConfig;
 use solana_svm_timings::ExecuteTimings;
 use solana_transaction::versioned::VersionedTransaction;
