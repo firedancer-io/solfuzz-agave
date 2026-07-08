@@ -1,7 +1,4 @@
-pub mod err_map;
-pub mod fd_hash;
 pub mod program;
-pub mod vm;
 use agave_feature_set::{FeatureSet, FEATURE_NAMES};
 use ahash::{AHashMap, AHashSet};
 use lazy_static::lazy_static;
