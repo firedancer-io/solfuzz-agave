@@ -21,10 +21,7 @@ fn exec(input: &PathBuf) -> bool {
         println!("No fixture found.");
         return false;
     };
-    let Some(effects) = solfuzz_agave::vm_syscalls::execute_vm_syscall(context) else {
-        println!("Failed to execute VM syscall.");
-        return false;
-    };
+    let effects = solfuzz_agave::vm_syscalls::execute_vm_syscall(context);
 
     let ok = effects == expected;
     if ok {
