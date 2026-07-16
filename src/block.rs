@@ -84,6 +84,7 @@ fn build_latest_stake_delegations(
     account_states: &[protos::AcctState],
     epoch: Epoch,
     stake_history: &StakeHistory,
+    use_fixed_point_stake_math: bool,
 ) -> DeserializableStakes<Delegation> {
     // let mut stakes = Stakes::<Delegation>::default();
     let mut stakes = DeserializableStakes::<Delegation> {
@@ -126,7 +127,12 @@ fn build_latest_stake_delegations(
                         .iter()
                         .filter_map(|(_, delegation)| {
                             if delegation.voter_pubkey == pubkey {
-                                Some(delegation.stake_v2(epoch, stake_history, Some(0)))
+                                if use_fixed_point_stake_math {
+                                    Some(delegation.stake_v2(epoch, stake_history, Some(0)))
+                                } else {
+                                    #[allow(deprecated)]
+                                    Some(delegation.stake(epoch, stake_history, Some(0)))
+                                }
                             } else {
                                 None
                             }
@@ -424,9 +430,14 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     let current_epoch = epoch_schedule.get_epoch(current_slot);
     let parent_epoch = epoch_schedule.get_epoch(parent_slot);
     let leader_schedule_epoch = epoch_schedule.get_leader_schedule_epoch(parent_slot);
+    let use_fixed_point_stake_math = feature_set.snapshot().upgrade_bpf_stake_program_to_v5_1;
 
-    let stakes_t =
-        build_latest_stake_delegations(&context.acct_states, parent_epoch, &stake_history);
+    let stakes_t = build_latest_stake_delegations(
+        &context.acct_states,
+        parent_epoch,
+        &stake_history,
+        use_fixed_point_stake_math,
+    );
 
     // Convert stakes_t (current epoch delegations + stake_history from sysvar) into
     // Stakes<StakeAccount> for the StakesCache. This mirrors new_from_snapshot which
