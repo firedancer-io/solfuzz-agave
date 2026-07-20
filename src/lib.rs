@@ -294,6 +294,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     validate_chained_block_id,
     upgrade_bpf_stake_program_to_v5,
     commission_rate_in_basis_points,
+    custom_commission_collector,
     loader_v3_minimum_extend_program_size,
     direct_account_pointers_in_program_input,
     enable_sha512_syscall,
