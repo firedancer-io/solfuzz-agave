@@ -246,6 +246,9 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     raise_account_cu_limit,
     relax_intrabatch_account_locks,
     increase_cpi_account_info_limit,
+    deprecate_rent_exemption_threshold,
+    delay_commission_updates,
+    commission_rate_in_basis_points,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -272,7 +275,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     syscall_parameter_address_restrictions,
     virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
     account_data_direct_mapping,       // depends on virtual_address_space_adjustments
-    deprecate_rent_exemption_threshold,
     discard_unexpected_data_complete_shreds,
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
@@ -290,10 +292,8 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     limit_instruction_accounts,
     validator_admission_ticket,
     create_account_allow_prefund,
-    delay_commission_updates,
     validate_chained_block_id,
     upgrade_bpf_stake_program_to_v5,
-    commission_rate_in_basis_points,
     custom_commission_collector,
     loader_v3_minimum_extend_program_size,
     direct_account_pointers_in_program_input,
