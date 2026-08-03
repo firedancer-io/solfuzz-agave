@@ -56,8 +56,8 @@ dependencies = [
 
 [[package]]
 name = "agave-banking-stage-ingress-types"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "crossbeam-channel",
  "solana-perf",
@@ -65,8 +65,8 @@ dependencies = [
 
 [[package]]
 name = "agave-bls-cert-verify"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-votor-messages",
  "bitvec",
@@ -80,8 +80,8 @@ dependencies = [
 
 [[package]]
 name = "agave-bls-sigverify"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-bls-cert-verify",
  "agave-math-utils",
@@ -110,16 +110,16 @@ dependencies = [
 
 [[package]]
 name = "agave-cpu-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "agave-feature-set"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "ahash 0.8.12",
  "solana-epoch-schedule",
@@ -132,8 +132,8 @@ dependencies = [
 
 [[package]]
 name = "agave-fs"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-io-uring",
  "io-uring",
@@ -147,8 +147,8 @@ dependencies = [
 
 [[package]]
 name = "agave-geyser-plugin-interface"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "log",
  "solana-clock",
@@ -162,8 +162,8 @@ dependencies = [
 
 [[package]]
 name = "agave-io-uring"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "io-uring",
  "libc",
@@ -174,8 +174,8 @@ dependencies = [
 
 [[package]]
 name = "agave-logger"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "env_logger",
  "libc",
@@ -185,16 +185,16 @@ dependencies = [
 
 [[package]]
 name = "agave-math-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "num-traits",
 ]
 
 [[package]]
 name = "agave-precompiles"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "bincode",
@@ -213,16 +213,16 @@ dependencies = [
 
 [[package]]
 name = "agave-random"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "rand 0.9.5",
 ]
 
 [[package]]
 name = "agave-reserved-account-keys"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "solana-pubkey 4.2.0",
@@ -231,13 +231,13 @@ dependencies = [
 
 [[package]]
 name = "agave-scheduler-bindings"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 
 [[package]]
 name = "agave-scheduling-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "agave-scheduler-bindings",
@@ -257,8 +257,8 @@ dependencies = [
 
 [[package]]
 name = "agave-snapshots"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-fs",
  "bincode",
@@ -287,8 +287,8 @@ dependencies = [
 
 [[package]]
 name = "agave-transaction-view"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "solana-hash 4.4.0",
  "solana-message",
@@ -303,8 +303,8 @@ dependencies = [
 
 [[package]]
 name = "agave-votor"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-bls-sigverify",
  "agave-logger",
@@ -346,8 +346,8 @@ dependencies = [
 
 [[package]]
 name = "agave-votor-messages"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "crossbeam-channel",
@@ -367,8 +367,8 @@ dependencies = [
 
 [[package]]
 name = "agave-xdp"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-cpu-utils",
  "agave-xdp-ebpf",
@@ -378,6 +378,7 @@ dependencies = [
  "bytes",
  "caps",
  "crossbeam-channel",
+ "crossbeam-queue",
  "libc",
  "log",
  "thiserror 2.0.18",
@@ -385,8 +386,8 @@ dependencies = [
 
 [[package]]
 name = "agave-xdp-ebpf"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "aya",
  "aya-ebpf",
@@ -1821,6 +1822,15 @@ name = "crossbeam-epoch"
 version = "0.9.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d6914041f254d6e9176c01941b21115dcfb7089e55135a35411081bd106ef3f"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "803d13fb3b09d88be9f4dbc29062c66b19bf7170867ceb746d2a8689bf6c7a26"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -5965,8 +5975,8 @@ dependencies = [
 
 [[package]]
 name = "solana-account-decoder"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "Inflector",
  "base64 0.22.1",
@@ -6007,8 +6017,8 @@ dependencies = [
 
 [[package]]
 name = "solana-account-decoder-client-types"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "base64 0.22.1",
  "bs58",
@@ -6032,8 +6042,8 @@ dependencies = [
 
 [[package]]
 name = "solana-accounts-db"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-fs",
  "ahash 0.8.12",
@@ -6169,8 +6179,8 @@ dependencies = [
 
 [[package]]
 name = "solana-bloom"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bv",
  "fnv",
@@ -6248,8 +6258,8 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-loader-program"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bincode",
  "qualifier_attr",
@@ -6274,8 +6284,8 @@ dependencies = [
 
 [[package]]
 name = "solana-bucket-map"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "ahash 0.8.12",
  "bv",
@@ -6293,8 +6303,8 @@ dependencies = [
 
 [[package]]
 name = "solana-builtins"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "solana-bpf-loader-program",
@@ -6311,8 +6321,8 @@ dependencies = [
 
 [[package]]
 name = "solana-builtins-default-costs"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "ahash 0.8.12",
@@ -6322,8 +6332,8 @@ dependencies = [
 
 [[package]]
 name = "solana-clap-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bip39",
  "bs58",
@@ -6352,8 +6362,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cli-config"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "dirs-next",
  "serde",
@@ -6365,8 +6375,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cli-output"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "Inflector",
  "agave-reserved-account-keys",
@@ -6410,8 +6420,8 @@ dependencies = [
 
 [[package]]
 name = "solana-client"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "async-trait",
  "bincode",
@@ -6502,8 +6512,8 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "solana-fee-structure",
  "solana-program-runtime",
@@ -6511,8 +6521,8 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget-instruction"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "solana-borsh",
@@ -6540,8 +6550,8 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget-program"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "solana-program-runtime",
 ]
@@ -6565,8 +6575,8 @@ dependencies = [
 
 [[package]]
 name = "solana-connection-cache"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
@@ -6583,8 +6593,8 @@ dependencies = [
 
 [[package]]
 name = "solana-core"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-banking-stage-ingress-types",
  "agave-bls-cert-verify",
@@ -6721,8 +6731,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cost-model"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "ahash 0.8.12",
@@ -6820,8 +6830,8 @@ dependencies = [
 
 [[package]]
 name = "solana-download-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-snapshots",
  "log",
@@ -6845,8 +6855,8 @@ dependencies = [
 
 [[package]]
 name = "solana-entry"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-votor-messages",
  "crossbeam-channel",
@@ -6926,8 +6936,8 @@ dependencies = [
 
 [[package]]
 name = "solana-faucet"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "crossbeam-channel",
  "log",
@@ -6971,8 +6981,8 @@ dependencies = [
 
 [[package]]
 name = "solana-fee"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "solana-fee-structure",
@@ -7044,8 +7054,8 @@ dependencies = [
 
 [[package]]
 name = "solana-genesis-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-snapshots",
  "log",
@@ -7069,8 +7079,8 @@ dependencies = [
 
 [[package]]
 name = "solana-geyser-plugin-manager"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-geyser-plugin-interface",
  "arc-swap",
@@ -7103,8 +7113,8 @@ dependencies = [
 
 [[package]]
 name = "solana-gossip"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-logger",
  "agave-random",
@@ -7321,8 +7331,8 @@ dependencies = [
 
 [[package]]
 name = "solana-lattice-hash"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -7332,8 +7342,8 @@ dependencies = [
 
 [[package]]
 name = "solana-leader-schedule"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-random",
  "itertools 0.14.0",
@@ -7345,8 +7355,8 @@ dependencies = [
 
 [[package]]
 name = "solana-ledger"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "agave-reserved-account-keys",
@@ -7480,13 +7490,13 @@ dependencies = [
 
 [[package]]
 name = "solana-measure"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 
 [[package]]
 name = "solana-merkle-tree"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "fast-math",
  "solana-hash 4.4.0",
@@ -7514,8 +7524,8 @@ dependencies = [
 
 [[package]]
 name = "solana-metrics"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
@@ -7544,8 +7554,8 @@ checksum = "ae8dd4c280dca9d046139eb5b7a5ac9ad10403fbd64964c7d7571214950d758f"
 
 [[package]]
 name = "solana-net-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-xdp",
  "bincode",
@@ -7650,8 +7660,8 @@ dependencies = [
 
 [[package]]
 name = "solana-perf"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-transaction-view",
  "ahash 0.8.12",
@@ -7690,8 +7700,8 @@ dependencies = [
 
 [[package]]
 name = "solana-poh"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-cpu-utils",
  "agave-votor-messages",
@@ -7759,8 +7769,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program-binaries"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bincode",
  "solana-account 4.3.1",
@@ -7818,8 +7828,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program-runtime"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -7884,8 +7894,8 @@ dependencies = [
 
 [[package]]
 name = "solana-pubsub-client"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -7907,8 +7917,8 @@ dependencies = [
 
 [[package]]
 name = "solana-quic-client"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "async-lock",
  "async-trait",
@@ -7932,8 +7942,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rayon-threadlimit"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "log",
  "num_cpus",
@@ -7941,8 +7951,8 @@ dependencies = [
 
 [[package]]
 name = "solana-remote-wallet"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "console 0.16.4",
  "dialoguer",
@@ -7988,8 +7998,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "agave-snapshots",
@@ -8071,8 +8081,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-votor-messages",
  "async-trait",
@@ -8113,8 +8123,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-api"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "anyhow",
  "jsonrpc-core",
@@ -8132,8 +8142,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-nonce-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "solana-account 4.3.1",
  "solana-commitment-config",
@@ -8148,8 +8158,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-types"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "base64 0.22.1",
  "bs58",
@@ -8172,8 +8182,8 @@ dependencies = [
 
 [[package]]
 name = "solana-runtime"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-bls-cert-verify",
  "agave-feature-set",
@@ -8303,8 +8313,8 @@ dependencies = [
 
 [[package]]
 name = "solana-runtime-transaction"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "agave-transaction-view",
@@ -8426,8 +8436,8 @@ dependencies = [
 
 [[package]]
 name = "solana-send-transaction-service"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
@@ -8619,8 +8629,8 @@ dependencies = [
 
 [[package]]
 name = "solana-storage-bigtable"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-reserved-account-keys",
  "base64 0.22.1",
@@ -8656,8 +8666,8 @@ dependencies = [
 
 [[package]]
 name = "solana-storage-proto"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bs58",
  "prost 0.14.4",
@@ -8681,8 +8691,8 @@ dependencies = [
 
 [[package]]
 name = "solana-streamer"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-xdp",
  "bytes",
@@ -8718,8 +8728,8 @@ dependencies = [
 
 [[package]]
 name = "solana-svm"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "agave-precompiles",
@@ -8776,8 +8786,8 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-callback"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "solana-account 4.3.1",
  "solana-clock",
@@ -8787,26 +8797,26 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-feature-set"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 
 [[package]]
 name = "solana-svm-log-collector"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "solana-svm-measure"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 
 [[package]]
 name = "solana-svm-timings"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "eager",
  "enum-iterator",
@@ -8829,16 +8839,16 @@ dependencies = [
 
 [[package]]
 name = "solana-svm-type-overrides"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "rand 0.9.5",
 ]
 
 [[package]]
 name = "solana-syscalls"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bincode",
  "libsecp256k1",
@@ -8909,8 +8919,8 @@ dependencies = [
 
 [[package]]
 name = "solana-system-program"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bincode",
  "log",
@@ -8995,8 +9005,8 @@ checksum = "0ced92c60aa76ec4780a9d93f3bd64dfa916e1b998eacc6f1c110f3f444f02c9"
 
 [[package]]
 name = "solana-tls-utils"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "quinn",
  "rustls",
@@ -9008,8 +9018,8 @@ dependencies = [
 
 [[package]]
 name = "solana-tpu-client"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "futures-util",
  "indicatif",
@@ -9037,8 +9047,8 @@ dependencies = [
 
 [[package]]
 name = "solana-tpu-client-next"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "async-trait",
  "futures 0.3.32",
@@ -9089,8 +9099,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-context"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bincode",
  "qualifier_attr",
@@ -9120,8 +9130,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-status"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "Inflector",
  "agave-reserved-account-keys",
@@ -9162,8 +9172,8 @@ dependencies = [
 
 [[package]]
 name = "solana-transaction-status-client-types"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -9185,8 +9195,8 @@ dependencies = [
 
 [[package]]
 name = "solana-turbine"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "agave-votor",
@@ -9232,8 +9242,8 @@ dependencies = [
 
 [[package]]
 name = "solana-udp-client"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "async-trait",
  "solana-connection-cache",
@@ -9245,8 +9255,8 @@ dependencies = [
 
 [[package]]
 name = "solana-unified-scheduler-logic"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "assert_matches",
  "solana-clock",
@@ -9260,8 +9270,8 @@ dependencies = [
 
 [[package]]
 name = "solana-unified-scheduler-pool"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-banking-stage-ingress-types",
  "aquamarine",
@@ -9297,8 +9307,8 @@ checksum = "c5d2face763df5afeaa9509b9019968860e69cc1531ec8b4a2e6c7b702204d5a"
 
 [[package]]
 name = "solana-version"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "rand 0.9.5",
@@ -9312,8 +9322,8 @@ dependencies = [
 
 [[package]]
 name = "solana-vote"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bincode",
  "log",
@@ -9367,8 +9377,8 @@ dependencies = [
 
 [[package]]
 name = "solana-vote-program"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "agave-feature-set",
  "bincode",
@@ -9413,8 +9423,8 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-elgamal-proof-program"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "bytemuck",
  "solana-instruction",
@@ -9497,8 +9507,8 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-token-proof-program"
-version = "4.2.0-beta.1"
-source = "git+https://github.com/firedancer-io/agave?rev=e52a524f386808a2b1f2d9f88e7f4d63326590ca#e52a524f386808a2b1f2d9f88e7f4d63326590ca"
+version = "4.2.0-rc.1"
+source = "git+https://github.com/firedancer-io/agave?rev=c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5#c7f9c6b808e15bbc4944f9e9b0f5879fa023ddb5"
 dependencies = [
  "solana-program-runtime",
 ]
