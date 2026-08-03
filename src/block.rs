@@ -198,18 +198,33 @@ fn synthesize_vote_account(pva: &protos::PrevVoteAccount) -> (Pubkey, u64, VoteA
 
 /* Build stake delegations for previous epochs. The difference between this and `build_latest_stake_delegations()` is that
 we use the provided votes cache instead of the latest input account states. */
+/// When validator_admission_ticket is active, real Agave builds epoch stakes
+/// through `VoteAccounts::clone_and_filter_for_vat`, which drops zero-stake
+/// vote accounts (`has_stake`). Firedancer matches that: `fd_top_votes_insert`
+/// bails on `stake == 0`. Synthesizing an unfiltered snapshot here would hand
+/// Agave a state production Agave cannot reach, and the two clients then
+/// disagree about which snapshot supplies a vote account's commission during
+/// epoch rewards. Only the stake predicate is applied -- `PrevVoteAccount` has
+/// no BLS pubkey field, so the full VAT filter would drop every entry.
 #[allow(deprecated)]
 fn build_prev_epoch_stakes(
     vote_accounts: &[protos::PrevVoteAccount],
+    validator_admission_ticket_active: bool,
 ) -> Stakes<stake_account::StakeAccount<Delegation>> {
     let stakes = DeserializableStakes::<Delegation> {
         vote_accounts: vote_accounts
             .iter()
-            .fold(VoteAccounts::default(), |mut acc, pva| {
-                let (pubkey, stake, vote_account) = synthesize_vote_account(pva);
-                acc.insert(pubkey, vote_account, || stake);
-                acc
-            }),
+            .filter(|prev_vote_account| {
+                !validator_admission_ticket_active || prev_vote_account.stake != 0
+            })
+            .fold(
+                VoteAccounts::default(),
+                |mut accumulated_vote_accounts, prev_vote_account| {
+                    let (pubkey, stake, vote_account) = synthesize_vote_account(prev_vote_account);
+                    accumulated_vote_accounts.insert(pubkey, vote_account, || stake);
+                    accumulated_vote_accounts
+                },
+            ),
         stake_delegations: Vec::default(),
         unused: 0,
         epoch: Epoch::default(),
@@ -460,8 +475,27 @@ pub fn execute_block(context: BlockContext) -> Option<BlockEffects> {
     })
     .unwrap();
 
-    let stakes_t_1 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_1);
-    let stakes_t_2 = build_prev_epoch_stakes(&bank_ctx.vote_accounts_t_2);
+    /* validator_admission_ticket can be activated by a feature gate account in
+    acct_states rather than by the input feature list, in which case the bank
+    only sees it once the epoch boundary applies the pending activations.  The
+    epoch stakes below stand in for snapshots taken in past epochs, so consult
+    both sources -- keying off `feature_set` alone would miss the account-driven
+    case and leave the snapshots unfiltered. */
+    let validator_admission_ticket_active = feature_set.snapshot().validator_admission_ticket
+        || accounts_to_store.iter().any(|(pubkey, account)| {
+            *pubkey == agave_feature_set::validator_admission_ticket::id()
+                && bincode::deserialize::<solana_feature_gate_interface::Feature>(account.data())
+                    .is_ok_and(|feature| feature.activated_at.is_some())
+        });
+
+    let stakes_t_1 = build_prev_epoch_stakes(
+        &bank_ctx.vote_accounts_t_1,
+        validator_admission_ticket_active,
+    );
+    let stakes_t_2 = build_prev_epoch_stakes(
+        &bank_ctx.vote_accounts_t_2,
+        validator_admission_ticket_active,
+    );
 
     // epoch_stakes keyed by absolute epoch:
     // leader_schedule_epoch ← stakes_t_1,
