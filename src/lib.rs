@@ -249,6 +249,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     deprecate_rent_exemption_threshold,
     delay_commission_updates,
     commission_rate_in_basis_points,
+    validator_admission_ticket,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -290,7 +291,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     relax_programdata_account_check_migration,
     remove_simple_vote_from_cost_model,
     limit_instruction_accounts,
-    validator_admission_ticket,
     create_account_allow_prefund,
     validate_chained_block_id,
     upgrade_bpf_stake_program_to_v5,
