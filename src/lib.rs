@@ -282,7 +282,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     replace_spl_token_with_p_token,
     raise_block_limits_to_100m, // to be activated in v3.1
     // alpenglow, // TBD
-    // raise_cpi_nesting_limit_to_8, // will enable soon after stricter abi constraints feature is active
+    raise_cpi_nesting_limit_to_8,
     // enable_loader_v4,
     enable_bls12_381_syscall,
     alt_bn128_little_endian,
