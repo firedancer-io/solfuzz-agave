@@ -126,7 +126,7 @@ fn test_system_program_exec() {
 }
 
 #[test]
-#[should_panic(expected = "UnsupportedProgramId")]
+#[should_panic(expected = "invariant violation: duplicate account load")]
 fn test_duplicate_accounts_panic_with_invariant_violation() {
     let native_loader_id = native_loader::id().to_bytes().to_vec();
 
