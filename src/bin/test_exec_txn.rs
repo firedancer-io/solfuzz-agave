@@ -22,7 +22,7 @@ fn exec(input: &PathBuf) -> bool {
         return false;
     };
 
-    let effects = solfuzz_agave::txn::execute_transaction(&context);
+    let effects = solfuzz_agave::txn::execute_txn_proto(&context);
     let ok = effects == expected;
     if ok {
         println!("OK: {:?}", input);

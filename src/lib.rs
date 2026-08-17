@@ -250,6 +250,16 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     delay_commission_updates,
     commission_rate_in_basis_points,
     validator_admission_ticket,
+    // cleaned up in agave v4.3: the gate is gone and the behaviour is now the
+    // unconditional default, so these must always be active.
+    // a842c84761 ("ff cleanup: SIMD-0340")
+    validate_chained_block_id,
+    validate_chained_block_id_2,
+    // fca9f266ff ("Cleanup SIMD-406")
+    limit_instruction_accounts,
+    // 866901d2f9 ("Cleanup - Enable SBPF v1/v2/v3 deployment and execution");
+    // v1 and v2 were already hardcoded above.
+    enable_sbpf_v3_deployment_and_execution,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -265,7 +275,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     deprecate_legacy_vote_ixs,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
-    enable_sbpf_v3_deployment_and_execution,
     enable_get_epoch_stake_syscall,
     verify_retransmitter_signature,
     // vote_only_retransmitter_signed_fec_sets, // reverted in agave
@@ -290,9 +299,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     bls_pubkey_management_in_vote_account,
     relax_programdata_account_check_migration,
     remove_simple_vote_from_cost_model,
-    limit_instruction_accounts,
     create_account_allow_prefund,
-    validate_chained_block_id,
     upgrade_bpf_stake_program_to_v5,
     custom_commission_collector,
     loader_v3_minimum_extend_program_size,
@@ -300,7 +307,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     enable_sha512_syscall,
     disable_sbpf_v0_v1_v2_deployment,
     define_ltds_fee_only_semantics,
-    validate_chained_block_id_2,
     set_lamports_per_byte_to_6333,
     set_lamports_per_byte_to_5080,
     set_lamports_per_byte_to_2575,

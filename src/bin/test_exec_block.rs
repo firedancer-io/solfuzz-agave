@@ -21,10 +21,9 @@ fn exec(input: &PathBuf) -> bool {
         println!("No fixture found.");
         return false;
     };
-    let Some(effects) = solfuzz_agave::block::execute_block(context) else {
-        println!("FAIL: No block effects returned for input: {:?}", input);
-        return false;
-    };
+    // upstream's execute_block takes &context and returns the effects directly
+    // (the local version's Option was vestigial - it had no None paths).
+    let effects = solfuzz_agave::block::execute_block(&context);
 
     let ok = effects == expected;
     if ok {

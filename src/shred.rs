@@ -17,7 +17,7 @@ use solana_accounts_db::{
     account_locks::validate_account_locks, accounts_hash::AccountsLtHash, ancestors::Ancestors,
     blockhash_queue::BlockhashQueue,
 };
-use solana_clock::{Epoch, Slot};
+use solana_clock::{BankId, Epoch, Slot};
 use solana_core::window_service::check_duplicate_shred;
 use solana_epoch_schedule::EpochSchedule;
 use solana_fee_calculator::FeeRateGovernor;
@@ -44,7 +44,7 @@ use solana_runtime::{
     bank_forks::BankForks,
     epoch_stakes::VersionedEpochStakes,
     stake_history::StakeHistory,
-    stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes},
+    stakes::{DeserializableDelegationStakes, SerdeStakesToStakeFormat, Stakes},
 };
 use solana_sdk_ids::sysvar;
 use solana_stake_interface::state::Stake;
@@ -229,8 +229,9 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         let _ = check_duplicate_shred(
             &blockstore,
             dup,
-            true,  // validate_chained_block_id: match Firedancer assumptions
-            true,  // validate_chained_block_id_2: match Firedancer assumptions
+            // The validate_chained_block_id{,_2} params were removed upstream by
+            // a842c8476174 ("ff cleanup: SIMD-0340"); the dead-slot marking they
+            // gated is now unconditional, which is what passing `true, true` asked for.
             false, // no_verify_chained_merkle_root: keep pre-Alpenglow validation
         );
     };
@@ -239,7 +240,9 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         .map(|s| (Cow::Borrowed(s), /*is_repaired:*/ false));
     let _ = blockstore.insert_shreds_handle_duplicate(
         shreds_iter,
-        None,
+        // the `leader_schedule: Option<&LeaderScheduleCache>` param was removed by
+        // 445096748d ("blockstore: Remove unused arg from insert_shreds()"); it was
+        // already dead code (`_leader_schedule`) at v4.2.0.
         false, // is_trusted: keep dedup + integrity checks
         &mut recovery,
         &handle_duplicate,
@@ -373,13 +376,14 @@ fn build_root_bank(root_slot: Slot, feature_set: FeatureSet) -> Arc<Bank> {
     let rent_account = AccountSharedData::new_data(1, &Rent::default(), &sysvar::id()).unwrap();
     accounts.store_accounts_seq(
         (parent_slot, &[(sysvar::rent::id(), rent_account)][..]),
+        BankId::default(),
         None,
         &Ancestors::default(),
     );
     accounts.accounts_db.add_root(parent_slot);
     let bank_rc = BankRc::new(accounts);
 
-    let stakes = DeserializableStakes {
+    let stakes = DeserializableDelegationStakes {
         vote_accounts: VoteAccounts::default(),
         stake_delegations: vec![],
         unused: 0,
