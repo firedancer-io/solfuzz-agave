@@ -250,15 +250,9 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     delay_commission_updates,
     commission_rate_in_basis_points,
     validator_admission_ticket,
-    // cleaned up in agave v4.3: the gate is gone and the behaviour is now the
-    // unconditional default, so these must always be active.
-    // a842c84761 ("ff cleanup: SIMD-0340")
     validate_chained_block_id,
     validate_chained_block_id_2,
-    // fca9f266ff ("Cleanup SIMD-406")
     limit_instruction_accounts,
-    // 866901d2f9 ("Cleanup - Enable SBPF v1/v2/v3 deployment and execution");
-    // v1 and v2 were already hardcoded above.
     enable_sbpf_v3_deployment_and_execution,
 ];
 

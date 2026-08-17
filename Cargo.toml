@@ -88,10 +88,6 @@ split-debuginfo = "off"
 split-debuginfo = "unpacked"
 lto = "thin"
 
-# Mirrors agave's [patch.crates-io] rocksdb fork. REQUIRED, not cosmetic:
-# cargo patches do not propagate to downstream consumers, and agave v4.3's
-# solana-ledger calls fork-only APIs (get_pinned_cf_into, new_pinnable_slice,
-# DBPinnableSlice::reset) that crates.io rocksdb 0.24.0 does not have.
 [patch.crates-io]
 librocksdb-sys = { git = "https://github.com/anza-xyz/rust-rocksdb", rev = "2c0ffd79c1b2e1f5220ee5f7c71af5080a5309e3" }
 rocksdb = { git = "https://github.com/anza-xyz/rust-rocksdb", rev = "2c0ffd79c1b2e1f5220ee5f7c71af5080a5309e3" }

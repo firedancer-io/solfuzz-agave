@@ -229,9 +229,6 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         let _ = check_duplicate_shred(
             &blockstore,
             dup,
-            // The validate_chained_block_id{,_2} params were removed upstream by
-            // a842c8476174 ("ff cleanup: SIMD-0340"); the dead-slot marking they
-            // gated is now unconditional, which is what passing `true, true` asked for.
             false, // no_verify_chained_merkle_root: keep pre-Alpenglow validation
         );
     };
@@ -240,9 +237,6 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         .map(|s| (Cow::Borrowed(s), /*is_repaired:*/ false));
     let _ = blockstore.insert_shreds_handle_duplicate(
         shreds_iter,
-        // the `leader_schedule: Option<&LeaderScheduleCache>` param was removed by
-        // 445096748d ("blockstore: Remove unused arg from insert_shreds()"); it was
-        // already dead code (`_leader_schedule`) at v4.2.0.
         false, // is_trusted: keep dedup + integrity checks
         &mut recovery,
         &handle_duplicate,

@@ -21,9 +21,6 @@ fn exec(input: &PathBuf) -> bool {
         println!("No fixture found.");
         return false;
     };
-    // upstream's execute_cost returns the effects directly; it defaults a missing
-    // feature set and treats any non-Actual mode as Estimate, where the local
-    // version returned None. See DRYRUN.md "harness swap" for the deltas.
     let effects = solfuzz_agave::cost::execute_cost(&context);
 
     let ok = effects == expected;
