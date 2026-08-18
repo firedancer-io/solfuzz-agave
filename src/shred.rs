@@ -5,10 +5,7 @@
 //! from the shred bytes.
 
 use crate::utils::create_accounts_db;
-use agave_feature_set::{
-    discard_unexpected_data_complete_shreds, validate_chained_block_id,
-    validate_chained_block_id_2, FeatureSet,
-};
+use agave_feature_set::{validate_chained_block_id, validate_chained_block_id_2, FeatureSet};
 use agave_votor_messages::migration::MigrationStatus;
 use prost::Message;
 use protosol::protos::{BlockParseResult, FecSetParseResult, ShredParseContext, ShredParseEffects};
@@ -150,11 +147,6 @@ fn open_ledger() -> (LedgerGuard, Blockstore) {
 pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
     let shred_version = ctx.shred_version as u16;
     let root_slot: Slot = ctx.root_slot;
-    let discard = ctx
-        .features
-        .as_ref()
-        .map(|f| f.discard_unexpected_data_complete_shreds)
-        .unwrap_or(false);
 
     let mut effects = ShredParseEffects {
         block_parse_result: BlockParseResult::Accepted as i32,
@@ -162,18 +154,14 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         fec_set_results: Vec::new(),
     };
 
-    // Bank at the root slot: drives the filter/recovery slot bounds, verify_ticks
-    // tick params, and the dup feature gate.
-    // FD: resolver + sched config (shred_version, advance_slot_old(root_slot), discard feature).
+    // Bank at the root slot: drives the filter/recovery slot bounds and verify_ticks tick params.
+    // FD: resolver + sched config (shred_version, advance_slot_old(root_slot)).
     let mut feature_set = FeatureSet::default();
 
     // FD assumes these features to always be active
     feature_set.activate(&validate_chained_block_id::id(), 0);
     feature_set.activate(&validate_chained_block_id_2::id(), 0);
 
-    if discard {
-        feature_set.activate(&discard_unexpected_data_complete_shreds::id(), 0);
-    }
     let bank = build_root_bank(root_slot, feature_set);
     let migration = MigrationStatus::default();
 
