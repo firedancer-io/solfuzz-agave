@@ -250,6 +250,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     delay_commission_updates,
     commission_rate_in_basis_points,
     validator_admission_ticket,
+    discard_unexpected_data_complete_shreds,
     validate_chained_block_id,
     validate_chained_block_id_2,
     limit_instruction_accounts,
@@ -279,7 +280,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     syscall_parameter_address_restrictions,
     virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
     account_data_direct_mapping,       // depends on virtual_address_space_adjustments
-    discard_unexpected_data_complete_shreds,
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
     replace_spl_token_with_p_token,
