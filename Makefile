@@ -25,7 +25,7 @@ RUSTFLAGS_PCGUARD+=-Cllvm-args=-sanitizer-coverage-trace-pc-guard
 #   _dl_try_allocate_static_tls due to division by zero when the process
 #   has no pre-existing static TLS alignment).
 # Note: indirect-calls is enabled via level=4 in RUSTFLAGS_BASE
-RUSTFLAGS_HFUZZ:=$(RUSTFLAGS_PCGUARD)
+RUSTFLAGS_HFUZZ:=$(RUSTFLAGS_8BIT)
 # RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-inline-8bit-counters
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-compares
 RUSTFLAGS_HFUZZ+=-Cllvm-args=-sanitizer-coverage-trace-divs
