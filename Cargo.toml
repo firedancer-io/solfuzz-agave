@@ -45,19 +45,19 @@ solana-transaction = "=4.2.0"
 solana-rent = { version = "=4.4.0", features = ["serde"] }
 
 # Enable dev-context-only-utils for Agave dependencies that need it
-agave-feature-set = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
-agave-logger = { git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api"] }
-solana-runtime = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils", "conformance"]}
-solana-accounts-db = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils"]}
-solana-lattice-hash = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
-solana-svm = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils", "conformance"]}
-solana-vote = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils"]}
-solana-gossip = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils", "conformance"]}
-solana-ledger = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils"]}
-agave-votor-messages = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
-solana-core = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
-solana-streamer = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
-solana-svm-conformance = {git = "https://github.com/firedancer-io/agave", rev = "5f4190968c917ff6d82cf50e31f03c7edbd0fa7c", version = "=4.3.0-beta.0", default-features = false, features = ["ffi"]}
+agave-feature-set = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
+agave-logger = { git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api"] }
+solana-runtime = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils", "conformance"]}
+solana-accounts-db = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils"]}
+solana-lattice-hash = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
+solana-svm = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils", "conformance"]}
+solana-vote = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils"]}
+solana-gossip = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils", "conformance"]}
+solana-ledger = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api", "dev-context-only-utils"]}
+agave-votor-messages = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
+solana-core = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
+solana-streamer = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", features = ["agave-unstable-api"]}
+solana-svm-conformance = {git = "https://github.com/firedancer-io/agave", rev = "6adfcb15ac1689df684d6b743d4915fa79761e02", version = "=4.3.0-beta.0", default-features = false, features = ["ffi"]}
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -23,7 +23,7 @@ fn exec(input: &PathBuf) -> bool {
     };
     let effects = solfuzz_agave::cost::execute_cost(&context);
 
-    let ok = effects == expected;
+    let ok = effects.as_ref() == Some(&expected);
     if ok {
         println!("OK: {:?}", input);
     } else {
