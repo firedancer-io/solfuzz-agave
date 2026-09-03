@@ -1,10 +1,12 @@
 use protosol::protos;
+use protosol::protos::acct_state::DataRepr;
 use solana_clock::Clock;
 use solana_epoch_schedule::EpochSchedule;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_sdk_ids::native_loader;
 #[allow(deprecated)]
+use solana_svm::conformance::fd_hash::fd_hash_or_zero;
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;
 use solana_sysvar::SysvarSerialize;
 use solfuzz_agave::instr::execute_instr_proto;
@@ -14,7 +16,7 @@ fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> protos::
         address: id.to_bytes().to_vec(),
         owner: solana_sdk_ids::sysvar::id().to_bytes().to_vec(),
         lamports: 1,
-        data: bincode::serialize(&sysvar).unwrap(),
+        data_repr: Some(DataRepr::Data(bincode::serialize(&sysvar).unwrap())),
         executable: false,
     }
 }
@@ -40,6 +42,18 @@ fn with_sysvars(mut v: Vec<protos::AcctState>) -> Vec<protos::AcctState> {
     v
 }
 
+/// Effects report account data as a hash, so expected effects have to be
+/// expressed the same way as the harness emits them.
+fn hashed(v: Vec<protos::AcctState>) -> Vec<protos::AcctState> {
+    v.into_iter()
+        .map(|mut a| {
+            let hash = fd_hash_or_zero(a.data());
+            a.set_data_hash(hash);
+            a
+        })
+        .collect()
+}
+
 #[test]
 fn test_system_program_exec() {
     let native_loader_id = native_loader::id().to_bytes().to_vec();
@@ -52,21 +66,21 @@ fn test_system_program_exec() {
                 address: vec![1u8; 32],
                 owner: vec![0u8; 32],
                 lamports: 1000,
-                data: vec![],
+                data_repr: Some(DataRepr::Data(vec![])),
                 executable: false,
             },
             protos::AcctState {
                 address: vec![2u8; 32],
                 owner: vec![0u8; 32],
                 lamports: 0,
-                data: vec![],
+                data_repr: Some(DataRepr::Data(vec![])),
                 executable: false,
             },
             protos::AcctState {
                 address: vec![0u8; 32],
                 owner: native_loader_id.clone(),
                 lamports: 10000000,
-                data: b"Solana Program".to_vec(),
+                data_repr: Some(DataRepr::Data(b"Solana Program".to_vec())),
                 executable: true,
             },
         ]),
@@ -96,31 +110,31 @@ fn test_system_program_exec() {
         protos::InstrEffects {
             result: 0,
             custom_err: 0,
-            modified_accounts: with_sysvars(vec![
+            modified_accounts: hashed(with_sysvars(vec![
                 protos::AcctState {
                     address: vec![1u8; 32],
                     owner: vec![0u8; 32],
                     lamports: 999,
-                    data: vec![],
+                    data_repr: Some(DataRepr::Data(vec![])),
                     executable: false,
                 },
                 protos::AcctState {
                     address: vec![2u8; 32],
                     owner: vec![0u8; 32],
                     lamports: 1,
-                    data: vec![],
+                    data_repr: Some(DataRepr::Data(vec![])),
                     executable: false,
                 },
                 protos::AcctState {
                     address: vec![0u8; 32],
                     owner: native_loader_id.clone(),
                     lamports: 10000000,
-                    data: b"Solana Program".to_vec(),
+                    data_repr: Some(DataRepr::Data(b"Solana Program".to_vec())),
                     executable: true,
                 },
-            ]),
+            ])),
             cu_avail: 9850u64,
-            return_data: vec![],
+            return_data_hash: 0,
         }
     );
 }
@@ -137,28 +151,28 @@ fn test_duplicate_accounts_panic_with_invariant_violation() {
                 address: vec![1u8; 32],
                 owner: vec![0u8; 32],
                 lamports: 1000,
-                data: vec![],
+                data_repr: Some(DataRepr::Data(vec![])),
                 executable: false,
             },
             protos::AcctState {
                 address: vec![1u8; 32],
                 owner: vec![0u8; 32],
                 lamports: 1000,
-                data: vec![],
+                data_repr: Some(DataRepr::Data(vec![])),
                 executable: false,
             },
             protos::AcctState {
                 address: vec![2u8; 32],
                 owner: vec![0u8; 32],
                 lamports: 0,
-                data: vec![],
+                data_repr: Some(DataRepr::Data(vec![])),
                 executable: false,
             },
             protos::AcctState {
                 address: vec![0u8; 32],
                 owner: native_loader_id,
                 lamports: 10000000,
-                data: b"Solana Program".to_vec(),
+                data_repr: Some(DataRepr::Data(b"Solana Program".to_vec())),
                 executable: true,
             },
         ]),

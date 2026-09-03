@@ -1,5 +1,6 @@
 use agave_feature_set::set_exempt_rent_epoch_max;
 use prost::Message;
+use protosol::protos::acct_state::DataRepr;
 use protosol::protos::{
     self, AcctState, BlockhashQueueEntry, CompiledInstruction, FeatureSet, MessageHeader,
     SanitizedTransaction, TransactionMessage, TxnBank, TxnContext, TxnResult,
@@ -54,7 +55,7 @@ fn get_clock_sysvar_account() -> AcctState {
     AcctState {
         address: Clock::id().to_bytes().to_vec(),
         lamports: 1,
-        data: bincode::serialize(&clock).unwrap(),
+        data_repr: Some(DataRepr::Data(bincode::serialize(&clock).unwrap())),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
     }
@@ -71,7 +72,7 @@ fn get_epoch_schedule_sysvar_account() -> AcctState {
     AcctState {
         address: EpochSchedule::id().to_bytes().to_vec(),
         lamports: 1,
-        data: bincode::serialize(&epoch_schedule).unwrap(),
+        data_repr: Some(DataRepr::Data(bincode::serialize(&epoch_schedule).unwrap())),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
     }
@@ -82,7 +83,7 @@ fn get_slot_hashes_sysvar_account() -> AcctState {
     AcctState {
         address: SlotHashes::id().to_bytes().to_vec(),
         lamports: 1,
-        data: bincode::serialize(&slot_hashes).unwrap(),
+        data_repr: Some(DataRepr::Data(bincode::serialize(&slot_hashes).unwrap())),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
     }
@@ -98,7 +99,7 @@ fn get_rent_sysvar_account() -> AcctState {
     AcctState {
         address: Rent::id().to_bytes().to_vec(),
         lamports: 1,
-        data: bincode::serialize(&rent).unwrap(),
+        data_repr: Some(DataRepr::Data(bincode::serialize(&rent).unwrap())),
         executable: false,
         owner: native_loader::id().to_bytes().to_vec(),
     }
@@ -128,7 +129,7 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
     let program_account_state = AcctState {
         address: program_account.to_bytes().to_vec(),
         lamports: 25,
-        data: bincode::serialize(&state).unwrap(),
+        data_repr: Some(DataRepr::Data(bincode::serialize(&state).unwrap())),
         executable: true,
         owner: bpf_loader_upgradeable::id().to_bytes().to_vec(),
     };
@@ -152,7 +153,7 @@ fn deploy_program(name: String) -> [(Pubkey, AcctState); 2] {
     let program_data_account_state = AcctState {
         address: program_data_account.to_bytes().to_vec(),
         lamports: 25,
-        data: header,
+        data_repr: Some(DataRepr::Data(header)),
         executable: false,
         owner: bpf_loader_upgradeable::id().to_bytes().to_vec(),
     };
@@ -180,7 +181,7 @@ fn test_txn_execute_clock() {
     let fee_payer_data = AcctState {
         address: fee_payer.to_bytes().to_vec(),
         lamports: 80000000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -261,7 +262,9 @@ fn test_txn_execute_clock() {
     assert_eq!(res, 1);
     let result = TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap();
     assert!(result.executed);
-    assert_eq!(result.return_data.len(), 8);
+    // Effects only carry a hash, so the old `return_data.len() == 8` check is
+    // not expressible; assert the program returned something instead.
+    assert_ne!(result.return_data_hash, 0);
     assert_eq!(result.txn_error, 0);
 }
 
@@ -284,7 +287,7 @@ fn test_simple_transfer() {
     let fee_payer_data = AcctState {
         address: fee_payer.to_bytes().to_vec(),
         lamports: 10000000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -293,7 +296,7 @@ fn test_simple_transfer() {
     let sender_data = AcctState {
         address: sender.to_bytes().to_vec(),
         lamports: 900000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -302,7 +305,7 @@ fn test_simple_transfer() {
     let recipient_data = AcctState {
         address: recipient.to_bytes().to_vec(),
         lamports: 900000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -353,7 +356,7 @@ fn test_simple_transfer() {
     let system_program_acc = AcctState {
         address: system_program::id().to_bytes().to_vec(),
         lamports: 1,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: true,
         owner: native_loader::id().to_bytes().to_vec(),
     };
@@ -430,7 +433,7 @@ fn test_lookup_table() {
     let fee_payer_data = AcctState {
         address: fee_payer.to_bytes().to_vec(),
         lamports: 10000000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -439,7 +442,7 @@ fn test_lookup_table() {
     let sender_data = AcctState {
         address: sender.to_bytes().to_vec(),
         lamports: 900000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -448,7 +451,7 @@ fn test_lookup_table() {
     let recipient_data = AcctState {
         address: recipient.to_bytes().to_vec(),
         lamports: 900000,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -457,7 +460,7 @@ fn test_lookup_table() {
     let extra_data = AcctState {
         address: extra_account.to_bytes().to_vec(),
         lamports: 2,
-        data: vec![5, 0, 0, 0, 0, 0, 0, 0],
+        data_repr: Some(DataRepr::Data(vec![5, 0, 0, 0, 0, 0, 0, 0])),
         executable: false,
         owner: vec![0; 32],
     };
@@ -488,7 +491,7 @@ fn test_lookup_table() {
     let address_lookup_table_acc = AcctState {
         address: vec![1; 32],
         lamports: 1,
-        data: alut_data,
+        data_repr: Some(DataRepr::Data(alut_data)),
         executable: false,
         owner: address_lookup_table::id().to_bytes().to_vec(),
     };
@@ -527,7 +530,7 @@ fn test_lookup_table() {
     let system_program_acc = AcctState {
         address: system_program::id().to_bytes().to_vec(),
         lamports: 1,
-        data: vec![],
+        data_repr: Some(DataRepr::Data(vec![])),
         executable: true,
         owner: native_loader::id().to_bytes().to_vec(),
     };
