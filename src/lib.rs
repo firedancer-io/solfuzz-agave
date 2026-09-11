@@ -313,6 +313,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reduce_slot_time_to_250ms,
     reduce_slot_time_to_200ms,
     upgrade_bpf_stake_program_to_v5_1,
+    enable_tx_v1,
 ];
 
 #[unsafe(no_mangle)]

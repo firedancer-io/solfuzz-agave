@@ -206,7 +206,7 @@ fn test_txn_execute_clock() {
     ];
 
     let message = TransactionMessage {
-        is_legacy: true,
+        version: protos::TransactionVersion::Legacy as i32,
         header: Some(header),
         account_keys: vec![
             fee_payer.to_bytes().to_vec(),
@@ -215,6 +215,7 @@ fn test_txn_execute_clock() {
         recent_blockhash: blockhash_queue[1].blockhash.clone(),
         instructions: vec![instr],
         address_table_lookups: vec![],
+        v1_config: None,
     };
 
     let tx = SanitizedTransaction {
@@ -330,7 +331,7 @@ fn test_simple_transfer() {
     ];
 
     let message = TransactionMessage {
-        is_legacy: false,
+        version: protos::TransactionVersion::V0 as i32,
         header: Some(header),
         account_keys: vec![
             fee_payer.to_bytes().to_vec(),
@@ -341,6 +342,7 @@ fn test_simple_transfer() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![],
+        v1_config: None,
         recent_blockhash: blockhash_queue[1].blockhash.clone(),
     };
 
@@ -505,7 +507,7 @@ fn test_lookup_table() {
     ];
 
     let message = TransactionMessage {
-        is_legacy: false,
+        version: protos::TransactionVersion::V0 as i32,
         header: Some(header),
         account_keys: vec![
             fee_payer.to_bytes().to_vec(),
@@ -515,6 +517,7 @@ fn test_lookup_table() {
         ],
         instructions: vec![instr],
         address_table_lookups: vec![table_lookup],
+        v1_config: None,
         recent_blockhash: blockhash_queue[1].blockhash.clone(),
     };
 
@@ -588,4 +591,136 @@ fn test_lookup_table() {
             assert_eq!(item.lamports, 900015);
         }
     }
+}
+
+fn v1_transfer_context(features: FeatureSet) -> (TxnContext, Pubkey, Pubkey) {
+    let fee_payer = Pubkey::new_unique();
+    let sender = Pubkey::new_unique();
+    let recipient = Pubkey::new_unique();
+    let account = |key: &Pubkey, lamports: u64| AcctState {
+        address: key.to_bytes().to_vec(),
+        lamports,
+        data_repr: Some(DataRepr::Data(vec![])),
+        executable: false,
+        owner: vec![0; 32],
+    };
+    let mut program_info = deploy_program("simple-transfer".to_string());
+    let p_acc = std::mem::take(&mut program_info[0].1);
+    let pd_acc = std::mem::take(&mut program_info[1].1);
+    let blockhash_queue = vec![
+        BlockhashQueueEntry {
+            blockhash: Hash::new_unique().to_bytes().to_vec(),
+            lamports_per_signature: 5000,
+        };
+        2
+    ];
+    let message = TransactionMessage {
+        header: Some(MessageHeader {
+            num_required_signatures: 2,
+            num_readonly_signed_accounts: 0,
+            num_readonly_unsigned_accounts: 1,
+        }),
+        account_keys: vec![
+            fee_payer.to_bytes().to_vec(),
+            sender.to_bytes().to_vec(),
+            recipient.to_bytes().to_vec(),
+            program_info[0].0.to_bytes().to_vec(),
+            vec![0; 32],
+        ],
+        instructions: vec![CompiledInstruction {
+            program_id_index: 3,
+            accounts: vec![1, 2, 4],
+            data: vec![0, 0, 0, 0, 0, 0, 0, 10],
+        }],
+        address_table_lookups: vec![],
+        recent_blockhash: blockhash_queue[1].blockhash.clone(),
+        version: protos::TransactionVersion::V1 as i32,
+        // An absent compute-unit or loaded-data limit means 0 in V1, so set both.
+        v1_config: Some(protos::TransactionConfig {
+            priority_fee: None,
+            compute_unit_limit: Some(200_000),
+            loaded_accounts_data_size_limit: Some(64 * 1024 * 1024),
+            heap_size: Some(64 * 1024),
+        }),
+    };
+    let tx = SanitizedTransaction {
+        message: Some(message),
+        message_hash: Hash::new_unique().to_bytes().to_vec(),
+        signatures: vec![Signature::default().as_ref().to_vec(); 2],
+    };
+    let system_program_acc = AcctState {
+        address: system_program::id().to_bytes().to_vec(),
+        lamports: 1,
+        data_repr: Some(DataRepr::Data(vec![])),
+        executable: true,
+        owner: native_loader::id().to_bytes().to_vec(),
+    };
+    let ctx = TxnContext {
+        tx: Some(tx),
+        account_shared_data: vec![
+            account(&fee_payer, 10000000),
+            account(&recipient, 900000),
+            account(&sender, 900000),
+            p_acc,
+            pd_acc,
+            system_program_acc,
+            get_clock_sysvar_account(),
+            get_epoch_schedule_sysvar_account(),
+            get_rent_sysvar_account(),
+            get_slot_hashes_sysvar_account(),
+        ],
+        bank: Some(TxnBank {
+            blockhash_queue,
+            rbh_lamports_per_signature: 5000,
+            features: Some(features),
+            fee_rate_governor: Some(protos::FeeRateGovernor::default()),
+            ..Default::default()
+        }),
+    };
+    (ctx, sender, recipient)
+}
+
+fn run_txn(ctx: &TxnContext) -> TxnResult {
+    let mut buffer = ctx.encode_to_vec();
+    let buffer_len = buffer.len() as u64;
+    let mut res_buffer: Vec<u8> = vec![0; 68007];
+    let mut res_buffer_len = res_buffer.len() as u64;
+    let res = unsafe {
+        sol_compat_txn_execute_v1(
+            res_buffer.as_mut_ptr(),
+            &mut res_buffer_len,
+            buffer.as_mut_ptr(),
+            buffer_len,
+        )
+    };
+    assert_eq!(res, 1);
+    TxnResult::decode(&res_buffer[..res_buffer_len as usize]).unwrap()
+}
+
+#[test]
+fn test_v1_transfer_executes_with_feature() {
+    let mut features = get_features();
+    features
+        .features
+        .push(feature_u64(&agave_feature_set::enable_tx_v1::id()));
+    let (ctx, sender, recipient) = v1_transfer_context(features);
+    let result = run_txn(&ctx);
+    assert!(result.executed, "txn_error={}", result.txn_error);
+    assert_eq!(result.txn_error, 0);
+    for item in &result.modified_accounts {
+        if item.address == sender.to_bytes() {
+            assert_eq!(item.lamports, 899990);
+        }
+        if item.address == recipient.to_bytes() {
+            assert_eq!(item.lamports, 900010);
+        }
+    }
+}
+
+#[test]
+fn test_v1_rejected_without_feature() {
+    let (ctx, _, _) = v1_transfer_context(get_features());
+    let result = run_txn(&ctx);
+    assert!(!result.executed);
+    assert_eq!(result.txn_error, 19, "UnsupportedVersion");
 }
