@@ -32,7 +32,7 @@ use solana_ledger::{
         layout, Payload, ReedSolomonCache, Shred,
     },
 };
-use solana_message::AccountKeys;
+use solana_message::{AccountKeys, VersionedMessage};
 use solana_packet::PACKET_DATA_SIZE;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
@@ -252,8 +252,11 @@ pub fn execute_shred_parse(ctx: &ShredParseContext) -> ShredParseEffects {
         }
         // Mirror FD's fd_sched_parse_txn: reject non-sanitizable, duplicate-account, or over-MTU txns.
         for tx in entries.iter().flat_map(|e| &e.transactions) {
-            let oversized =
-                bincode::serialized_size(tx).map_or(true, |n| n > PACKET_DATA_SIZE as u64);
+            let max_size = match tx.message {
+                VersionedMessage::V1(_) => solana_message::v1::MAX_TRANSACTION_SIZE,
+                _ => PACKET_DATA_SIZE,
+            } as u64;
+            let oversized = wincode::serialized_size(tx).map_or(true, |n| n > max_size);
             let bad_locks = validate_account_locks(
                 AccountKeys::new(tx.message.static_account_keys(), None),
                 MAX_TX_ACCOUNT_LOCKS,
