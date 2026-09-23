@@ -233,7 +233,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     vote_only_full_fec_sets,
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
-    enable_turbine_extended_fanout_experiments,
+    // enable_turbine_extended_fanout_experiments, // NOT impl in fd
     mask_out_rent_epoch_in_vm_serialization,
     disable_zk_elgamal_proof_program,
     enable_vote_address_leader_schedule,
@@ -259,15 +259,15 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
     // zk_token_sdk_enabled, // NOT supported in fd
-    stake_raise_minimum_delegation_to_1_sol,
+    // stake_raise_minimum_delegation_to_1_sol, // NOT impl in fd
     // stake_minimum_delegation_for_rewards, // reverted in agave
     // increase_tx_account_lock_limit, // abandoned
     disable_turbine_fanout_experiments,
     // enable_big_mod_exp_syscall, // NOT impl in fd
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
-    chained_merkle_conflict_duplicate_proofs,
-    deprecate_legacy_vote_ixs,
+    // chained_merkle_conflict_duplicate_proofs, // NOT impl in fd
+    // deprecate_legacy_vote_ixs, // NOT impl in fd
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
     enable_get_epoch_stake_syscall,
@@ -285,7 +285,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     replace_spl_token_with_p_token,
     raise_block_limits_to_100m, // to be activated in v3.1
     // alpenglow, // TBD
-    raise_cpi_nesting_limit_to_8,
+    // raise_cpi_nesting_limit_to_8, // NOT impl in fd
     // enable_loader_v4,
     enable_bls12_381_syscall,
     alt_bn128_little_endian,
