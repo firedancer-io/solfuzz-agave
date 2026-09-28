@@ -233,7 +233,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     vote_only_full_fec_sets,
     enable_sbpf_v1_deployment_and_execution,
     enable_sbpf_v2_deployment_and_execution,
-    enable_turbine_extended_fanout_experiments,
+    // Reverted upstream; Firedancer excludes this gate from its supported set.
     mask_out_rent_epoch_in_vm_serialization,
     disable_zk_elgamal_proof_program,
     enable_vote_address_leader_schedule,
@@ -355,3 +355,23 @@ pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeature
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sol_compat_fini() {}
+
+#[cfg(test)]
+mod feature_tests {
+    use super::*;
+
+    #[test]
+    fn reverted_fanout_is_not_required_by_the_exported_feature_contract() {
+        let reverted = feature_u64(&enable_turbine_extended_fanout_experiments::id());
+        assert_eq!(reverted, 0x78efccd879624c0d);
+        let features = unsafe { &*sol_compat_get_features_v1() };
+        let hardcoded = unsafe {
+            std::slice::from_raw_parts(
+                features.hardcoded_features,
+                features.hardcoded_features_len as usize,
+            )
+        };
+        assert!(!hardcoded.contains(&reverted));
+        assert!(hardcoded.contains(&feature_u64(&enable_sbpf_v2_deployment_and_execution::id())));
+    }
+}
