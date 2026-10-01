@@ -255,6 +255,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     validate_chained_block_id_2,
     limit_instruction_accounts,
     enable_sbpf_v3_deployment_and_execution,
+    syscall_parameter_address_restrictions,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -277,7 +278,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // enable_extend_program_checked,  // was un-keyed https://github.com/anza-xyz/agave/pull/11686
     require_static_nonce_account,
     // enshrine_slashing_program, // removed in Agave 4.2
-    syscall_parameter_address_restrictions,
     virtual_address_space_adjustments, // depends on syscall_parameter_address_restrictions
     account_data_direct_mapping,       // depends on virtual_address_space_adjustments
     poseidon_enforce_padding,
