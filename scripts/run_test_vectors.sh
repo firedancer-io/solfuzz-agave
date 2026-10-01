@@ -20,8 +20,8 @@ repo_commit=$(git rev-parse HEAD)
 echo "Using repo commit: $repo_commit"
 
 # If WORK_DIR is provided, use it directly and skip the whole
-# git clone/checkout/cache of test-vectors. The provided directory is
-# expected to already contain the fixtures laid out as
+# git clone/fetch/checkout/cache/rsync dance. The provided directory
+# is expected to already contain the fixtures laid out as
 # <WORK_DIR>/{instr,txn,block,syscall,elf_loader,shred}/fixtures
 if [ -n "${WORK_DIR:-}" ]; then
   echo "Using provided WORK_DIR: $WORK_DIR"
@@ -32,26 +32,37 @@ else
   GIT_REF=${GIT_REF:-$(cat ./scripts/test-vectors-commit-sha.txt)}
   echo "Using test-vectors commit: $GIT_REF"
 
-  # Fetch/update test-vectors repo
-  if [ ! -d dump/test-vectors ]; then
+  # One cache repo per user, shared with firedancer's
+  # contrib/test/run_test_vectors.sh. Each run gets its own
+  # hardlinked working copy so concurrent runs do not collide.
+  REPO_URL="https://github.com/firedancer-io/test-vectors.git"
+  CACHE="/data/${USER}/.cache/firedancer/test-vectors"
+  WORK_DIR="dump/test-vectors-$$"
+  mkdir -p "$(dirname "$CACHE")"
+  exec {lockfd}>"$CACHE.lock"
+  flock -x "$lockfd"
+
+  # Clean up stale git lock files left by killed processes
+  rm -f "$CACHE/.git/index.lock"
+  if [ ! -d "$CACHE" ]; then
     echo "Cloning test-vectors repository..."
-    (cd dump && git clone --depth=1 -q --no-tags https://github.com/firedancer-io/test-vectors.git)
+    git clone -q "$REPO_URL" "$CACHE"
   fi
+  git -C "$CACHE" fetch -q --prune
+  # Repair cache state left by interrupted checkouts
+  git -C "$CACHE" reset -q --hard
+  git -C "$CACHE" clean -q -fd
+  git -C "$CACHE" checkout -q "$GIT_REF"
 
-  # Checkout specific commit non-destructively
-  (
-    cd dump/test-vectors
-    if ! git checkout -q $GIT_REF; then
-      git remote update
-      git checkout -q $GIT_REF
-    fi
-  )
+  # Remove stale working copies older than 24 hours (non-fatal)
+  find dump -maxdepth 1 -regex '.*/test-vectors-[0-9]+$' -type d -mtime +0 \
+    -exec echo "  removing stale: {}" \; -exec rm -rf {} \; 2>/dev/null || true
 
-  # Show the commit hashes being used
-  test_vectors_commit=$(cd dump/test-vectors && git rev-parse HEAD)
-  echo "Using test-vectors commit: $test_vectors_commit"
+  rm -rf "$WORK_DIR"
+  rsync -a --link-dest="$CACHE" "$CACHE"/ "$WORK_DIR"
 
-  WORK_DIR="dump/test-vectors"
+  flock -u "$lockfd"
+  exec {lockfd}>&-
 fi
 
 # Run one fixture per process, capture per-fixture output, and collect failures/successes.

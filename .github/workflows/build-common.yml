@@ -78,18 +78,6 @@ jobs:
         with:
           cache-all-crates: true # we do this because we have a crapload of crates used for testing/CI
 
-      - name: check out test-vectors (persistent)
-        run: |
-          COMMIT_SHA=$(cat scripts/test-vectors-commit-sha.txt)
-          TEST_VECTORS_PATH="/data/svc_firedancer/test-vectors/${COMMIT_SHA}"
-          if [[ ! -d "${TEST_VECTORS_PATH}" ]]; then
-            mkdir -p /data/svc_firedancer/test-vectors
-            git clone https://github.com/firedancer-io/test-vectors.git "${TEST_VECTORS_PATH}"
-            git -C "${TEST_VECTORS_PATH}" checkout "${COMMIT_SHA}"
-          fi
-          mkdir -p dump
-          ln -sf "${TEST_VECTORS_PATH}" dump/test-vectors
-
       - name: Make binaries
         run: make binaries
 
