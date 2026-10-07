@@ -256,6 +256,9 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     limit_instruction_accounts,
     enable_sbpf_v3_deployment_and_execution,
     syscall_parameter_address_restrictions,
+    upgrade_bpf_stake_program_to_v5_1,
+    enable_tx_v1,
+    alpenglow,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -284,7 +287,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     provide_instruction_data_offset_in_vm_r2,
     replace_spl_token_with_p_token,
     raise_block_limits_to_100m, // to be activated in v3.1
-    // alpenglow, // TBD
     // raise_cpi_nesting_limit_to_8, // NOT impl in fd
     // enable_loader_v4,
     enable_bls12_381_syscall,
@@ -296,6 +298,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     create_account_allow_prefund,
     upgrade_bpf_stake_program_to_v5,
     custom_commission_collector,
+    block_revenue_sharing,
     loader_v3_minimum_extend_program_size,
     direct_account_pointers_in_program_input,
     enable_sha512_syscall,
@@ -312,8 +315,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reduce_slot_time_to_300ms,
     reduce_slot_time_to_250ms,
     reduce_slot_time_to_200ms,
-    upgrade_bpf_stake_program_to_v5_1,
-    enable_tx_v1,
     relax_fee_payer_constraint,
 ];
 

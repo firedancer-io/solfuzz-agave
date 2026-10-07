@@ -8,10 +8,9 @@ use solana_sdk_ids::native_loader;
 #[allow(deprecated)]
 use solana_svm::conformance::fd_hash::fd_hash_or_zero;
 use solana_sysvar::recent_blockhashes::RecentBlockhashes;
-use solana_sysvar::SysvarSerialize;
 use solfuzz_agave::instr::execute_instr_proto;
 
-fn create_sysvar_account<T: SysvarSerialize>(id: &Pubkey, sysvar: T) -> protos::AcctState {
+fn create_sysvar_account<T: serde::Serialize>(id: &Pubkey, sysvar: T) -> protos::AcctState {
     protos::AcctState {
         address: id.to_bytes().to_vec(),
         owner: solana_sdk_ids::sysvar::id().to_bytes().to_vec(),

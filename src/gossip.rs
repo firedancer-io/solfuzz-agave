@@ -1,1 +1,1 @@
-pub use solana_gossip::harness::sol_compat_gossip_decode_v1;
+pub use agave_conformance::gossip::sol_compat_gossip_decode_v1;

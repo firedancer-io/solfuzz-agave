@@ -17,7 +17,7 @@ fn exec(input: &PathBuf) -> bool {
         return false;
     };
 
-    let effects = solana_gossip::gossip_decode_to_effects(&fixture.input);
+    let effects = agave_conformance::gossip::gossip_decode_to_effects(&fixture.input);
 
     let ok = effects == expected;
     if ok {

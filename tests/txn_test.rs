@@ -79,7 +79,7 @@ fn get_epoch_schedule_sysvar_account() -> AcctState {
 }
 
 fn get_slot_hashes_sysvar_account() -> AcctState {
-    let slot_hashes = SlotHashes::new(&[(20, Hash::default())]);
+    let slot_hashes = SlotHashes::new(&[(20, Hash::default()).into()]);
     AcctState {
         address: SlotHashes::id().to_bytes().to_vec(),
         lamports: 1,
@@ -718,9 +718,9 @@ fn test_v1_transfer_executes_with_feature() {
 }
 
 #[test]
-fn test_v1_rejected_without_feature() {
+fn test_v1_transfer_executes_without_feature() {
     let (ctx, _, _) = v1_transfer_context(get_features());
     let result = run_txn(&ctx);
-    assert!(!result.executed);
-    assert_eq!(result.txn_error, 19, "UnsupportedVersion");
+    assert!(result.executed);
+    assert_eq!(result.txn_error, 0);
 }
