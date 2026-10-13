@@ -4,7 +4,6 @@ RUSTFLAGS_BASE+=-g
 RUSTFLAGS_BASE+=-Cpasses=sancov-module
 RUSTFLAGS_BASE+=-Cllvm-args=-sanitizer-coverage-level=4
 RUSTFLAGS_BASE+=-Cllvm-args=-sanitizer-coverage-pc-table
-RUSTFLAGS_BASE+=-Clink-dead-code
 RUSTFLAGS_BASE+=-Cforce-frame-pointers=yes
 RUSTFLAGS_BASE+=-Ctarget-feature=-crt-static
 
