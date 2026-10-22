@@ -50,7 +50,7 @@ make conformance_release
 make shared_obj_hfuzz
 ```
 
-`make shared_obj_hfuzz` produces file `target/hfuzz/x86_64-unknown-linux-gnu/release-with-debug/libsolfuzz_agave.so`, which is a Solfuzz target that can be used with [Solana-Conformance](https://github.com/firedancer-io/solana-conformance) and [Solfuzz](https://github.com/firedancer-io/solfuzz).
+`make shared_obj_hfuzz` produces file `target/hfuzz/x86_64-unknown-linux-gnu/release-with-debug/libsolfuzz_agave.so`, which is a Solfuzz target that can be used with [Solana-Conformance](https://github.com/firedancer-io/solfuzz/tree/main/solana-conformance) and [Solfuzz](https://github.com/firedancer-io/solfuzz).
 
 The resulting file is instrumented with sancov.
 
