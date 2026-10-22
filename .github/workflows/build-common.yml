@@ -5,7 +5,9 @@ on:
 jobs:
   lint:
     name: check lints and clippy
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - 512G
     concurrency:
       group: on-pull-request_lint_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -27,7 +29,9 @@ jobs:
 
   test:
     name: cargo check + test
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - 512G
     concurrency:
       group: on-pull-request_test_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -47,7 +51,9 @@ jobs:
 
   build-shared-objects:
     name: build shared objects
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - 512G
     concurrency:
       group: on-pull-request_build-shared-objects_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -65,7 +71,9 @@ jobs:
 
   test-vectors:
     name: run test vectors
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - 512G
     concurrency:
       group: on-pull-request_test-vectors_${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
