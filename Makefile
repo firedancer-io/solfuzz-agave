@@ -42,7 +42,7 @@ CC:=clang
 CARGO?=cargo
 
 # TODO: re-enable LTO when we move to a rust version containing rust-lang/rust#164583 (1.101.0)
-NO_LTO:=CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_WITH_DEBUG_LTO=false
+NO_LTO:=CARGO_PROFILE_RELEASE_LTO=false
 
 .PHONY: clean binaries shared_obj shared_obj_hfuzz shared_obj_pcguard
 
