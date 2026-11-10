@@ -272,7 +272,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // stake_minimum_delegation_for_rewards, // reverted in agave
     // increase_tx_account_lock_limit, // abandoned
     disable_turbine_fanout_experiments,
-    // enable_big_mod_exp_syscall, // NOT impl in fd
+    enable_big_mod_exp_syscall,
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     // chained_merkle_conflict_duplicate_proofs, // NOT impl in fd
@@ -291,7 +291,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
     raise_block_limits_to_100m, // to be activated in v3.1
-    // raise_cpi_nesting_limit_to_8, // NOT impl in fd
+    raise_cpi_nesting_limit_to_8,
     // enable_loader_v4,
     alt_bn128_little_endian,
     enable_alt_bn128_g2_syscalls,
@@ -316,6 +316,22 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reduce_slot_time_to_250ms,
     reduce_slot_time_to_200ms,
     relax_fee_payer_constraint,
+    loaderv3_programdata_size_floor,
+    invoke_signed_v2,
+    replace_ata_with_p_ata,
+    remove_runtime_float_ops,
+    loader_v3_remove_extend_program,
+    core_bpf_hash_validation,
+    secp256r1_syscall_enabled,
+    loader_v3_allow_prefunded_programdata,
+    pass_input_metadata_in_vm_r3_r5,
+    single_program_runtime_environment,
+    unbound_loader_v3_instruction_data,
+    early_instruction_trace_overflow_detection,
+    double_disinflation_rate,
+    increase_tx_v1_account_lock_limit,
+    stricter_shred_validation,
+    alpenglow_fast_leader_handover,
 ];
 
 #[repr(C)]
