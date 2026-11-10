@@ -11,8 +11,8 @@ pub mod utils;
 pub mod vm_serialization;
 pub mod vm_syscalls;
 
+pub use agave_conformance::{sol_compat_fini, sol_compat_init};
 use agave_feature_set::*;
-use std::env;
 
 use crate::utils::feature_u64;
 
@@ -220,7 +220,7 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     reserve_minimal_cus_for_builtin_instructions,
     raise_block_limits_to_50m,
     move_precompile_verification_to_svm,
-    enable_transaction_loading_failure_fees,
+    relax_transaction_loading_constraints,
     disable_partitioned_rent_collection,
     formalize_loaded_transaction_data_size,
     // create_slashing_program, // renamed to enshrine_slashing_program
@@ -259,6 +259,11 @@ pub static HARDCODED_FEATURES: &[u64] = feature_list![
     upgrade_bpf_stake_program_to_v5_1,
     enable_tx_v1,
     alpenglow,
+    enable_bls12_381_syscall,
+    replace_spl_token_with_p_token,
+    upgrade_bpf_stake_program_to_v5,
+    loader_v3_minimum_extend_program_size,
+    define_ltds_fee_only_semantics,
 ];
 
 static SUPPORTED_FEATURES: &[u64] = feature_list![
@@ -285,25 +290,20 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     account_data_direct_mapping,       // depends on virtual_address_space_adjustments
     poseidon_enforce_padding,
     provide_instruction_data_offset_in_vm_r2,
-    replace_spl_token_with_p_token,
     raise_block_limits_to_100m, // to be activated in v3.1
     // raise_cpi_nesting_limit_to_8, // NOT impl in fd
     // enable_loader_v4,
-    enable_bls12_381_syscall,
     alt_bn128_little_endian,
     enable_alt_bn128_g2_syscalls,
     bls_pubkey_management_in_vote_account,
     relax_programdata_account_check_migration,
     remove_simple_vote_from_cost_model,
     create_account_allow_prefund,
-    upgrade_bpf_stake_program_to_v5,
     custom_commission_collector,
     block_revenue_sharing,
-    loader_v3_minimum_extend_program_size,
     direct_account_pointers_in_program_input,
     enable_sha512_syscall,
     disable_sbpf_v0_v1_v2_deployment,
-    define_ltds_fee_only_semantics,
     set_lamports_per_byte_to_6333,
     set_lamports_per_byte_to_5080,
     set_lamports_per_byte_to_2575,
@@ -317,18 +317,6 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     reduce_slot_time_to_200ms,
     relax_fee_payer_constraint,
 ];
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn sol_compat_init(_log_level: i32) {
-    unsafe {
-        env::set_var("SOLANA_RAYON_THREADS", "1");
-        env::set_var("RAYON_NUM_THREADS", "1");
-    }
-    if env::var("ENABLE_SOLANA_LOGGER").is_ok() {
-        /* Pairs with RUST_LOG={trace,debug,info,etc} */
-        agave_logger::setup(); // renamed in Agave v3.1
-    }
-}
 
 #[repr(C)]
 pub struct SolCompatFeatures {
@@ -354,6 +342,3 @@ static FEATURES: SolCompatFeatures = SolCompatFeatures {
 pub unsafe extern "C" fn sol_compat_get_features_v1() -> *const SolCompatFeatures {
     &FEATURES
 }
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn sol_compat_fini() {}
