@@ -2,6 +2,10 @@
 RUSTFLAGS_BASE:=
 RUSTFLAGS_BASE+=-g
 RUSTFLAGS_BASE+=-Cpasses=sancov-module
+# rustc 1.99 (Agave's toolchain) segfaults in ModuleSummaryIndex.
+# assign-guid is idempotent, so it is harmless on fixed toolchains
+# and can be dropped once Agave moves to >=1.101.
+RUSTFLAGS_BASE+=-Cpasses=assign-guid
 RUSTFLAGS_BASE+=-Cllvm-args=-sanitizer-coverage-level=4
 RUSTFLAGS_BASE+=-Cllvm-args=-sanitizer-coverage-pc-table
 RUSTFLAGS_BASE+=-Cforce-frame-pointers=yes
@@ -41,9 +45,6 @@ CC:=clang
 
 CARGO?=cargo
 
-# TODO: re-enable LTO when we move to a rust version containing rust-lang/rust#164583 (1.101.0)
-NO_LTO:=CARGO_PROFILE_RELEASE_LTO=false
-
 .PHONY: clean binaries shared_obj shared_obj_hfuzz shared_obj_pcguard
 
 all: | shared_obj binaries
@@ -55,16 +56,16 @@ conformance_release:
 	$(CARGO) build --lib --release
 
 shared_obj:
-	$(NO_LTO) RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
+	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib
 
 shared_obj_hfuzz:
-	$(NO_LTO) RUSTFLAGS="$(RUSTFLAGS_HFUZZ)" $(CARGO) build --target x86_64-unknown-linux-gnu --profile release-with-debug --lib --target-dir target/hfuzz
+	RUSTFLAGS="$(RUSTFLAGS_HFUZZ)" $(CARGO) build --target x86_64-unknown-linux-gnu --profile release-with-debug --lib --target-dir target/hfuzz
 
 shared_obj_pcguard:
-	$(NO_LTO) RUSTFLAGS="$(RUSTFLAGS_PCGUARD)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/pcguard
+	RUSTFLAGS="$(RUSTFLAGS_PCGUARD)" $(CARGO) build --target x86_64-unknown-linux-gnu --release --lib --target-dir target/pcguard
 
 shared_obj_cov:
-	$(NO_LTO) RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) build --target x86_64-unknown-linux-gnu --release \
+	RUSTFLAGS="$(RUSTFLAGS) -Cinstrument-coverage" $(CARGO) build --target x86_64-unknown-linux-gnu --release \
 	 --lib --target-dir target/cov
 
 	# to avoid conflicts when uploading as GH artifact
@@ -82,7 +83,7 @@ shared_obj_core_bpf:
 	CARGO=$(CARGO) ./scripts/build_core_bpf.sh $(PROGRAM)
 
 shared_obj_bpf_conformance:
-	$(NO_LTO) RUSTFLAGS="$(RUSTFLAGS)" BPF_PROGRAM_ID=$(BPF_PROGRAM_ID) BPF_TARGET=$(BPF_TARGET) FORCE_RECOMPILE=true $(CARGO) build \
+	RUSTFLAGS="$(RUSTFLAGS)" BPF_PROGRAM_ID=$(BPF_PROGRAM_ID) BPF_TARGET=$(BPF_TARGET) FORCE_RECOMPILE=true $(CARGO) build \
 		--target x86_64-unknown-linux-gnu \
 		--features bpf-program-conformance \
 		--lib \
