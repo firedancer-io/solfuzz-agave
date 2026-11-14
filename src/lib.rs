@@ -276,7 +276,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     // deplete_cu_meter_on_vm_failure, // NOT GOOD FOR FUZZING
     // remaining_compute_units_syscall_enabled, // NOT impl in fd
     // chained_merkle_conflict_duplicate_proofs, // NOT impl in fd
-    // deprecate_legacy_vote_ixs, // NOT impl in fd
+    deprecate_legacy_vote_ixs,
     // disable_sbpf_v0_execution, // test only (revist for vm v3)
     // reenable_sbpf_v0_execution, // test only (revist for vm v3)
     enable_get_epoch_stake_syscall,
@@ -332,6 +332,7 @@ static SUPPORTED_FEATURES: &[u64] = feature_list![
     increase_tx_v1_account_lock_limit,
     stricter_shred_validation,
     alpenglow_fast_leader_handover,
+    loader_v3_set_program_data_to_elf_length,
 ];
 
 #[repr(C)]
